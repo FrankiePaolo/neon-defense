@@ -274,9 +274,35 @@ canvas {
   font-family: 'Courier New', monospace;
 }
 
-#upgrade-panel .up-title { font-weight: bold; margin-bottom: 8px; font-size: 13px; }
-#upgrade-panel .up-path-name { margin-top: 6px; color: #aaa; font-size: 11px; }
-#upgrade-panel .up-level { font-size: 10px; padding: 3px 0; }
+#upgrade-panel .up-title { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
+#upgrade-panel .up-stats {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 10px; color: #888; padding: 4px 0 6px;
+  border-bottom: 1px solid #1a1a2e; margin-bottom: 4px;
+}
+#upgrade-panel .up-stats span { white-space: nowrap; }
+#upgrade-panel .up-path-name { margin-top: 6px; color: #aaa; font-size: 11px; letter-spacing: 1px; }
+#upgrade-panel .up-level {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px; margin: 2px 0; border: 1px solid transparent; border-radius: 2px;
+}
+#upgrade-panel .up-cost { font-size: 11px; font-weight: bold; min-width: 44px; }
+#upgrade-panel .up-desc { font-size: 10px; }
+#upgrade-panel .up-check { color: #00ff66; font-size: 12px; min-width: 44px; }
+#upgrade-panel .up-purchased .up-desc { color: rgba(0, 255, 100, 0.7); }
+#upgrade-panel .up-available {
+  cursor: pointer; background: rgba(255, 215, 0, 0.05); border-color: rgba(255, 215, 0, 0.15);
+}
+#upgrade-panel .up-available:hover {
+  background: rgba(255, 215, 0, 0.12); border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
+}
+#upgrade-panel .up-available .up-cost { color: #ffd700; }
+#upgrade-panel .up-available .up-desc { color: #fff; }
+#upgrade-panel .up-unaffordable .up-cost { color: #663333; }
+#upgrade-panel .up-unaffordable .up-desc { color: #555; }
+#upgrade-panel .up-locked .up-cost { color: #2a2a2a; }
+#upgrade-panel .up-locked .up-desc { color: #2a2a2a; }
 #upgrade-panel .up-actions { margin-top: 8px; display: flex; gap: 12px; }
 #upgrade-panel .move-btn { font-size: 10px; color: #00aaff; cursor: pointer; }
 #upgrade-panel .sell-btn { font-size: 10px; color: #ff6666; cursor: pointer; }
@@ -675,9 +701,13 @@ canvas {
     padding: 16px;
   }
 
-  #upgrade-panel .up-title { font-size: 16px; margin-bottom: 10px; }
+  #upgrade-panel .up-title { font-size: 16px; margin-bottom: 6px; }
+  #upgrade-panel .up-stats { font-size: 12px; gap: 12px; }
   #upgrade-panel .up-path-name { font-size: 14px; margin-top: 10px; }
-  #upgrade-panel .up-level { font-size: 14px; padding: 8px 0; }
+  #upgrade-panel .up-level { padding: 8px 6px; }
+  #upgrade-panel .up-cost { font-size: 14px; min-width: 52px; }
+  #upgrade-panel .up-desc { font-size: 13px; }
+  #upgrade-panel .up-check { font-size: 14px; min-width: 52px; }
   #upgrade-panel .up-actions { margin-top: 12px; gap: 20px; }
   #upgrade-panel .move-btn { font-size: 14px; padding: 8px 0; }
   #upgrade-panel .sell-btn { font-size: 14px; padding: 8px 0; }

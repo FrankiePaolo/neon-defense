@@ -231,6 +231,19 @@ export class UIController {
     const canModify = game.state === 'BETWEEN_WAVES';
     let html = `<div class="up-title" style="color:${def.color}">${t('tower.' + type)}</div>`;
 
+    // Current stats summary
+    const s = tower.currentStats;
+    html += `<div class="up-stats">`;
+    if (s.damage > 0) html += `<span>DMG ${s.damage}</span>`;
+    if (s.fireRate > 0) html += `<span>RATE ${s.fireRate}/s</span>`;
+    html += `<span>RNG ${s.range}</span>`;
+    if (s.slowAmount) html += `<span>SLOW ${Math.round(s.slowAmount * 100)}%</span>`;
+    if (s.chainCount) html += `<span>CHAIN ${s.chainCount}</span>`;
+    if (s.splashRadius) html += `<span>SPLASH ${s.splashRadius}</span>`;
+    if (s.damageAmp) html += `<span>AMP +${Math.round(s.damageAmp * 100)}%</span>`;
+    if (s.goldPerWave) html += `<span>+${s.goldPerWave}g/wave</span>`;
+    html += `</div>`;
+
     for (const [pathKey, pathLabel] of [['A', 'pathA'], ['B', 'pathB']]) {
       const upgradePath = def.upgrades[pathLabel];
       html += `<div class="up-path-name">${t('up.' + type + '.' + pathKey)}</div>`;
@@ -242,9 +255,17 @@ export class UIController {
         const canAfford = available && game.economy.canAfford(level.cost);
         const desc = t('up.' + type + '.' + pathKey + '.' + i);
 
-        html += `<div class="upgrade-option up-level" style="color:${purchased ? '#00ff66' : available ? (canAfford ? '#fff' : '#666') : '#333'}; cursor:${canAfford ? 'pointer' : 'default'}"
-          data-upgrade-path="${canAfford ? pathKey : ''}"
-          >${purchased ? '&#10003;' : `$${level.cost}`} ${desc}</div>`;
+        if (purchased) {
+          html += `<div class="upgrade-option up-level up-purchased" data-upgrade-path="">
+            <span class="up-check">&#10003;</span><span class="up-desc">${desc}</span></div>`;
+        } else if (available) {
+          html += `<div class="upgrade-option up-level ${canAfford ? 'up-available' : 'up-unaffordable'}"
+            data-upgrade-path="${canAfford ? pathKey : ''}">
+            <span class="up-cost">$${level.cost}</span><span class="up-desc">${desc}</span></div>`;
+        } else {
+          html += `<div class="upgrade-option up-level up-locked">
+            <span class="up-cost">$${level.cost}</span><span class="up-desc">${desc}</span></div>`;
+        }
       }
     }
 
