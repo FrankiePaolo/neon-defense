@@ -1,4 +1,4 @@
-import { CONFIG, ENEMY_DEFS } from './config.js';
+import { CONFIG, ENEMY_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 import { distance, drawShape } from './utils.js';
 
 export class Enemy {
@@ -183,7 +183,7 @@ export class Enemy {
     }
 
     ctx.save();
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = this.color;
     ctx.fillStyle = this.color;
     drawShape(ctx, this.shape, this.x, this.y, this.size);

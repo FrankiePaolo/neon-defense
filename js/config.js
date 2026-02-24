@@ -1,3 +1,6 @@
+export const IS_MOBILE = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+export const SHADOW_BLUR_SCALE = IS_MOBILE ? 0.3 : 1.0;
+
 export const CONFIG = {
   GRID_COLS: 20,
   GRID_ROWS: 15,

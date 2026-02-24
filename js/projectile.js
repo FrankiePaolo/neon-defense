@@ -1,4 +1,4 @@
-import { TOWER_DEFS } from './config.js';
+import { TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 
 export class Projectile {
   constructor(origin, target, tower) {
@@ -59,7 +59,7 @@ export class Projectile {
     ctx.globalAlpha = 1;
 
     ctx.save();
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = this.color;
     ctx.fillStyle = this.color;
     ctx.beginPath();

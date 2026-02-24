@@ -1,4 +1,4 @@
-import { CONFIG, TOWER_DEFS } from './config.js';
+import { CONFIG, TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 import { gridToPixel, distance, drawShape } from './utils.js';
 import { COLORS } from './config.js';
 
@@ -133,7 +133,7 @@ export class Tower {
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
     ctx.translate(-this.x, -this.y);
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 12 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = this.def.glowColor;
     ctx.fillStyle = color;
     drawShape(ctx, this.def.shape, this.x, this.y, size);

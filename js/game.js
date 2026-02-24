@@ -1,4 +1,4 @@
-import { CONFIG, TOWER_DEFS } from './config.js';
+import { CONFIG, TOWER_DEFS, IS_MOBILE } from './config.js';
 import { distance, gridToPixel } from './utils.js';
 import { Grid } from './grid.js';
 import { SpatialHash } from './pathfinding.js';
@@ -17,7 +17,7 @@ export class Game {
     this.canvas = document.getElementById('game-canvas');
     this.renderer = new Renderer(this.canvas);
     this.grid = new Grid();
-    this.particles = new ParticleSystem();
+    this.particles = new ParticleSystem(IS_MOBILE ? 200 : 500);
     this.spatialHash = new SpatialHash(80);
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();

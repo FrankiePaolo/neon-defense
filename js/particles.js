@@ -1,4 +1,4 @@
-import { PARTICLE_PRESETS } from './config.js';
+import { PARTICLE_PRESETS, SHADOW_BLUR_SCALE } from './config.js';
 import { clamp } from './utils.js';
 
 export class ParticleSystem {
@@ -41,7 +41,7 @@ export class ParticleSystem {
       const alpha = clamp(p.life / p.maxLife, 0, 1);
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 5 * SHADOW_BLUR_SCALE;
       ctx.shadowColor = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);

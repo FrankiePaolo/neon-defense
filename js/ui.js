@@ -22,6 +22,7 @@ export class UIController {
       finalWave: document.getElementById('final-wave'),
       highScoresList: document.getElementById('high-scores-list'),
       towerPanel: document.getElementById('tower-panel'),
+      cancelPlaceBtn: document.getElementById('cancel-place-btn'),
     };
 
     this._buildTowerPanel();
@@ -41,9 +42,15 @@ export class UIController {
         <span class="tower-desc">${def.description}</span>
       `;
       btn.addEventListener('click', () => {
+        const currentlySelected = btn.classList.contains('selected');
         document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.game.input.startPlacing(type);
+        if (currentlySelected) {
+          this.game.input.placingType = null;
+          this.hideCancelButton();
+        } else {
+          btn.classList.add('selected');
+          this.game.input.startPlacing(type);
+        }
       });
       list.appendChild(btn);
     }
@@ -83,6 +90,18 @@ export class UIController {
 
     document.getElementById('pause-btn').addEventListener('click', () => {
       this.game.togglePause();
+    });
+
+    document.getElementById('resume-btn').addEventListener('click', () => {
+      this.game.togglePause();
+    });
+
+    this.elements.cancelPlaceBtn.addEventListener('click', () => {
+      this.game.input.placingType = null;
+      this.game.input.selectedTower = null;
+      document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
+      this.hideUpgradePanel();
+      this.hideCancelButton();
     });
   }
 
@@ -124,8 +143,15 @@ export class UIController {
 
     panel.innerHTML = html;
     panel.style.display = 'block';
-    panel.style.left = Math.min(pos.x + 30, CONFIG.CANVAS_WIDTH - 320) + 'px';
-    panel.style.top = Math.min(pos.y, CONFIG.CANVAS_HEIGHT - 200) + 'px';
+
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile) {
+      panel.style.left = '';
+      panel.style.top = '';
+    } else {
+      panel.style.left = Math.min(pos.x + 30, CONFIG.CANVAS_WIDTH - 320) + 'px';
+      panel.style.top = Math.min(pos.y, CONFIG.CANVAS_HEIGHT - 200) + 'px';
+    }
 
     // Bind upgrade clicks
     panel.querySelectorAll('.upgrade-option[data-upgrade-path]').forEach(el => {
@@ -148,6 +174,14 @@ export class UIController {
     this.elements.upgradePanel.style.display = 'none';
   }
 
+  showCancelButton() {
+    this.elements.cancelPlaceBtn.classList.remove('hidden');
+  }
+
+  hideCancelButton() {
+    this.elements.cancelPlaceBtn.classList.add('hidden');
+  }
+
   showBetweenWaves() {
     this.elements.towerPanel.classList.remove('hidden');
     this.elements.startWaveBtn.style.display = 'block';
@@ -164,6 +198,7 @@ export class UIController {
     this.elements.towerPanel.classList.add('hidden');
     this.elements.startWaveBtn.style.display = 'none';
     this.elements.wavePreview.style.display = 'none';
+    this.hideCancelButton();
   }
 
   showPause() { this.elements.pauseOverlay.style.display = 'flex'; }

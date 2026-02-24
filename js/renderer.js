@@ -1,4 +1,4 @@
-import { CONFIG, COLORS, TOWER_DEFS } from './config.js';
+import { CONFIG, COLORS, TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 import { gridToPixel } from './utils.js';
 import { CELL_PATH, CELL_ENTRY, CELL_EXIT } from './grid.js';
 
@@ -39,7 +39,7 @@ export class Renderer {
         const cell = grid.cells[y][x];
         if (cell === CELL_PATH || cell === CELL_ENTRY || cell === CELL_EXIT) {
           ctx.save();
-          ctx.shadowBlur = 3;
+          ctx.shadowBlur = 3 * SHADOW_BLUR_SCALE;
           ctx.shadowColor = COLORS.PATH_GLOW;
           ctx.fillStyle = COLORS.PATH;
           ctx.fillRect(x * ts + 1, y * ts + 1, ts - 2, ts - 2);
@@ -54,7 +54,7 @@ export class Renderer {
     if (grid.entry) {
       const ep = gridToPixel(grid.entry.x, grid.entry.y);
       ctx.save();
-      ctx.shadowBlur = 15; ctx.shadowColor = COLORS.ENTRY;
+      ctx.shadowBlur = 15 * SHADOW_BLUR_SCALE; ctx.shadowColor = COLORS.ENTRY;
       ctx.fillStyle = COLORS.ENTRY; ctx.globalAlpha = 0.6;
       ctx.beginPath();
       ctx.moveTo(ep.x - 12, ep.y - 8); ctx.lineTo(ep.x + 6, ep.y); ctx.lineTo(ep.x - 12, ep.y + 8);
@@ -64,7 +64,7 @@ export class Renderer {
     if (grid.exit) {
       const xp = gridToPixel(grid.exit.x, grid.exit.y);
       ctx.save();
-      ctx.shadowBlur = 15; ctx.shadowColor = COLORS.EXIT;
+      ctx.shadowBlur = 15 * SHADOW_BLUR_SCALE; ctx.shadowColor = COLORS.EXIT;
       ctx.fillStyle = COLORS.EXIT; ctx.globalAlpha = 0.6;
       ctx.beginPath(); ctx.arc(xp.x, xp.y, 8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
@@ -131,7 +131,7 @@ export class Renderer {
       const alpha = 1 - age / 150;
       ctx.save();
       ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2;
-      ctx.globalAlpha = alpha; ctx.shadowBlur = 10; ctx.shadowColor = '#ffff00';
+      ctx.globalAlpha = alpha; ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE; ctx.shadowColor = '#ffff00';
       ctx.beginPath();
       ctx.moveTo(chain.from.x, chain.from.y);
       const dx = chain.to.x - chain.from.x;

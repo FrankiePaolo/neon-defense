@@ -9,11 +9,49 @@ export class InputHandler {
     this.hoveredCell = null;
     this.selectedTower = null;
     this.placingType = null;
+    this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     canvas.addEventListener('mousemove', (e) => this._onMove(e));
     canvas.addEventListener('click', (e) => this._onClick(e));
     canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); this._onRightClick(); });
     document.addEventListener('keydown', (e) => this._onKey(e));
+
+    if (this.isTouchDevice) {
+      canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: false });
+      canvas.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
+      canvas.addEventListener('touchend', (e) => this._onTouchEnd(e), { passive: false });
+    }
+  }
+
+  _getTouchPos(touch) {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: (touch.clientX - rect.left) * (this.canvas.width / rect.width),
+      y: (touch.clientY - rect.top) * (this.canvas.height / rect.height),
+    };
+  }
+
+  _onTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const pos = this._getTouchPos(touch);
+    this.mouseX = pos.x;
+    this.mouseY = pos.y;
+    this.hoveredCell = pixelToGrid(pos.x, pos.y);
+  }
+
+  _onTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const pos = this._getTouchPos(touch);
+    this.mouseX = pos.x;
+    this.mouseY = pos.y;
+    this.hoveredCell = pixelToGrid(pos.x, pos.y);
+  }
+
+  _onTouchEnd(e) {
+    e.preventDefault();
+    this._onClick(null);
   }
 
   _onMove(e) {
@@ -47,6 +85,7 @@ export class InputHandler {
     this.placingType = null;
     this.selectedTower = null;
     this.game.ui.hideUpgradePanel();
+    this.game.ui.hideCancelButton();
   }
 
   _onKey(e) {
@@ -59,7 +98,7 @@ export class InputHandler {
         else if (game.state === 'PAUSED') game.togglePause();
         break;
       case 'Escape':
-        if (this.placingType) { this.placingType = null; }
+        if (this.placingType) { this.placingType = null; game.ui.hideCancelButton(); }
         else if (this.selectedTower) { this.selectedTower = null; game.ui.hideUpgradePanel(); }
         else { game.togglePause(); }
         break;
@@ -80,5 +119,6 @@ export class InputHandler {
     this.placingType = type;
     this.selectedTower = null;
     this.game.ui.hideUpgradePanel();
+    this.game.ui.showCancelButton();
   }
 }
