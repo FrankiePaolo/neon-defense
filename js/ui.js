@@ -317,14 +317,22 @@ export class UIController {
     }, 4000);
   }
 
-  _showHighScores() {
+  async _showHighScores() {
     const list = this.elements.highScoresList;
-    const scores = this.game.scoreTracker.highScores;
+    const tracker = this.game.scoreTracker;
+
+    if (!tracker.globalLoaded) {
+      list.innerHTML = '<div style="color:#666; padding:8px">Loading...</div>';
+      list.style.display = 'block';
+      await tracker.fetchGlobalScores();
+    }
+
+    const scores = tracker.highScores;
     if (scores.length === 0) {
       list.innerHTML = '<div style="color:#666; padding:8px">No scores yet</div>';
     } else {
       list.innerHTML = scores.map((s, i) =>
-        `<div class="score-entry">${i + 1}. ${s.name} — ${s.score} (Wave ${s.wave})</div>`
+        `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (Wave ${s.wave})</div>`
       ).join('');
     }
     list.style.display = list.style.display === 'block' ? 'none' : 'block';

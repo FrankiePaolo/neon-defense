@@ -28,7 +28,9 @@ export class Economy {
 export class ScoreTracker {
   constructor() {
     this.score = 0;
-    this.highScores = this._load();
+    this.highScores = this._loadLocal();
+    this.globalLoaded = false;
+    this.fetchGlobalScores();
   }
 
   addKill(enemy, wave) {
@@ -39,13 +41,36 @@ export class ScoreTracker {
   addPerfectWaveBonus(wave) { this.score += wave * 200; }
 
   save(name, wave) {
-    this.highScores.push({ name, score: this.score, wave, date: Date.now() });
+    const entry = { name, score: this.score, wave, date: Date.now() };
+    this.highScores.push(entry);
     this.highScores.sort((a, b) => b.score - a.score);
-    this.highScores = this.highScores.slice(0, 10);
-    try { localStorage.setItem('neon_td_scores', JSON.stringify(this.highScores)); } catch {}
+    this.highScores = this.highScores.slice(0, 50);
+    try { localStorage.setItem('neon_td_scores', JSON.stringify(this.highScores.slice(0, 10))); } catch {}
+    this._submitRemote(name, wave);
   }
 
-  _load() {
+  async fetchGlobalScores() {
+    try {
+      const res = await fetch('/api/scores');
+      if (res.ok) {
+        this.highScores = await res.json();
+        this.globalLoaded = true;
+      }
+    } catch {}
+  }
+
+  async _submitRemote(name, wave) {
+    try {
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, score: this.score, wave }),
+      });
+      this.fetchGlobalScores();
+    } catch {}
+  }
+
+  _loadLocal() {
     try { return JSON.parse(localStorage.getItem('neon_td_scores')) || []; } catch { return []; }
   }
 }
