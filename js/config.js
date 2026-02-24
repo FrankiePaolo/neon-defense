@@ -25,8 +25,8 @@ export const COLORS = {
   PATH_GLOW: 'rgba(15, 52, 96, 0.4)',
   ENTRY: '#00ff66',
   EXIT: '#ff4444',
-  VALID_PLACEMENT: 'rgba(0, 255, 100, 0.15)',
-  INVALID_PLACEMENT: 'rgba(255, 0, 0, 0.15)',
+  VALID_PLACEMENT: 'rgba(0, 255, 100, 0.35)',
+  INVALID_PLACEMENT: 'rgba(255, 0, 0, 0.3)',
   TOWER_RANGE: 'rgba(0, 255, 255, 0.06)',
 };
 

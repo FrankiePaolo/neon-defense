@@ -109,6 +109,9 @@ export class Renderer {
 
     ctx.fillStyle = valid ? COLORS.VALID_PLACEMENT : COLORS.INVALID_PLACEMENT;
     ctx.fillRect(cell.x * ts, cell.y * ts, ts, ts);
+    ctx.strokeStyle = valid ? 'rgba(0, 255, 100, 0.6)' : 'rgba(255, 0, 0, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cell.x * ts + 1, cell.y * ts + 1, ts - 2, ts - 2);
 
     if (valid) {
       const def = TOWER_DEFS[game.input.placingType];
