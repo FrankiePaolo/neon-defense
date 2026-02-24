@@ -361,7 +361,7 @@ export class Renderer {
   }
 
   _renderKillStreak(ctx, game) {
-    if (game.killStreak < 5 || game.killStreakTimer <= 0) return;
+    if (game.killStreak < 8 || game.killStreakTimer <= 0) return;
     ctx.save();
     ctx.globalAlpha = Math.min(1, game.killStreakTimer * 2);
     ctx.font = 'bold 22px Courier New';

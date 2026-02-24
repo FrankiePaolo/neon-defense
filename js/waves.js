@@ -23,9 +23,9 @@ export class WaveManager {
 
   generateWave(waveNum) {
     const baseCount = 8 + Math.floor(waveNum * 2);
-    const hpMult = Math.pow(1.10, waveNum - 1);
-    const speedMult = 1 + (waveNum - 1) * 0.03;
-    const armorBonus = Math.max(0, Math.floor((waveNum - 8) * 0.5));
+    const hpMult = Math.pow(1.12, waveNum - 1);
+    const speedMult = 1 + (waveNum - 1) * 0.04;
+    const armorBonus = Math.max(0, Math.floor((waveNum - 8) * 0.7));
     const rewardMult = 1 + (waveNum - 1) * 0.05;
     const isBoss = waveNum % CONFIG.BOSS_INTERVAL === 0;
 

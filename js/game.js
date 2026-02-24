@@ -378,8 +378,8 @@ export class Game {
   _updateKillStreak(dt) {
     if (this.killStreakTimer <= 0) return;
     this.killStreakTimer -= dt;
-    if (this.killStreakTimer <= 0 && this.killStreak >= 5) {
-      const bonus = this.killStreak * 2;
+    if (this.killStreakTimer <= 0 && this.killStreak >= 8) {
+      const bonus = Math.min(this.killStreak * 2, 20);
       this.economy.earn(bonus);
       this.scoreTracker.score += bonus;
       this.floatingTexts.push({

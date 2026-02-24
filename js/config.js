@@ -188,14 +188,14 @@ export const TOWER_DEFS = {
 
 export const ENEMY_DEFS = {
   basic:    { name: 'Drone',    hp: 30,   speed: 60,  armor: 0, reward: 5,   color: '#ff4444', shape: 'circle',   size: 8 },
-  fast:     { name: 'Scout',    hp: 15,   speed: 120, armor: 0, reward: 4,   color: '#ff8844', shape: 'triangle', size: 6 },
+  fast:     { name: 'Scout',    hp: 20,   speed: 120, armor: 0, reward: 4,   color: '#ff8844', shape: 'triangle', size: 6 },
   tank:     { name: 'Brute',    hp: 150,  speed: 30,  armor: 0, reward: 15,  color: '#aa44aa', shape: 'square',   size: 12 },
   armored:  { name: 'Sentinel', hp: 80,   speed: 45,  armor: 5, reward: 12,  color: '#888888', shape: 'pentagon', size: 10 },
-  healer:   { name: 'Medic',    hp: 40,   speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healAmount: 5, healInterval: 1.0 },
+  healer:   { name: 'Medic',    hp: 50,   speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healAmount: 5, healInterval: 1.0 },
   splitter: { name: 'Hydra',    hp: 60,   speed: 50,  armor: 0, reward: 8,   color: '#44ffff', shape: 'diamond',  size: 10, splitCount: 2, splitType: 'basic' },
-  flying:   { name: 'Wraith',   hp: 35,   speed: 70,  armor: 0, reward: 10,  color: '#ff44ff', shape: 'triangle', size: 7,  flying: true },
+  flying:   { name: 'Wraith',   hp: 45,   speed: 70,  armor: 0, reward: 10,  color: '#ff44ff', shape: 'triangle', size: 7,  flying: true },
   boss:     { name: 'Overlord', hp: 1000, speed: 20,  armor: 3, reward: 200, color: '#ff0000', shape: 'hexagon',  size: 18, bossRegen: 2 },
-  stealth:  { name: 'Phantom',  hp: 25,   speed: 80,  armor: 0, reward: 15,  color: '#666666', shape: 'circle',   size: 6,  stealth: true, revealRange: 2.0 },
+  stealth:  { name: 'Phantom',  hp: 35,   speed: 80,  armor: 0, reward: 15,  color: '#666666', shape: 'circle',   size: 6,  stealth: true, revealRange: 2.0 },
   shielded: { name: 'Guardian', hp: 60,   speed: 40,  armor: 0, reward: 18,  color: '#4488ff', shape: 'octagon',  size: 10, shield: 40, shieldRegen: 3, shieldRegenDelay: 3.0 },
 };
 
