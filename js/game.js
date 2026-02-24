@@ -377,14 +377,13 @@ export class Game {
   }
 
   _regenerateMap() {
+    for (const tower of this.towers) {
+      this.economy.earn(tower.totalInvested);
+    }
+    this.towers = [];
     const wave = this.waveManager.currentWave;
     const minLength = Math.min(20 + wave * 3, 120);
-    const conflicts = this.grid.regenerate(minLength);
-    for (const tower of conflicts) {
-      const value = tower.totalInvested;
-      this.economy.earn(value);
-      this.towers = this.towers.filter(t => t !== tower);
-    }
+    this.grid.generate(minLength);
     this.renderer.markDirty();
   }
 
