@@ -358,6 +358,52 @@ canvas {
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
 }
 
+#difficulty-label {
+  color: #666;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+#difficulty-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.difficulty-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+.difficulty-btn[data-difficulty="hard"] {
+  color: #ff4444;
+  border-color: #ff4444;
+}
+.difficulty-btn[data-difficulty="hard"]:hover {
+  background: rgba(255, 68, 68, 0.15);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+}
+
+.difficulty-btn[data-difficulty="normal"] {
+  color: #ffaa00;
+  border-color: #ffaa00;
+}
+.difficulty-btn[data-difficulty="normal"]:hover {
+  background: rgba(255, 170, 0, 0.15);
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+}
+
+.difficulty-btn[data-difficulty="easy"] {
+  color: #00ff66;
+  border-color: #00ff66;
+}
+.difficulty-btn[data-difficulty="easy"]:hover {
+  background: rgba(0, 255, 100, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 100, 0.4);
+}
+
 /* Pause Overlay */
 #pause-overlay {
   position: absolute;
@@ -622,6 +668,11 @@ canvas {
     letter-spacing: 6px;
   }
 
+  #difficulty-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .menu-btn {
     padding: 14px 36px;
     font-size: 16px;
@@ -707,7 +758,12 @@ canvas {
 
     <div id="menu-screen">
       <h1>NEON DEFENSE</h1>
-      <button class="menu-btn" id="new-game-btn">NEW GAME</button>
+      <div id="difficulty-label">SELECT DIFFICULTY</div>
+      <div id="difficulty-buttons">
+        <button class="menu-btn difficulty-btn" data-difficulty="hard">SHORT PATH</button>
+        <button class="menu-btn difficulty-btn" data-difficulty="normal">MEDIUM PATH</button>
+        <button class="menu-btn difficulty-btn" data-difficulty="easy">LONG PATH</button>
+      </div>
       <button class="menu-btn" id="high-scores-btn">GLOBAL SCORES</button>
       <div id="high-scores-list"></div>
     </div>

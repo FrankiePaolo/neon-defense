@@ -29,7 +29,7 @@ export class Grid {
   }
 
   generate(minLength = 25) {
-    for (let attempt = 0; attempt < 50; attempt++) {
+    for (let attempt = 0; attempt < 150; attempt++) {
       this.init();
       const entryY = randInt(2, this.rows - 3);
       const exitY = randInt(2, this.rows - 3);
@@ -47,7 +47,7 @@ export class Grid {
         return true;
       }
     }
-    this._fallbackPath();
+    this._fallbackPath(minLength);
     return true;
   }
 
@@ -69,10 +69,13 @@ export class Grid {
     ];
 
     let stuckCount = 0;
+    const maxLength = Math.max(200, minLength * 3);
+    const maxStuck = Math.max(15, Math.floor(minLength / 3));
 
     while (x !== this.exit.x || y !== this.exit.y) {
-      if (path.length > 200) return null;
+      if (path.length > maxLength) return null;
 
+      const progress = path.length / minLength; // 0..1+ how close to target length
       const candidates = [];
       for (const dir of dirs) {
         const nx = x + dir.dx;
@@ -82,10 +85,22 @@ export class Grid {
         if (this._countPathNeighbors(nx, ny, visited) > 1 && !(nx === this.exit.x && ny === this.exit.y)) continue;
 
         let weight = 1;
-        const rightBias = path.length < minLength ? 1 : 3;
-        if (dir.dx > 0) weight += rightBias;
-        if (dir.dy !== 0 && path.length < minLength) weight += 2;
-        if ((ny > y && this.exit.y > y) || (ny < y && this.exit.y < y)) weight += 1;
+
+        if (progress >= 1) {
+          // Path is long enough, head toward exit
+          if (dir.dx > 0) weight += 3;
+        } else {
+          // Path still too short — meander
+          if (dir.dx > 0) weight += progress * 2;       // weak right pull, grows with progress
+          if (dir.dx < 0) weight += (1 - progress) * 2; // leftward when very short
+          if (dir.dy !== 0) weight += 3;                 // strong vertical bias
+        }
+
+        if (progress >= 0.5) {
+          // Nudge toward exit Y in second half
+          if ((ny > y && this.exit.y > y) || (ny < y && this.exit.y < y)) weight += 1;
+        }
+
         if (ny <= 0 || ny >= this.rows - 1) weight *= 0.3;
 
         candidates.push({ nx, ny, weight });
@@ -93,7 +108,7 @@ export class Grid {
 
       if (candidates.length === 0) {
         stuckCount++;
-        if (stuckCount > 10) return null;
+        if (stuckCount > maxStuck) return null;
         path.pop();
         if (path.length === 0) return null;
         const prev = path[path.length - 1];
@@ -155,21 +170,45 @@ export class Grid {
     return path;
   }
 
-  _fallbackPath() {
+  _fallbackPath(minLength = 25) {
     this.init();
-    const midY = Math.floor(this.rows / 2);
-    this.entry = { x: 0, y: midY };
-    this.exit = { x: this.cols - 1, y: midY };
+    const startY = 1;
+    this.entry = { x: 0, y: startY };
     const path = [];
-    let y = midY;
-    for (let x = 0; x < this.cols; x++) {
-      path.push({ x, y });
-      if (x === Math.floor(this.cols / 3)) {
-        for (let dy = 0; dy < 4 && y > 2; dy++) { y--; path.push({ x, y }); }
-      } else if (x === Math.floor(2 * this.cols / 3)) {
-        for (let dy = 0; dy < 4 && y < this.rows - 3; dy++) { y++; path.push({ x, y }); }
+
+    let x = 0, y = startY, goingRight = true;
+    path.push({ x, y });
+
+    // Serpentine: go right, drop down, go left, drop down, repeat
+    while (path.length < minLength) {
+      if (goingRight) {
+        if (x < this.cols - 1) {
+          x++; path.push({ x, y });
+        } else if (y + 2 <= this.rows - 2) {
+          y++; path.push({ x, y });
+          y++; path.push({ x, y });
+          goingRight = false;
+        } else {
+          break; // grid exhausted
+        }
+      } else {
+        if (x > 0) {
+          x--; path.push({ x, y });
+        } else if (y + 2 <= this.rows - 2) {
+          y++; path.push({ x, y });
+          y++; path.push({ x, y });
+          goingRight = true;
+        } else {
+          break;
+        }
       }
+      if (path.length > 400) break;
     }
+
+    // Connect to right edge for exit
+    while (x < this.cols - 1) { x++; path.push({ x, y }); }
+
+    this.exit = { x: this.cols - 1, y };
     for (const p of path) this.cells[p.y][p.x] = CELL_PATH;
     this.cells[this.entry.y][this.entry.x] = CELL_ENTRY;
     this.cells[this.exit.y][this.exit.x] = CELL_EXIT;

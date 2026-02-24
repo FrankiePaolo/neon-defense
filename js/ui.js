@@ -75,9 +75,12 @@ export class UIController {
   }
 
   _bindButtons() {
-    document.getElementById('new-game-btn').addEventListener('click', () => {
-      this.elements.menuScreen.style.display = 'none';
-      this.game.startNewGame();
+    this.elements.menuScreen.addEventListener('click', (e) => {
+      const btn = e.target.closest('.difficulty-btn');
+      if (btn) {
+        this.elements.menuScreen.style.display = 'none';
+        this.game.startNewGame(btn.dataset.difficulty);
+      }
     });
 
     document.getElementById('high-scores-btn').addEventListener('click', () => {
@@ -97,7 +100,7 @@ export class UIController {
 
     document.getElementById('play-again-btn').addEventListener('click', () => {
       this.elements.gameOverScreen.style.display = 'none';
-      this.game.startNewGame();
+      this.elements.menuScreen.style.display = 'flex';
     });
 
     document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {

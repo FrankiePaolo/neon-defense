@@ -44,8 +44,10 @@ export class Game {
     requestAnimationFrame(this._loop);
   }
 
-  startNewGame() {
-    this.grid.generate(20);
+  startNewGame(difficulty = 'normal') {
+    const cols = this.grid.cols;
+    const pathLengths = { hard: cols, normal: Math.floor(cols * 2.5), easy: cols * 4 };
+    this.grid.generate(pathLengths[difficulty] || Math.floor(cols * 2.5));
     this.renderer.markDirty();
     this.towers = [];
     this.enemies = [];
@@ -357,7 +359,6 @@ export class Game {
       return;
     }
 
-    this._regenerateMap();
     this.state = 'BETWEEN_WAVES';
     this.ui.showBetweenWaves();
     this.ui.updateHUD();
