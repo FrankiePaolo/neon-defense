@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon } from "@netlify/neon";
 
 const DATABASE_URL = process.env.NETLIFY_DATABASE_URL || process.argv[2];
 
