@@ -96,11 +96,13 @@ export class UIController {
       this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
+      this.game.audio.playTrack('menu');
     });
 
     document.getElementById('play-again-btn').addEventListener('click', () => {
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
+      this.game.audio.playTrack('menu');
     });
 
     document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
@@ -115,6 +117,13 @@ export class UIController {
 
     document.getElementById('resume-btn').addEventListener('click', () => {
       this.game.togglePause();
+    });
+
+    document.getElementById('mute-btn').addEventListener('click', () => {
+      const muted = this.game.audio.toggleMute();
+      const btn = document.getElementById('mute-btn');
+      btn.classList.toggle('active', !muted);
+      btn.style.opacity = muted ? '0.4' : '';
     });
 
     this.elements.cancelPlaceBtn.addEventListener('click', () => {

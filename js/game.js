@@ -12,6 +12,7 @@ import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
 import { Tutorial } from './tutorial.js';
+import { AudioEngine } from './audio.js';
 
 export class Game {
   constructor() {
@@ -24,6 +25,7 @@ export class Game {
     this.scoreTracker = new ScoreTracker();
     this.progressTracker = new ProgressTracker();
     this.waveManager = new WaveManager();
+    this.audio = new AudioEngine();
     this.input = new InputHandler(this.canvas, this);
     this.ui = new UIController(this);
     this.tutorial = new Tutorial(this);
@@ -70,6 +72,8 @@ export class Game {
     this.ui.refreshTowerPanel();
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
+    this.audio.init();
+    this.audio.playTrack('gameplay');
     this.tutorial.start();
   }
 
@@ -78,6 +82,9 @@ export class Game {
     this.state = 'PLAYING';
     this.livesLostThisWave = 0;
     this.waveManager.startWave();
+    const isBoss = this.waveManager.currentWave % CONFIG.BOSS_INTERVAL === 0;
+    this.audio.playTrack(isBoss ? 'boss' : 'gameplay');
+    this.audio.playSfx('wave');
     this.ui.hideBetweenWaves();
   }
 
@@ -95,6 +102,7 @@ export class Game {
     this.towers.push(tower);
     this.renderer.markDirty();
     this.ui.updateHUD();
+    this.audio.playSfx('place');
     return true;
   }
 
@@ -121,6 +129,7 @@ export class Game {
     this.grid.removeTower(tower.gx, tower.gy);
     this.towers = this.towers.filter(t => t !== tower);
     this.renderer.markDirty();
+    this.audio.playSfx('sell');
     this.ui.updateHUD();
   }
 
@@ -338,6 +347,7 @@ export class Game {
   _onEnemyReachedEnd(enemy) {
     this.lives--;
     this.livesLostThisWave++;
+    this.audio.playSfx('damage');
   }
 
   _onWaveComplete() {
@@ -367,6 +377,8 @@ export class Game {
   _onGameOver() {
     this.state = 'GAME_OVER';
     this._processEndOfGame();
+    this.audio.stopMusic();
+    this.audio.playSfx('gameover');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
   }
 
@@ -374,6 +386,8 @@ export class Game {
     this.scoreTracker.score += 5000;
     this.state = 'GAME_OVER';
     this._processEndOfGame();
+    this.audio.stopMusic();
+    this.audio.playSfx('wave');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
   }
 
