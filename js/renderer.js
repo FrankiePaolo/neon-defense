@@ -118,6 +118,17 @@ export class Renderer {
   renderFrame(game) {
     const ctx = this.ctx;
 
+    // Screen shake offset
+    let shakeX = 0, shakeY = 0;
+    if (game.shakeTimer > 0) {
+      const intensity = game.shakeIntensity * (game.shakeTimer / 0.4);
+      shakeX = (Math.random() - 0.5) * 2 * intensity;
+      shakeY = (Math.random() - 0.5) * 2 * intensity;
+    }
+
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
     if (this.staticDirty) this.renderStatic(game.grid);
     ctx.drawImage(this.staticCanvas, 0, 0);
 
@@ -150,6 +161,10 @@ export class Renderer {
     this._renderLightningChains(ctx, game);
     this._renderFloatingTexts(ctx, game);
     this._renderKillStreak(ctx, game);
+
+    ctx.restore(); // end shake transform
+
+    this._renderWaveBanner(ctx, game);
   }
 
   _renderPortals(ctx, grid) {
@@ -370,6 +385,43 @@ export class Renderer {
     ctx.shadowColor = '#ff8800';
     ctx.textAlign = 'center';
     ctx.fillText(`${game.killStreak}x COMBO`, CONFIG.CANVAS_WIDTH / 2, 70);
+    ctx.restore();
+  }
+
+  _renderWaveBanner(ctx, game) {
+    if (!game.waveBanner) return;
+    const b = game.waveBanner;
+    const progress = 1 - b.timer / b.duration;
+
+    // Fade in fast, hold, then fade out
+    let alpha;
+    if (progress < 0.15) alpha = progress / 0.15;
+    else if (progress > 0.7) alpha = (1 - progress) / 0.3;
+    else alpha = 1;
+
+    // Slide in from left, settle at center
+    const slideT = Math.min(1, progress / 0.2);
+    const ease = 1 - Math.pow(1 - slideT, 3); // ease-out cubic
+    const x = -200 + (this.width / 2 + 200) * ease;
+    const y = this.height / 2;
+
+    // Background bar
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.3;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, y - 25, this.width, 50);
+    ctx.restore();
+
+    // Text
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 28px Courier New';
+    ctx.fillStyle = b.color;
+    ctx.shadowBlur = 20 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = b.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.text, x, y);
     ctx.restore();
   }
 

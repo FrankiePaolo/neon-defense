@@ -37,6 +37,9 @@ export class Game {
     this.floatingTexts = [];
     this.killStreak = 0;
     this.killStreakTimer = 0;
+    this.shakeTimer = 0;
+    this.shakeIntensity = 0;
+    this.waveBanner = null;
 
     this.lives = CONFIG.BASE_LIVES;
     this.state = 'MENU';
@@ -61,6 +64,9 @@ export class Game {
     this.floatingTexts = [];
     this.killStreak = 0;
     this.killStreakTimer = 0;
+    this.shakeTimer = 0;
+    this.shakeIntensity = 0;
+    this.waveBanner = null;
     this.particles.clear();
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
@@ -189,6 +195,11 @@ export class Game {
       this._update(dt);
     }
 
+    if (this.waveBanner) {
+      this.waveBanner.timer -= rawDt;
+      if (this.waveBanner.timer <= 0) this.waveBanner = null;
+    }
+
     if (this.tutorial.active) this.tutorial.check();
 
     if (this.state !== 'MENU') {
@@ -239,6 +250,7 @@ export class Game {
     this.particles.update(dt);
     this._updateFloatingTexts(dt);
     this._updateKillStreak(dt);
+    if (this.shakeTimer > 0) this.shakeTimer -= dt;
 
     if (this.waveManager.isSpawningDone() && this.enemies.length === 0) {
       this.waveClearDelay += dt;
@@ -348,6 +360,9 @@ export class Game {
       life: 1.0, maxLife: 1.0,
     });
 
+    // Screen shake on boss kill
+    if (enemy.type === 'boss') this.triggerShake(6, 0.4);
+
     // Kill streak
     this.killStreak++;
     this.killStreakTimer = 1.5;
@@ -387,10 +402,16 @@ export class Game {
         text: `${this.killStreak}x COMBO  +${bonus}g`,
         color: '#ff8800', life: 2.0, maxLife: 2.0, large: true,
       });
+      this.triggerShake(4, 0.25);
       this.killStreak = 0;
     } else if (this.killStreakTimer <= 0) {
       this.killStreak = 0;
     }
+  }
+
+  triggerShake(intensity, duration) {
+    this.shakeIntensity = intensity;
+    this.shakeTimer = duration;
   }
 
   _onEnemyReachedEnd(enemy) {
@@ -418,6 +439,14 @@ export class Game {
       return;
     }
 
+    const wave = this.waveManager.currentWave;
+    const perfect = this.livesLostThisWave === 0;
+    this.waveBanner = {
+      text: perfect ? `WAVE ${wave} PERFECT!` : `WAVE ${wave} CLEARED`,
+      color: perfect ? '#00ff66' : '#00ccff',
+      timer: 2.5,
+      duration: 2.5,
+    };
     this.state = 'BETWEEN_WAVES';
     this.ui.showBetweenWaves();
     this.ui.updateHUD();
