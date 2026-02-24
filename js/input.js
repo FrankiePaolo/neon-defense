@@ -82,9 +82,6 @@ export class InputHandler {
       if (tower) {
         this.selectedTower = tower;
         game.ui.showUpgradePanel(tower);
-      } else {
-        this.selectedTower = null;
-        game.ui.hideUpgradePanel();
       }
     }
   }
