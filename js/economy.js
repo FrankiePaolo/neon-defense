@@ -77,18 +77,17 @@ export class ScoreTracker {
 
 export class ProgressTracker {
   constructor() {
-    this.bestScore = this._loadBestScore();
+    this.bestScore = 0;
   }
 
-  _loadBestScore() {
-    try { return parseInt(localStorage.getItem('neon_td_best_score')) || 0; } catch { return 0; }
+  reset() {
+    this.bestScore = 0;
   }
 
   updateBestScore(score) {
     const previousBest = this.bestScore;
     if (score > this.bestScore) {
       this.bestScore = score;
-      try { localStorage.setItem('neon_td_best_score', String(this.bestScore)); } catch {}
     }
     return previousBest;
   }

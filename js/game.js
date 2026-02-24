@@ -54,6 +54,7 @@ export class Game {
     this.particles.clear();
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
+    this.progressTracker.reset();
     this.waveManager = new WaveManager();
     this.lives = CONFIG.BASE_LIVES;
     this.state = 'BETWEEN_WAVES';
