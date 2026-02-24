@@ -82,6 +82,10 @@ export class Renderer {
       this._renderPlacementPreview(ctx, game);
     }
 
+    if (game.input && game.input.hoveredCell && game.input.movingTower) {
+      this._renderMovePreview(ctx, game);
+    }
+
     for (const tower of game.towers) {
       const isSelected = game.input && game.input.selectedTower === tower;
       const isHovered = game.input && game.input.hoveredCell &&
@@ -122,6 +126,31 @@ export class Renderer {
       ctx.arc(center.x, center.y, def.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
       ctx.stroke(); ctx.restore();
     }
+  }
+
+  _renderMovePreview(ctx, game) {
+    const cell = game.input.hoveredCell;
+    const tower = game.input.movingTower;
+    const ts = CONFIG.TILE_SIZE;
+    const valid = game.grid.isPlaceable(cell.x, cell.y);
+
+    ctx.fillStyle = valid ? COLORS.VALID_PLACEMENT : COLORS.INVALID_PLACEMENT;
+    ctx.fillRect(cell.x * ts, cell.y * ts, ts, ts);
+    ctx.strokeStyle = valid ? 'rgba(0, 255, 100, 0.6)' : 'rgba(255, 0, 0, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cell.x * ts + 1, cell.y * ts + 1, ts - 2, ts - 2);
+
+    const center = gridToPixel(cell.x, cell.y);
+    ctx.save();
+    ctx.strokeStyle = tower.def.color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.25;
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, tower.currentStats.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = COLORS.TOWER_RANGE;
+    ctx.fill();
+    ctx.restore();
   }
 
   _renderLightningChains(ctx, game) {
