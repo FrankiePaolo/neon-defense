@@ -73,7 +73,9 @@ export class InputHandler {
       }
     } else if (this.placingType) {
       if (game.placeTower(this.placingType, this.hoveredCell.x, this.hoveredCell.y)) {
-        // Keep placing mode active
+        this.placingType = null;
+        document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
+        game.ui.hideCancelButton();
       }
     } else {
       const tower = game.grid.getTowerAt(this.hoveredCell.x, this.hoveredCell.y);

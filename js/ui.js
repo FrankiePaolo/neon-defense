@@ -47,6 +47,7 @@ export class UIController {
           <span class="tower-desc">${def.description}</span>
         `;
         btn.addEventListener('click', () => {
+          if (!this.game.economy.canAfford(def.cost)) return;
           const currentlySelected = btn.classList.contains('selected');
           document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
           if (currentlySelected) {
@@ -129,6 +130,18 @@ export class UIController {
     this.elements.livesValue.textContent = this.game.lives;
     this.elements.scoreValue.textContent = this.game.scoreTracker.score;
     this.updateUnlockTracker();
+    this._updateTowerAffordability();
+  }
+
+  _updateTowerAffordability() {
+    const gold = this.game.economy.gold;
+    this.elements.towerList.querySelectorAll('.tower-btn:not(.tower-locked)').forEach(btn => {
+      const type = btn.dataset.towerType;
+      const def = TOWER_DEFS[type];
+      if (def) {
+        btn.classList.toggle('tower-unaffordable', gold < def.cost);
+      }
+    });
   }
 
   showUpgradePanel(tower) {
