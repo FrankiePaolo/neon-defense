@@ -34,21 +34,82 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(0, y * ts); ctx.lineTo(this.width, y * ts); ctx.stroke();
     }
 
+    // ── Path tiles ──
+    const isPathCell = (px, py) => {
+      if (px < 0 || px >= grid.cols || py < 0 || py >= grid.rows) return false;
+      const c = grid.cells[py][px];
+      return c === CELL_PATH || c === CELL_ENTRY || c === CELL_EXIT;
+    };
+
+    // Base fill with subtle radial gradient
     for (let y = 0; y < grid.rows; y++) {
       for (let x = 0; x < grid.cols; x++) {
-        const cell = grid.cells[y][x];
-        if (cell === CELL_PATH || cell === CELL_ENTRY || cell === CELL_EXIT) {
-          ctx.save();
-          ctx.shadowBlur = 3 * SHADOW_BLUR_SCALE;
-          ctx.shadowColor = COLORS.PATH_GLOW;
-          ctx.fillStyle = COLORS.PATH;
-          ctx.fillRect(x * ts + 1, y * ts + 1, ts - 2, ts - 2);
-          ctx.restore();
-          ctx.strokeStyle = COLORS.PATH_BORDER;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x * ts + 0.5, y * ts + 0.5, ts - 1, ts - 1);
+        if (!isPathCell(x, y)) continue;
+        const cx = x * ts + ts / 2;
+        const cy = y * ts + ts / 2;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ts * 0.7);
+        grad.addColorStop(0, '#1c2d50');
+        grad.addColorStop(1, '#141e38');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x * ts + 1, y * ts + 1, ts - 2, ts - 2);
+      }
+    }
+
+    // Glowing neon edges on outer boundaries of the path (channel walls)
+    ctx.save();
+    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = '#1a6fff';
+    ctx.strokeStyle = '#1e50aa';
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.6;
+    for (let y = 0; y < grid.rows; y++) {
+      for (let x = 0; x < grid.cols; x++) {
+        if (!isPathCell(x, y)) continue;
+        const px = x * ts;
+        const py = y * ts;
+        if (!isPathCell(x, y - 1)) { ctx.beginPath(); ctx.moveTo(px, py + 0.5); ctx.lineTo(px + ts, py + 0.5); ctx.stroke(); }
+        if (!isPathCell(x, y + 1)) { ctx.beginPath(); ctx.moveTo(px, py + ts - 0.5); ctx.lineTo(px + ts, py + ts - 0.5); ctx.stroke(); }
+        if (!isPathCell(x - 1, y)) { ctx.beginPath(); ctx.moveTo(px + 0.5, py); ctx.lineTo(px + 0.5, py + ts); ctx.stroke(); }
+        if (!isPathCell(x + 1, y)) { ctx.beginPath(); ctx.moveTo(px + ts - 0.5, py); ctx.lineTo(px + ts - 0.5, py + ts); ctx.stroke(); }
+      }
+    }
+    ctx.restore();
+
+    // Dashed center-line along path direction
+    if (grid.path && grid.path.length >= 2) {
+      ctx.save();
+      ctx.strokeStyle = '#2a4a7a';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.25;
+      ctx.setLineDash([4, 8]);
+      ctx.beginPath();
+      ctx.moveTo(grid.path[0].x * ts + ts / 2, grid.path[0].y * ts + ts / 2);
+      for (let i = 1; i < grid.path.length; i++) {
+        ctx.lineTo(grid.path[i].x * ts + ts / 2, grid.path[i].y * ts + ts / 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // Node dots at path turns
+    if (grid.path && grid.path.length >= 3) {
+      ctx.save();
+      ctx.fillStyle = '#2a5aaa';
+      ctx.globalAlpha = 0.3;
+      for (let i = 1; i < grid.path.length - 1; i++) {
+        const prev = grid.path[i - 1];
+        const curr = grid.path[i];
+        const next = grid.path[i + 1];
+        const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
+        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
+        if (dx1 !== dx2 || dy1 !== dy2) {
+          ctx.beginPath();
+          ctx.arc(curr.x * ts + ts / 2, curr.y * ts + ts / 2, 2, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
+      ctx.restore();
     }
 
     this.staticDirty = false;
