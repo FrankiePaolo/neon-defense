@@ -45,7 +45,7 @@ export class Game {
   }
 
   startNewGame() {
-    this.grid.generate();
+    this.grid.generate(20);
     this.renderer.markDirty();
     this.towers = [];
     this.enemies = [];
@@ -357,6 +357,7 @@ export class Game {
       return;
     }
 
+    this._regenerateMap();
     this.state = 'BETWEEN_WAVES';
     this.ui.showBetweenWaves();
     this.ui.updateHUD();
@@ -373,6 +374,18 @@ export class Game {
     this.state = 'GAME_OVER';
     this._processEndOfGame();
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
+  }
+
+  _regenerateMap() {
+    const wave = this.waveManager.currentWave;
+    const minLength = Math.min(20 + wave * 3, 120);
+    const conflicts = this.grid.regenerate(minLength);
+    for (const tower of conflicts) {
+      const value = tower.totalInvested;
+      this.economy.earn(value);
+      this.towers = this.towers.filter(t => t !== tower);
+    }
+    this.renderer.markDirty();
   }
 
   _processEndOfGame() {

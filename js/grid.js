@@ -28,7 +28,7 @@ export class Grid {
     this.towers.clear();
   }
 
-  generate() {
+  generate(minLength = 25) {
     for (let attempt = 0; attempt < 50; attempt++) {
       this.init();
       const entryY = randInt(2, this.rows - 3);
@@ -37,7 +37,7 @@ export class Grid {
       this.exit = { x: this.cols - 1, y: exitY };
 
       const path = this._randomWalk();
-      if (path && path.length >= 25) {
+      if (path && path.length >= minLength) {
         for (const p of path) {
           this.cells[p.y][p.x] = CELL_PATH;
         }
@@ -172,6 +172,21 @@ export class Grid {
     this.cells[this.entry.y][this.entry.x] = CELL_ENTRY;
     this.cells[this.exit.y][this.exit.x] = CELL_EXIT;
     this.path = path;
+  }
+
+  regenerate(minLength = 25) {
+    const savedTowers = new Map(this.towers);
+    this.generate(minLength);
+    const conflicts = [];
+    for (const [key, tower] of savedTowers) {
+      const [gx, gy] = key.split(',').map(Number);
+      if (this.cells[gy][gx] === CELL_EMPTY) {
+        this.towers.set(key, tower);
+      } else {
+        conflicts.push(tower);
+      }
+    }
+    return conflicts;
   }
 
   isPlaceable(gx, gy) {
