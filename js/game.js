@@ -340,7 +340,7 @@ export class Game {
       this.scoreTracker.addPerfectWaveBonus(this.waveManager.currentWave);
     }
     this.economy.applyInterest();
-    this.economy.earn(50 + this.waveManager.currentWave * 10);
+    this.economy.earn(30 + this.waveManager.currentWave * 5);
 
     for (const tower of this.towers) {
       if (tower.type === 'support' && tower.currentStats.goldPerWave) {
