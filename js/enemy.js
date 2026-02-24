@@ -12,7 +12,7 @@ export class Enemy {
     this.maxHp = def.hp * (waveMult.hp || 1);
     this.hp = this.maxHp;
     this.baseSpeed = def.speed * (waveMult.speed || 1);
-    this.armor = def.armor;
+    this.armor = def.armor + (waveMult.armor || 0);
     this.reward = Math.floor(def.reward * (waveMult.reward || 1));
     this.color = def.color;
     this.shape = def.shape;

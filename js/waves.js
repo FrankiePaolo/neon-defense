@@ -22,9 +22,10 @@ export class WaveManager {
   }
 
   generateWave(waveNum) {
-    const baseCount = 8 + Math.floor(waveNum * 1.5);
-    const hpMult = 1 + (waveNum - 1) * 0.15;
-    const speedMult = 1 + (waveNum - 1) * 0.02;
+    const baseCount = 8 + Math.floor(waveNum * 2);
+    const hpMult = Math.pow(1.10, waveNum - 1);
+    const speedMult = 1 + (waveNum - 1) * 0.03;
+    const armorBonus = Math.max(0, Math.floor((waveNum - 8) * 0.5));
     const rewardMult = 1 + (waveNum - 1) * 0.05;
     const isBoss = waveNum % CONFIG.BOSS_INTERVAL === 0;
 
@@ -39,7 +40,7 @@ export class WaveManager {
         queue.push({
           type,
           interval: type === 'fast' ? 0.3 : type === 'tank' ? 1.0 : 0.6,
-          waveMult: { hp: hpMult, speed: speedMult, reward: rewardMult },
+          waveMult: { hp: hpMult, speed: speedMult, reward: rewardMult, armor: armorBonus },
         });
       }
       remaining -= count;
@@ -49,7 +50,7 @@ export class WaveManager {
       queue.push({
         type: 'boss',
         interval: 1.5,
-        waveMult: { hp: hpMult * 0.5, speed: 1, reward: rewardMult * 2 },
+        waveMult: { hp: hpMult * 0.5, speed: 1, reward: rewardMult * 2, armor: armorBonus },
       });
     }
 
