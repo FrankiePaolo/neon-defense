@@ -50,6 +50,7 @@ const STRINGS = {
     'tut.4': 'Press <span style="color:#00ffff">START WAVE</span> to send enemies. Your towers fire automatically!',
     'tut.5': 'Enemies that reach the exit cost you a life. Destroy them all to clear the wave!',
     'tut.6': 'You earned gold! Place more towers or tap an existing tower to see upgrades. You can only build <span style="color:#ffd700">between waves</span>.',
+    'tut.6b': 'Click on a placed tower to see its <span style="color:#00ff66">upgrade paths</span>. Each tower has two branches — pick the one that fits your strategy. You can also <span style="color:#00aaff">move</span> or <span style="color:#ff6666">sell</span> towers between waves.',
     'tut.7': "You've got the basics! Good luck, commander.",
     'tut.ok': 'GOT IT',
 
@@ -190,6 +191,7 @@ const STRINGS = {
     'tut.4': 'Premi <span style="color:#00ffff">INIZIA ONDATA</span> per inviare i nemici. Le torri sparano automaticamente!',
     'tut.5': 'I nemici che raggiungono l\'uscita ti costano una vita. Distruggili tutti per completare l\'ondata!',
     'tut.6': 'Hai guadagnato oro! Piazza altre torri o tocca una torre per i potenziamenti. Puoi costruire solo <span style="color:#ffd700">tra le ondate</span>.',
+    'tut.6b': 'Clicca su una torre piazzata per vedere i suoi <span style="color:#00ff66">percorsi di potenziamento</span>. Ogni torre ha due rami — scegli quello adatto alla tua strategia. Puoi anche <span style="color:#00aaff">spostare</span> o <span style="color:#ff6666">vendere</span> le torri tra le ondate.',
     'tut.7': 'Hai imparato le basi! Buona fortuna, comandante.',
     'tut.ok': 'CAPITO',
 

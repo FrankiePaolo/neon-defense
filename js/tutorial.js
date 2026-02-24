@@ -38,6 +38,12 @@ const STEPS = [
     waitForState: 'BETWEEN_WAVES',
   },
   {
+    msgKey: 'tut.6b',
+    highlight: null,
+    btnKey: 'tut.ok',
+    condition: null,
+  },
+  {
     msgKey: 'tut.7',
     highlight: null,
     btnKey: null,
