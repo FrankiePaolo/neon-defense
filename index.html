@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEON DEFENSE</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  user-select: none;
+}
+
+#game-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+#canvas-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* HUD Overlay */
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0.2), transparent);
+  pointer-events: none;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  letter-spacing: 1px;
+}
+
+#hud-gold { color: #ffd700; }
+#hud-wave { color: #00ffff; }
+#hud-lives { color: #ff4444; }
+#hud-score { color: #ffffff; }
+
+/* Speed Controls */
+#speed-controls {
+  position: absolute;
+  top: 36px;
+  right: 16px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.speed-btn {
+  background: rgba(20, 20, 20, 0.8);
+  color: #888;
+  border: 1px solid #333;
+  padding: 4px 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.speed-btn:hover { color: #fff; border-color: #666; }
+.speed-btn.active {
+  color: #00ffff;
+  border-color: #00ffff;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+/* Tower Panel */
+#tower-panel {
+  width: 200px;
+  background: #0d0d0d;
+  border-left: 1px solid #1a1a2e;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+#tower-panel h3 {
+  color: #00ffff;
+  font-size: 14px;
+  text-align: center;
+  letter-spacing: 4px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.tower-btn {
+  background: rgba(20, 20, 30, 0.8);
+  border: 1px solid var(--tower-color, #333);
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tower-btn:hover {
+  box-shadow: 0 0 12px var(--tower-color, #333);
+  background: rgba(30, 30, 50, 0.8);
+}
+
+.tower-btn.selected {
+  box-shadow: 0 0 16px var(--tower-color, #333), inset 0 0 8px rgba(255,255,255,0.05);
+}
+
+.tower-btn .tower-name {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--tower-color, #ccc);
+  font-weight: bold;
+}
+
+.tower-btn .tower-cost {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #ffd700;
+}
+
+.tower-btn .tower-desc {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #666;
+}
+
+/* Upgrade Panel */
+#upgrade-panel {
+  position: absolute;
+  background: rgba(10, 10, 15, 0.95);
+  border: 1px solid #333;
+  padding: 12px;
+  z-index: 20;
+  min-width: 300px;
+  display: none;
+}
+
+/* Wave Preview */
+#wave-preview {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #888;
+  border: 1px solid #222;
+  z-index: 10;
+  display: none;
+}
+
+/* Start Wave Button */
+#start-wave-btn {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border: 1px solid #00ffff;
+  padding: 10px 30px;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 10;
+  display: none;
+  transition: all 0.2s;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+#start-wave-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Menu Screen */
+#menu-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 100;
+}
+
+#menu-screen h1 {
+  font-size: 48px;
+  color: #00ffff;
+  letter-spacing: 12px;
+  text-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
+  margin-bottom: 40px;
+}
+
+.menu-btn {
+  background: transparent;
+  color: #00ffff;
+  border: 1px solid #00ffff;
+  padding: 12px 40px;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 8px;
+  letter-spacing: 2px;
+  transition: all 0.3s;
+}
+
+.menu-btn:hover {
+  background: rgba(0, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+/* Pause Overlay */
+#pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 50;
+}
+
+#pause-overlay h2 {
+  color: #00ffff;
+  font-size: 36px;
+  letter-spacing: 8px;
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+#pause-overlay p {
+  color: #666;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+/* Game Over */
+#game-over-screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 100;
+  gap: 12px;
+}
+
+#game-over-screen h2 {
+  color: #ff4444;
+  font-size: 36px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+#game-over-screen p { color: #aaa; font-size: 14px; }
+
+#player-name {
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 8px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+}
+
+#player-name:focus { border-color: #00ffff; }
+
+#high-scores-list {
+  display: none;
+  margin-top: 20px;
+  text-align: left;
+  font-size: 13px;
+  color: #aaa;
+}
+
+#high-scores-list .score-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="canvas-wrapper">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-overlay">
+      <div id="hud-gold" class="hud-item">$ <span id="gold-value">100</span></div>
+      <div id="hud-wave" class="hud-item">WAVE <span id="wave-value">0</span></div>
+      <div id="hud-lives" class="hud-item">&hearts; <span id="lives-value">20</span></div>
+      <div id="hud-score" class="hud-item">SCORE <span id="score-value">0</span></div>
+    </div>
+
+    <div id="speed-controls">
+      <button class="speed-btn active" data-speed="1">1x</button>
+      <button class="speed-btn" data-speed="2">2x</button>
+      <button class="speed-btn" data-speed="3">3x</button>
+      <button class="speed-btn" id="pause-btn">| |</button>
+    </div>
+
+    <div id="wave-preview">Next: <span id="wave-preview-content"></span></div>
+    <button id="start-wave-btn">START WAVE (SPACE)</button>
+    <div id="upgrade-panel"></div>
+
+    <div id="menu-screen">
+      <h1>NEON DEFENSE</h1>
+      <button class="menu-btn" id="new-game-btn">NEW GAME</button>
+      <button class="menu-btn" id="high-scores-btn">HIGH SCORES</button>
+      <div id="high-scores-list"></div>
+    </div>
+
+    <div id="pause-overlay">
+      <h2>PAUSED</h2>
+      <p>Press SPACE or ESC to resume</p>
+    </div>
+
+    <div id="game-over-screen">
+      <h2>GAME OVER</h2>
+      <p>Score: <span id="final-score">0</span></p>
+      <p>Wave: <span id="final-wave">0</span></p>
+      <input id="player-name" placeholder="Enter name" maxlength="12">
+      <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
+      <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <div id="tower-panel">
+    <h3>TOWERS</h3>
+    <div id="tower-list"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
