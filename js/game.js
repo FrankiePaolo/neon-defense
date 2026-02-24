@@ -70,6 +70,7 @@ export class Game {
     this.input.movingTower = null;
     this.ui.hideUpgradePanel();
     this.ui.refreshTowerPanel();
+    this.ui.updateSpeedButtons(1);
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
     this.audio.init();
