@@ -1,44 +1,46 @@
+import { t } from './i18n.js';
+
 const STEPS = [
   {
-    msg: 'Welcome to <span style="color:#00ffff">NEON DEFENSE</span>! Enemies travel along the glowing path. Place towers to stop them before they reach the exit.',
+    msgKey: 'tut.1',
     highlight: null,
-    btn: 'GOT IT',
+    btnKey: 'tut.ok',
     condition: null,
   },
   {
-    msg: 'Select a tower from the <span style="color:#00ffff">TOWERS</span> panel to start building.',
+    msgKey: 'tut.2',
     highlight: 'tower-panel',
-    btn: null,
+    btnKey: null,
     condition: (game) => game.input.placingType !== null,
   },
   {
-    msg: 'Now tap a <span style="color:#aaa">dark tile</span> next to the path to place your tower.',
+    msgKey: 'tut.3',
     highlight: null,
-    btn: null,
+    btnKey: null,
     condition: (game) => game.towers.length > 0,
   },
   {
-    msg: 'Press <span style="color:#00ffff">START WAVE</span> to send enemies. Your towers fire automatically!',
+    msgKey: 'tut.4',
     highlight: 'start-wave-btn',
-    btn: null,
+    btnKey: null,
     condition: (game) => game.state === 'PLAYING',
   },
   {
-    msg: 'Enemies that reach the exit cost you a life. Destroy them all to clear the wave!',
+    msgKey: 'tut.5',
     highlight: null,
-    btn: null,
+    btnKey: null,
     autoAdvance: 4000,
   },
   {
-    msg: 'You earned gold! Place more towers or tap an existing tower to see upgrades. You can only build <span style="color:#ffd700">between waves</span>.',
+    msgKey: 'tut.6',
     highlight: null,
-    btn: 'GOT IT',
+    btnKey: 'tut.ok',
     waitForState: 'BETWEEN_WAVES',
   },
   {
-    msg: 'You\'ve got the basics! Good luck, commander.',
+    msgKey: 'tut.7',
     highlight: null,
-    btn: null,
+    btnKey: null,
     autoAdvance: 2500,
   },
 ];
@@ -78,7 +80,6 @@ export class Tutorial {
 
     const s = STEPS[this.step];
 
-    // If step waits for a game state, defer rendering until that state is reached
     if (s.waitForState && this.game.state !== s.waitForState) {
       this.overlay.classList.add('hidden');
       return;
@@ -92,14 +93,14 @@ export class Tutorial {
   }
 
   _render(s) {
-    let html = `<div class="tutorial-msg">${s.msg}</div>`;
-    if (s.btn) {
-      html += `<button class="tutorial-btn">${s.btn}</button>`;
+    let html = `<div class="tutorial-msg">${t(s.msgKey)}</div>`;
+    if (s.btnKey) {
+      html += `<button class="tutorial-btn">${t(s.btnKey)}</button>`;
     }
     this.overlay.innerHTML = html;
     this.overlay.classList.remove('hidden');
 
-    if (s.btn) {
+    if (s.btnKey) {
       this.overlay.querySelector('.tutorial-btn').addEventListener('click', () => {
         this._advance();
       });
@@ -121,18 +122,15 @@ export class Tutorial {
     }
   }
 
-  // Called every frame from game._update()
   check() {
     if (!this.active || this.step < 0 || this.step >= STEPS.length) return;
     const s = STEPS[this.step];
 
-    // Handle steps waiting for a specific game state
     if (s.waitForState && this.game.state === s.waitForState) {
       this._render(s);
-      s.waitForState = null; // only trigger once
+      s.waitForState = null;
     }
 
-    // Handle condition-based auto-advance
     if (s.condition && s.condition(this.game)) {
       this._advance();
     }

@@ -1,6 +1,7 @@
 import { TOWER_DEFS, ENEMY_DEFS, IS_MOBILE } from './config.js';
 import { gridToPixel } from './utils.js';
 import { CONFIG } from './config.js';
+import { t, getLang, setLang } from './i18n.js';
 
 export class UIController {
   constructor(game) {
@@ -27,6 +28,58 @@ export class UIController {
 
     this._buildTowerPanel();
     this._bindButtons();
+    this.applyLanguage();
+  }
+
+  applyLanguage() {
+    // Menu
+    document.querySelector('#menu-screen h1').textContent = t('menu.title');
+    document.getElementById('difficulty-label').textContent = t('menu.difficulty');
+    document.querySelector('[data-difficulty="hard"]').textContent = t('menu.hard');
+    document.querySelector('[data-difficulty="normal"]').textContent = t('menu.normal');
+    document.querySelector('[data-difficulty="easy"]').textContent = t('menu.easy');
+    document.getElementById('high-scores-btn').textContent = t('menu.scores');
+
+    // HUD
+    document.querySelector('#hud-wave').innerHTML = `${t('hud.wave')} <span id="wave-value">${this.elements.waveValue.textContent}</span>`;
+    document.querySelector('#hud-score').innerHTML = `${t('hud.score')} <span id="score-value">${this.elements.scoreValue.textContent}</span>`;
+    this.elements.waveValue = document.getElementById('wave-value');
+    this.elements.scoreValue = document.getElementById('score-value');
+
+    // Buttons
+    this.elements.cancelPlaceBtn.textContent = t('game.cancel');
+
+    // Pause
+    document.querySelector('#pause-overlay h2').textContent = t('game.paused');
+    document.querySelector('#pause-overlay p').textContent = t('game.pauseHint');
+    document.getElementById('resume-btn').textContent = t('game.resume');
+
+    // Game over
+    document.querySelector('#game-over-screen h2').textContent = t('game.gameOver');
+    document.querySelector('#game-over-screen p:nth-of-type(1)').innerHTML = `${t('game.score')}: <span id="final-score">${this.elements.finalScore.textContent}</span>`;
+    document.querySelector('#game-over-screen p:nth-of-type(2)').innerHTML = `${t('game.wave')}: <span id="final-wave">${this.elements.finalWave.textContent}</span>`;
+    this.elements.finalScore = document.getElementById('final-score');
+    this.elements.finalWave = document.getElementById('final-wave');
+    document.getElementById('player-name').placeholder = t('game.enterName');
+    document.getElementById('save-score-btn').textContent = t('game.saveScore');
+    document.getElementById('play-again-btn').textContent = t('game.playAgain');
+
+    // Tower panel title
+    document.querySelector('#tower-panel h3').textContent = t('towers.title');
+
+    // Wave preview label
+    const wpEl = document.getElementById('wave-preview');
+    if (wpEl) {
+      wpEl.firstChild.textContent = t('game.next') + ': ';
+    }
+
+    // Language buttons
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.lang === getLang());
+    });
+
+    // Rebuild tower panel with new language
+    this._buildTowerPanel();
   }
 
   _buildTowerPanel() {
@@ -42,9 +95,9 @@ export class UIController {
       btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
       if (unlocked) {
         btn.innerHTML = `
-          <span class="tower-name">${def.name}</span>
+          <span class="tower-name">${t('tower.' + type)}</span>
           <span class="tower-cost">$${def.cost}</span>
-          <span class="tower-desc">${def.description}</span>
+          <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
         `;
         btn.addEventListener('click', () => {
           if (!this.game.economy.canAfford(def.cost)) return;
@@ -60,9 +113,9 @@ export class UIController {
         });
       } else {
         btn.innerHTML = `
-          <span class="tower-name locked-name">${def.name}</span>
-          <span class="tower-unlock-req">SCORE ${def.unlockScore.toLocaleString()}</span>
-          <span class="tower-desc">${def.description}</span>
+          <span class="tower-name locked-name">${t('tower.' + type)}</span>
+          <span class="tower-unlock-req">${t('hud.score')} ${def.unlockScore.toLocaleString()}</span>
+          <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
         `;
       }
       list.appendChild(btn);
@@ -76,10 +129,15 @@ export class UIController {
 
   _bindButtons() {
     this.elements.menuScreen.addEventListener('click', (e) => {
-      const btn = e.target.closest('.difficulty-btn');
-      if (btn) {
+      const diffBtn = e.target.closest('.difficulty-btn');
+      if (diffBtn) {
         this.elements.menuScreen.style.display = 'none';
-        this.game.startNewGame(btn.dataset.difficulty);
+        this.game.startNewGame(diffBtn.dataset.difficulty);
+      }
+      const langBtn = e.target.closest('.lang-btn');
+      if (langBtn) {
+        setLang(langBtn.dataset.lang);
+        this.applyLanguage();
       }
     });
 
@@ -159,32 +217,34 @@ export class UIController {
   showUpgradePanel(tower) {
     const panel = this.elements.upgradePanel;
     const def = tower.def;
+    const type = tower.type;
     const pos = gridToPixel(tower.gx, tower.gy);
     const game = this.game;
 
     const canModify = game.state === 'BETWEEN_WAVES';
-    let html = `<div class="up-title" style="color:${def.color}">${def.name}</div>`;
+    let html = `<div class="up-title" style="color:${def.color}">${t('tower.' + type)}</div>`;
 
     for (const [pathKey, pathLabel] of [['A', 'pathA'], ['B', 'pathB']]) {
       const upgradePath = def.upgrades[pathLabel];
-      html += `<div class="up-path-name">${upgradePath.name}</div>`;
+      html += `<div class="up-path-name">${t('up.' + type + '.' + pathKey)}</div>`;
       for (let i = 0; i < upgradePath.levels.length; i++) {
         const level = upgradePath.levels[i];
         const currentLevel = pathKey === 'A' ? tower.upgradesA : tower.upgradesB;
         const purchased = i < currentLevel;
         const available = i === currentLevel && tower.getUpgradeCost(pathKey) !== null;
         const canAfford = available && game.economy.canAfford(level.cost);
+        const desc = t('up.' + type + '.' + pathKey + '.' + i);
 
         html += `<div class="upgrade-option up-level" style="color:${purchased ? '#00ff66' : available ? (canAfford ? '#fff' : '#666') : '#333'}; cursor:${canAfford ? 'pointer' : 'default'}"
           data-upgrade-path="${canAfford ? pathKey : ''}"
-          >${purchased ? '&#10003;' : `$${level.cost}`} ${level.desc}</div>`;
+          >${purchased ? '&#10003;' : `$${level.cost}`} ${desc}</div>`;
       }
     }
 
     if (canModify) {
       html += `<div class="up-actions">`;
-      html += `<div class="move-btn">MOVE</div>`;
-      html += `<div class="sell-btn">SELL ($${tower.getSellValue()})</div>`;
+      html += `<div class="move-btn">${t('towers.move')}</div>`;
+      html += `<div class="sell-btn">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
       html += `</div>`;
     }
 
@@ -240,12 +300,12 @@ export class UIController {
   showBetweenWaves() {
     this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('hidden');
-    this.elements.startWaveBtn.textContent = IS_MOBILE ? 'START WAVE' : 'START WAVE (SPACE)';
+    this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
     this.elements.startWaveBtn.style.display = 'block';
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
       const def = ENEMY_DEFS[type];
-      return `<span style="color:${def.color}">${count}x ${def.name}</span>`;
+      return `<span style="color:${def.color}">${count}x ${t('enemy.' + type)}</span>`;
     }).join(' ');
     this.elements.wavePreviewContent.innerHTML = text;
     this.elements.wavePreview.style.display = 'block';
@@ -270,7 +330,8 @@ export class UIController {
     const next = this.game.progressTracker.getNextUnlock(score);
     if (next && nextUnlockEl) {
       const remaining = next.score - Math.max(this.game.progressTracker.bestScore, score);
-      nextUnlockEl.innerHTML = `Next unlock: <span style="color:${TOWER_DEFS[next.type].color}">${next.name}</span> in <span style="color:#ffd700">${remaining.toLocaleString()}</span> pts`;
+      const towerName = t('tower.' + next.type);
+      nextUnlockEl.innerHTML = `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span style="color:#ffd700">${remaining.toLocaleString()}</span> ${t('unlock.pts')}`;
       nextUnlockEl.style.display = 'block';
     } else if (nextUnlockEl) {
       nextUnlockEl.style.display = 'none';
@@ -304,13 +365,14 @@ export class UIController {
     const allThresholds = Object.values(TOWER_DEFS)
       .map(d => d.unlockScore || 0)
       .sort((a, b) => a - b);
-    const prevThreshold = allThresholds.filter(t => t <= effective).pop() || 0;
+    const prevThreshold = allThresholds.filter(th => th <= effective).pop() || 0;
     const range = next.score - prevThreshold;
     const progress = Math.min((effective - prevThreshold) / range, 1);
     const color = TOWER_DEFS[next.type].color;
+    const towerName = t('tower.' + next.type);
 
     el.innerHTML = `
-      <div class="unlock-label" style="color:${color}">${next.name}</div>
+      <div class="unlock-label" style="color:${color}">${towerName}</div>
       <div class="unlock-bar-bg">
         <div class="unlock-bar-fill" style="width:${Math.round(progress * 100)}%; background:${color}; color:${color}"></div>
       </div>
@@ -329,9 +391,9 @@ export class UIController {
 
     const container = document.createElement('div');
     container.id = 'unlock-notification';
-    const names = newUnlocks.map(u => `<span style="color:${u.def.color}">${u.def.name}</span>`).join(', ');
+    const names = newUnlocks.map(u => `<span style="color:${u.def.color}">${t('tower.' + u.type)}</span>`).join(', ');
     container.innerHTML = `
-      <div class="unlock-title">NEW TOWER${newUnlocks.length > 1 ? 'S' : ''} UNLOCKED</div>
+      <div class="unlock-title">${newUnlocks.length > 1 ? t('unlock.plural') : t('unlock.single')}</div>
       <div class="unlock-names">${names}</div>
     `;
     document.getElementById('canvas-wrapper').appendChild(container);
@@ -347,17 +409,17 @@ export class UIController {
     const tracker = this.game.scoreTracker;
 
     if (!tracker.globalLoaded) {
-      list.innerHTML = '<div style="color:#666; padding:8px">Loading...</div>';
+      list.innerHTML = `<div style="color:#666; padding:8px">${t('scores.loading')}</div>`;
       list.style.display = 'block';
       await tracker.fetchGlobalScores();
     }
 
     const scores = tracker.highScores;
     if (scores.length === 0) {
-      list.innerHTML = '<div style="color:#666; padding:8px">No scores yet</div>';
+      list.innerHTML = `<div style="color:#666; padding:8px">${t('scores.empty')}</div>`;
     } else {
       list.innerHTML = scores.map((s, i) =>
-        `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (Wave ${s.wave})</div>`
+        `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (${t('game.wave')} ${s.wave})</div>`
       ).join('');
     }
     list.style.display = list.style.display === 'block' ? 'none' : 'block';
