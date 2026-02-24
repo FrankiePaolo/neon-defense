@@ -51,24 +51,6 @@ export class Renderer {
       }
     }
 
-    if (grid.entry) {
-      const ep = gridToPixel(grid.entry.x, grid.entry.y);
-      ctx.save();
-      ctx.shadowBlur = 15 * SHADOW_BLUR_SCALE; ctx.shadowColor = COLORS.ENTRY;
-      ctx.fillStyle = COLORS.ENTRY; ctx.globalAlpha = 0.6;
-      ctx.beginPath();
-      ctx.moveTo(ep.x - 12, ep.y - 8); ctx.lineTo(ep.x + 6, ep.y); ctx.lineTo(ep.x - 12, ep.y + 8);
-      ctx.closePath(); ctx.fill(); ctx.restore();
-    }
-
-    if (grid.exit) {
-      const xp = gridToPixel(grid.exit.x, grid.exit.y);
-      ctx.save();
-      ctx.shadowBlur = 15 * SHADOW_BLUR_SCALE; ctx.shadowColor = COLORS.EXIT;
-      ctx.fillStyle = COLORS.EXIT; ctx.globalAlpha = 0.6;
-      ctx.beginPath(); ctx.arc(xp.x, xp.y, 8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    }
-
     this.staticDirty = false;
   }
 
@@ -77,6 +59,8 @@ export class Renderer {
 
     if (this.staticDirty) this.renderStatic(game.grid);
     ctx.drawImage(this.staticCanvas, 0, 0);
+
+    this._renderPortals(ctx, game.grid);
 
     if (game.input && game.input.hoveredCell && game.input.placingType) {
       this._renderPlacementPreview(ctx, game);
@@ -103,6 +87,125 @@ export class Renderer {
 
     game.particles.render(ctx);
     this._renderLightningChains(ctx, game);
+  }
+
+  _renderPortals(ctx, grid) {
+    const t = Date.now() / 1000;
+    if (grid.entry) {
+      const p = gridToPixel(grid.entry.x, grid.entry.y);
+      this._renderPortal(ctx, p.x, p.y, COLORS.ENTRY, t, 1);
+    }
+    if (grid.exit) {
+      const p = gridToPixel(grid.exit.x, grid.exit.y);
+      this._renderPortal(ctx, p.x, p.y, COLORS.EXIT, t, -1);
+    }
+  }
+
+  _renderPortal(ctx, x, y, color, t, dir) {
+    const ts = CONFIG.TILE_SIZE;
+    const pulse = 0.7 + 0.3 * Math.sin(t * 3);
+    const r = ts * 0.42;
+
+    // Ambient glow
+    ctx.save();
+    ctx.shadowBlur = 25 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 2);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Outer ring — slow rotation, dashed
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(t * 0.5 * dir);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4 * pulse;
+    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    ctx.setLineDash([6, 8]);
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Middle ring — faster, opposite direction
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-t * 1.2 * dir);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.5 * pulse;
+    ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    ctx.setLineDash([3, 10]);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Orbiting particles (6 dots at varying distances)
+    for (let i = 0; i < 6; i++) {
+      const angle = t * (0.8 + i * 0.3) * dir + (i * Math.PI / 3);
+      const dist = r * (0.4 + 0.25 * Math.sin(t * 2 + i));
+      const px = x + Math.cos(angle) * dist;
+      const py = y + Math.sin(angle) * dist;
+      const size = 1.2 + 0.8 * Math.sin(t * 4 + i * 1.5);
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 3 + i);
+      ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
+      ctx.shadowColor = color;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Core — bright pulsing center
+    ctx.save();
+    ctx.shadowBlur = 18 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.6 + 0.3 * pulse;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x, y, 3 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.4 * pulse;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 5 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Energy arcs — 3 rotating spokes from core to ring
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(t * 0.8 * dir);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.2 + 0.1 * Math.sin(t * 4);
+    ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const jitter = Math.sin(t * 6 + i * 2) * 3;
+      ctx.quadraticCurveTo(
+        Math.cos(a + 0.3) * r * 0.5 + jitter,
+        Math.sin(a + 0.3) * r * 0.5 + jitter,
+        Math.cos(a) * r * 0.9,
+        Math.sin(a) * r * 0.9
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _renderPlacementPreview(ctx, game) {
