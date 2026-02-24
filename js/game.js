@@ -61,6 +61,7 @@ export class Game {
     this.waveClearDelay = 0;
     this.input.selectedTower = null;
     this.input.placingType = null;
+    this.input.movingTower = null;
     this.ui.hideUpgradePanel();
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
@@ -88,6 +89,22 @@ export class Game {
     this.towers.push(tower);
     this.renderer.markDirty();
     this.ui.updateHUD();
+    return true;
+  }
+
+  moveTower(tower, newGx, newGy) {
+    if (this.state !== 'BETWEEN_WAVES') return false;
+    if (tower.gx === newGx && tower.gy === newGy) return false;
+    if (!this.grid.isPlaceable(newGx, newGy)) return false;
+
+    this.grid.removeTower(tower.gx, tower.gy);
+    this.grid.placeTower(newGx, newGy, tower);
+    tower.gx = newGx;
+    tower.gy = newGy;
+    const pos = gridToPixel(newGx, newGy);
+    tower.x = pos.x;
+    tower.y = pos.y;
+    this.renderer.markDirty();
     return true;
   }
 

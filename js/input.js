@@ -9,6 +9,7 @@ export class InputHandler {
     this.hoveredCell = null;
     this.selectedTower = null;
     this.placingType = null;
+    this.movingTower = null;
     this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     canvas.addEventListener('mousemove', (e) => this._onMove(e));
@@ -65,7 +66,12 @@ export class InputHandler {
     if (!this.hoveredCell) return;
     const game = this.game;
 
-    if (this.placingType) {
+    if (this.movingTower) {
+      if (game.moveTower(this.movingTower, this.hoveredCell.x, this.hoveredCell.y)) {
+        this.movingTower = null;
+        game.ui.hideCancelButton();
+      }
+    } else if (this.placingType) {
       if (game.placeTower(this.placingType, this.hoveredCell.x, this.hoveredCell.y)) {
         // Keep placing mode active
       }
@@ -83,6 +89,7 @@ export class InputHandler {
 
   _onRightClick() {
     this.placingType = null;
+    this.movingTower = null;
     this.selectedTower = null;
     this.game.ui.hideUpgradePanel();
     this.game.ui.hideCancelButton();
@@ -98,7 +105,8 @@ export class InputHandler {
         else if (game.state === 'PAUSED') game.togglePause();
         break;
       case 'Escape':
-        if (this.placingType) { this.placingType = null; game.ui.hideCancelButton(); }
+        if (this.movingTower) { this.movingTower = null; game.ui.hideCancelButton(); }
+        else if (this.placingType) { this.placingType = null; game.ui.hideCancelButton(); }
         else if (this.selectedTower) { this.selectedTower = null; game.ui.hideUpgradePanel(); }
         else { game.togglePause(); }
         break;
@@ -117,6 +125,15 @@ export class InputHandler {
 
   startPlacing(type) {
     this.placingType = type;
+    this.movingTower = null;
+    this.selectedTower = null;
+    this.game.ui.hideUpgradePanel();
+    this.game.ui.showCancelButton();
+  }
+
+  startMoving(tower) {
+    this.movingTower = tower;
+    this.placingType = null;
     this.selectedTower = null;
     this.game.ui.hideUpgradePanel();
     this.game.ui.showCancelButton();

@@ -98,6 +98,7 @@ export class UIController {
 
     this.elements.cancelPlaceBtn.addEventListener('click', () => {
       this.game.input.placingType = null;
+      this.game.input.movingTower = null;
       this.game.input.selectedTower = null;
       document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
       this.hideUpgradePanel();
@@ -119,11 +120,11 @@ export class UIController {
     const game = this.game;
 
     const canModify = game.state === 'BETWEEN_WAVES';
-    let html = `<div style="color:${def.color}; font-weight:bold; margin-bottom:8px">${def.name}</div>`;
+    let html = `<div class="up-title" style="color:${def.color}">${def.name}</div>`;
 
     for (const [pathKey, pathLabel] of [['A', 'pathA'], ['B', 'pathB']]) {
       const upgradePath = def.upgrades[pathLabel];
-      html += `<div style="margin-top:6px; color:#aaa; font-size:11px">${upgradePath.name}</div>`;
+      html += `<div class="up-path-name">${upgradePath.name}</div>`;
       for (let i = 0; i < upgradePath.levels.length; i++) {
         const level = upgradePath.levels[i];
         const currentLevel = pathKey === 'A' ? tower.upgradesA : tower.upgradesB;
@@ -131,14 +132,17 @@ export class UIController {
         const available = i === currentLevel && tower.getUpgradeCost(pathKey) !== null;
         const canAfford = available && game.economy.canAfford(level.cost);
 
-        html += `<div class="upgrade-option" style="font-size:10px; padding:3px 0; color:${purchased ? '#00ff66' : available ? (canAfford ? '#fff' : '#666') : '#333'}; cursor:${canAfford ? 'pointer' : 'default'}"
+        html += `<div class="upgrade-option up-level" style="color:${purchased ? '#00ff66' : available ? (canAfford ? '#fff' : '#666') : '#333'}; cursor:${canAfford ? 'pointer' : 'default'}"
           data-upgrade-path="${canAfford ? pathKey : ''}"
           >${purchased ? '&#10003;' : `$${level.cost}`} ${level.desc}</div>`;
       }
     }
 
     if (canModify) {
-      html += `<div class="sell-btn" style="margin-top:8px; font-size:10px; color:#ff6666; cursor:pointer">SELL ($${tower.getSellValue()})</div>`;
+      html += `<div class="up-actions">`;
+      html += `<div class="move-btn">MOVE</div>`;
+      html += `<div class="sell-btn">SELL ($${tower.getSellValue()})</div>`;
+      html += `</div>`;
     }
 
     panel.innerHTML = html;
@@ -162,6 +166,14 @@ export class UIController {
         });
       }
     });
+
+    // Bind move click
+    const moveBtn = panel.querySelector('.move-btn');
+    if (moveBtn) {
+      moveBtn.addEventListener('click', () => {
+        game.input.startMoving(game.input.selectedTower);
+      });
+    }
 
     // Bind sell click
     const sellBtn = panel.querySelector('.sell-btn');
