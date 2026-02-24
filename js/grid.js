@@ -77,12 +77,14 @@ export class Grid {
 
       const progress = path.length / minLength; // 0..1+ how close to target length
       const candidates = [];
+      const recent = new Set([key(x, y)]);
+      if (path.length >= 2) recent.add(key(path[path.length - 2].x, path[path.length - 2].y));
       for (const dir of dirs) {
         const nx = x + dir.dx;
         const ny = y + dir.dy;
         if (nx < 0 || nx >= this.cols || ny < 0 || ny >= this.rows) continue;
         if (visited.has(key(nx, ny))) continue;
-        if (this._countPathNeighbors(nx, ny, visited) > 1 && !(nx === this.exit.x && ny === this.exit.y)) continue;
+        if (!(nx === this.exit.x && ny === this.exit.y) && this._isTooCloseToPath(nx, ny, visited, recent)) continue;
 
         let weight = 1;
 
@@ -132,7 +134,8 @@ export class Grid {
       path.push({ x, y });
 
       if (Math.abs(x - this.exit.x) + Math.abs(y - this.exit.y) <= 3 && path.length >= minLength) {
-        const direct = this._directConnect(x, y, this.exit.x, this.exit.y, visited);
+        const tail = path.length >= 2 ? path[path.length - 2] : path[0];
+        const direct = this._directConnect(x, y, this.exit.x, this.exit.y, visited, tail);
         if (direct) {
           for (const p of direct) {
             visited.add(key(p.x, p.y));
@@ -145,26 +148,34 @@ export class Grid {
     return path;
   }
 
-  _countPathNeighbors(x, y, visited) {
-    let count = 0;
+  _isTooCloseToPath(nx, ny, visited, recentKeys) {
     const key = (x, y) => `${x},${y}`;
-    if (visited.has(key(x - 1, y))) count++;
-    if (visited.has(key(x + 1, y))) count++;
-    if (visited.has(key(x, y - 1))) count++;
-    if (visited.has(key(x, y + 1))) count++;
-    return count;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const k = key(nx + dx, ny + dy);
+        if (visited.has(k) && !recentKeys.has(k)) return true;
+      }
+    }
+    return false;
   }
 
-  _directConnect(x1, y1, x2, y2, visited) {
+  _directConnect(x1, y1, x2, y2, visited, pathTail) {
     const path = [];
     let x = x1, y = y1;
     const key = (x, y) => `${x},${y}`;
+    let prev = { x: x1, y: y1 };
+    let prevPrev = pathTail;
     while (x !== x2 || y !== y2) {
       if (x < x2) x++;
       else if (x > x2) x--;
       else if (y < y2) y++;
       else if (y > y2) y--;
       if (visited.has(key(x, y)) && !(x === x2 && y === y2)) return null;
+      const recent = new Set([key(prev.x, prev.y), key(prevPrev.x, prevPrev.y)]);
+      if (!(x === x2 && y === y2) && this._isTooCloseToPath(x, y, visited, recent)) return null;
+      prevPrev = prev;
+      prev = { x, y };
       path.push({ x, y });
     }
     return path;
