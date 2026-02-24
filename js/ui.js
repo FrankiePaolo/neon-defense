@@ -3,6 +3,27 @@ import { gridToPixel } from './utils.js';
 import { CONFIG } from './config.js';
 import { t, getLang, setLang } from './i18n.js';
 
+const STAT_LABELS = {
+  fireRate: 'RATE', damage: 'DMG', range: 'RNG',
+  slowAmount: 'SLOW', slowDuration: 'DUR',
+  chainCount: 'CHAIN', chainDecay: 'DECAY', chainRange: 'C.RNG',
+  splashRadius: 'SPLASH', damageAmp: 'AMP', buffRange: 'B.RNG',
+  goldPerWave: 'GOLD', fireRateAmp: 'SPD AMP',
+};
+
+function formatStatVal(key, val) {
+  if (key === 'slowAmount' || key === 'damageAmp' || key === 'fireRateAmp' ||
+      key === 'splashDecay' || key === 'chainDecay') return Math.round(val * 100) + '%';
+  return val;
+}
+
+function formatStatChanges(stats) {
+  return Object.entries(stats)
+    .filter(([k]) => STAT_LABELS[k])
+    .map(([k, v]) => `${STAT_LABELS[k]} ${formatStatVal(k, v)}`)
+    .join('  ');
+}
+
 export class UIController {
   constructor(game) {
     this.game = game;
@@ -255,16 +276,19 @@ export class UIController {
         const canAfford = available && game.economy.canAfford(level.cost);
         const desc = t('up.' + type + '.' + pathKey + '.' + i);
 
+        const changes = formatStatChanges(level.stats);
+        const changesHtml = changes ? `<span class="up-changes">${changes}</span>` : '';
+
         if (purchased) {
           html += `<div class="upgrade-option up-level up-purchased" data-upgrade-path="">
-            <span class="up-check">&#10003;</span><span class="up-desc">${desc}</span></div>`;
+            <span class="up-check">&#10003;</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         } else if (available) {
           html += `<div class="upgrade-option up-level ${canAfford ? 'up-available' : 'up-unaffordable'}"
             data-upgrade-path="${canAfford ? pathKey : ''}">
-            <span class="up-cost">$${level.cost}</span><span class="up-desc">${desc}</span></div>`;
+            <span class="up-cost">$${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         } else {
           html += `<div class="upgrade-option up-level up-locked">
-            <span class="up-cost">$${level.cost}</span><span class="up-desc">${desc}</span></div>`;
+            <span class="up-cost">$${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         }
       }
     }

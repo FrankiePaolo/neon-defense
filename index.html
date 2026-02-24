@@ -287,15 +287,29 @@ canvas {
   padding: 4px 6px; margin: 2px 0; border: 1px solid transparent; border-radius: 2px;
 }
 #upgrade-panel .up-cost { font-size: 11px; font-weight: bold; min-width: 44px; }
+#upgrade-panel .up-info { display: flex; flex-direction: column; gap: 1px; }
 #upgrade-panel .up-desc { font-size: 10px; }
+#upgrade-panel .up-changes { font-size: 9px; color: #335566; letter-spacing: 1px; }
+#upgrade-panel .up-purchased .up-changes { color: rgba(0, 255, 100, 0.4); }
+#upgrade-panel .up-available .up-changes { color: #66ccff; }
+#upgrade-panel .up-unaffordable .up-changes { color: #3a3a3a; }
+#upgrade-panel .up-locked .up-changes { color: #1a1a1a; }
 #upgrade-panel .up-check { color: #00ff66; font-size: 12px; min-width: 44px; }
 #upgrade-panel .up-purchased .up-desc { color: rgba(0, 255, 100, 0.7); }
 #upgrade-panel .up-available {
-  cursor: pointer; background: rgba(255, 215, 0, 0.05); border-color: rgba(255, 215, 0, 0.15);
+  cursor: pointer; background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.1), inset 0 0 10px rgba(255, 215, 0, 0.08);
+  animation: up-glow 2s ease-in-out infinite;
 }
 #upgrade-panel .up-available:hover {
-  background: rgba(255, 215, 0, 0.12); border-color: rgba(255, 215, 0, 0.4);
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
+  background: rgba(255, 215, 0, 0.22); border-color: rgba(255, 215, 0, 0.7);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 14px rgba(255, 215, 0, 0.1);
+  animation: none;
+}
+@keyframes up-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.2), 0 0 16px rgba(255, 215, 0, 0.08), inset 0 0 8px rgba(255, 215, 0, 0.05); }
+  50% { box-shadow: 0 0 14px rgba(255, 215, 0, 0.4), 0 0 28px rgba(255, 215, 0, 0.15), inset 0 0 12px rgba(255, 215, 0, 0.1); }
 }
 #upgrade-panel .up-available .up-cost { color: #ffd700; }
 #upgrade-panel .up-available .up-desc { color: #fff; }
@@ -707,6 +721,7 @@ canvas {
   #upgrade-panel .up-level { padding: 8px 6px; }
   #upgrade-panel .up-cost { font-size: 14px; min-width: 52px; }
   #upgrade-panel .up-desc { font-size: 13px; }
+  #upgrade-panel .up-changes { font-size: 11px; }
   #upgrade-panel .up-check { font-size: 14px; min-width: 52px; }
   #upgrade-panel .up-actions { margin-top: 12px; gap: 20px; }
   #upgrade-panel .move-btn { font-size: 14px; padding: 8px 0; }
