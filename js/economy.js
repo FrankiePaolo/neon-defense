@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+import { CONFIG, TOWER_DEFS } from './config.js';
 
 export class Economy {
   constructor() {
@@ -47,5 +47,55 @@ export class ScoreTracker {
 
   _load() {
     try { return JSON.parse(localStorage.getItem('neon_td_scores')) || []; } catch { return []; }
+  }
+}
+
+export class ProgressTracker {
+  constructor() {
+    this.bestScore = this._loadBestScore();
+  }
+
+  _loadBestScore() {
+    try { return parseInt(localStorage.getItem('neon_td_best_score')) || 0; } catch { return 0; }
+  }
+
+  updateBestScore(score) {
+    const previousBest = this.bestScore;
+    if (score > this.bestScore) {
+      this.bestScore = score;
+      try { localStorage.setItem('neon_td_best_score', String(this.bestScore)); } catch {}
+    }
+    return previousBest;
+  }
+
+  isTowerUnlocked(type, currentScore = 0) {
+    const def = TOWER_DEFS[type];
+    const effective = Math.max(this.bestScore, currentScore);
+    return def && effective >= (def.unlockScore || 0);
+  }
+
+  getNewlyUnlockedTowers(previousBest, currentScore) {
+    const unlocked = [];
+    for (const [type, def] of Object.entries(TOWER_DEFS)) {
+      const threshold = def.unlockScore || 0;
+      if (threshold > previousBest && threshold <= currentScore) {
+        unlocked.push({ type, def });
+      }
+    }
+    return unlocked;
+  }
+
+  getNextUnlock(currentScore = 0) {
+    const effective = Math.max(this.bestScore, currentScore);
+    let nearest = null;
+    for (const [type, def] of Object.entries(TOWER_DEFS)) {
+      const threshold = def.unlockScore || 0;
+      if (threshold > effective) {
+        if (!nearest || threshold < nearest.score) {
+          nearest = { type, name: def.name, score: threshold };
+        }
+      }
+    }
+    return nearest;
   }
 }

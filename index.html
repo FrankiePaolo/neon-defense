@@ -70,6 +70,37 @@ canvas {
 #hud-lives { color: #ff4444; }
 #hud-score { color: #ffffff; }
 
+/* Unlock Tracker */
+#unlock-tracker {
+  position: absolute;
+  top: 34px;
+  left: 16px;
+  z-index: 10;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+#unlock-tracker .unlock-label {
+  color: #666;
+  margin-bottom: 3px;
+}
+
+#unlock-tracker .unlock-bar-bg {
+  width: 120px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#unlock-tracker .unlock-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease-out;
+  box-shadow: 0 0 6px currentColor;
+}
+
 /* Speed Controls */
 #speed-controls {
   position: absolute;
@@ -156,6 +187,66 @@ canvas {
   font-family: 'Courier New', monospace;
   font-size: 10px;
   color: #666;
+}
+
+/* Locked towers */
+.tower-btn.tower-locked {
+  opacity: 0.4;
+  cursor: default;
+  border-color: #222;
+  background: rgba(10, 10, 15, 0.6);
+}
+
+.tower-btn.tower-locked:hover {
+  box-shadow: none;
+  background: rgba(10, 10, 15, 0.6);
+}
+
+.tower-btn .locked-name {
+  color: #555 !important;
+}
+
+.tower-btn .tower-unlock-req {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #ff8800;
+  letter-spacing: 1px;
+}
+
+/* Unlock notification */
+#unlock-notification {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(0, 10, 20, 0.95);
+  border: 1px solid #00ff66;
+  box-shadow: 0 0 30px rgba(0, 255, 100, 0.4), 0 0 60px rgba(0, 255, 100, 0.15);
+  padding: 20px 36px;
+  z-index: 90;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  opacity: 0;
+  transition: opacity 0.5s, transform 0.5s;
+  pointer-events: none;
+}
+
+#unlock-notification.unlock-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#unlock-notification .unlock-title {
+  font-size: 18px;
+  color: #00ff66;
+  letter-spacing: 4px;
+  text-shadow: 0 0 15px rgba(0, 255, 100, 0.6);
+  margin-bottom: 8px;
+}
+
+#unlock-notification .unlock-names {
+  font-size: 16px;
+  font-weight: bold;
 }
 
 /* Upgrade Panel */
@@ -433,6 +524,15 @@ canvas {
     padding: 6px 10px;
   }
 
+  #unlock-tracker {
+    top: 26px;
+    left: 8px;
+  }
+
+  #unlock-tracker .unlock-bar-bg {
+    width: 80px;
+  }
+
   #speed-controls {
     top: 28px;
     right: 8px;
@@ -577,6 +677,8 @@ canvas {
       <div id="hud-score" class="hud-item">SCORE <span id="score-value">0</span></div>
     </div>
 
+    <div id="unlock-tracker" class="hidden"></div>
+
     <div id="speed-controls">
       <button class="speed-btn active" data-speed="1">1x</button>
       <button class="speed-btn" data-speed="2">2x</button>
@@ -607,6 +709,7 @@ canvas {
       <h2>GAME OVER</h2>
       <p>Score: <span id="final-score">0</span></p>
       <p>Wave: <span id="final-wave">0</span></p>
+      <p id="next-unlock-hint" style="display:none; font-size: 13px; color: #aaa;"></p>
       <input id="player-name" placeholder="Enter name" maxlength="12">
       <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
       <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>

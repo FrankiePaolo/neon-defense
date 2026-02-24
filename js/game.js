@@ -7,7 +7,7 @@ import { Enemy } from './enemy.js';
 import { Projectile } from './projectile.js';
 import { Tower } from './tower.js';
 import { WaveManager } from './waves.js';
-import { Economy, ScoreTracker } from './economy.js';
+import { Economy, ScoreTracker, ProgressTracker } from './economy.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
@@ -22,6 +22,7 @@ export class Game {
     this.spatialHash = new SpatialHash(80);
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
+    this.progressTracker = new ProgressTracker();
     this.waveManager = new WaveManager();
     this.input = new InputHandler(this.canvas, this);
     this.ui = new UIController(this);
@@ -63,6 +64,7 @@ export class Game {
     this.input.placingType = null;
     this.input.movingTower = null;
     this.ui.hideUpgradePanel();
+    this.ui.refreshTowerPanel();
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
     this.tutorial.start();
@@ -80,6 +82,7 @@ export class Game {
     if (this.state !== 'BETWEEN_WAVES') return false;
     const def = TOWER_DEFS[type];
     if (!def) return false;
+    if (!this.progressTracker.isTowerUnlocked(type, this.scoreTracker.score)) return false;
     if (!this.grid.isPlaceable(gx, gy)) return false;
     if (!this.economy.canAfford(def.cost)) return false;
 
@@ -360,12 +363,23 @@ export class Game {
 
   _onGameOver() {
     this.state = 'GAME_OVER';
+    this._processEndOfGame();
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
   }
 
   _onVictory() {
     this.scoreTracker.score += 5000;
     this.state = 'GAME_OVER';
+    this._processEndOfGame();
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
+  }
+
+  _processEndOfGame() {
+    const score = this.scoreTracker.score;
+    const previousBest = this.progressTracker.updateBestScore(score);
+    const newUnlocks = this.progressTracker.getNewlyUnlockedTowers(previousBest, score);
+    if (newUnlocks.length > 0) {
+      this.ui.showUnlockNotifications(newUnlocks);
+    }
   }
 }

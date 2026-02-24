@@ -32,28 +32,45 @@ export class UIController {
   _buildTowerPanel() {
     const list = this.elements.towerList;
     list.innerHTML = '';
+    const progress = this.game.progressTracker;
+    const currentScore = this.game.scoreTracker ? this.game.scoreTracker.score : 0;
     for (const [type, def] of Object.entries(TOWER_DEFS)) {
+      const unlocked = progress.isTowerUnlocked(type, currentScore);
       const btn = document.createElement('div');
-      btn.className = 'tower-btn';
-      btn.style.setProperty('--tower-color', def.color);
-      btn.innerHTML = `
-        <span class="tower-name">${def.name}</span>
-        <span class="tower-cost">$${def.cost}</span>
-        <span class="tower-desc">${def.description}</span>
-      `;
-      btn.addEventListener('click', () => {
-        const currentlySelected = btn.classList.contains('selected');
-        document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-        if (currentlySelected) {
-          this.game.input.placingType = null;
-          this.hideCancelButton();
-        } else {
-          btn.classList.add('selected');
-          this.game.input.startPlacing(type);
-        }
-      });
+      btn.className = 'tower-btn' + (unlocked ? '' : ' tower-locked');
+      btn.dataset.towerType = type;
+      btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
+      if (unlocked) {
+        btn.innerHTML = `
+          <span class="tower-name">${def.name}</span>
+          <span class="tower-cost">$${def.cost}</span>
+          <span class="tower-desc">${def.description}</span>
+        `;
+        btn.addEventListener('click', () => {
+          const currentlySelected = btn.classList.contains('selected');
+          document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
+          if (currentlySelected) {
+            this.game.input.placingType = null;
+            this.hideCancelButton();
+          } else {
+            btn.classList.add('selected');
+            this.game.input.startPlacing(type);
+          }
+        });
+      } else {
+        btn.innerHTML = `
+          <span class="tower-name locked-name">${def.name}</span>
+          <span class="tower-unlock-req">SCORE ${def.unlockScore.toLocaleString()}</span>
+          <span class="tower-desc">${def.description}</span>
+        `;
+      }
       list.appendChild(btn);
     }
+  }
+
+  refreshTowerPanel() {
+    this._lastTrackerScore = -1;
+    this._buildTowerPanel();
   }
 
   _bindButtons() {
@@ -111,6 +128,7 @@ export class UIController {
     this.elements.waveValue.textContent = this.game.waveManager.currentWave;
     this.elements.livesValue.textContent = this.game.lives;
     this.elements.scoreValue.textContent = this.game.scoreTracker.score;
+    this.updateUnlockTracker();
   }
 
   showUpgradePanel(tower) {
@@ -195,6 +213,7 @@ export class UIController {
   }
 
   showBetweenWaves() {
+    this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? 'START WAVE' : 'START WAVE (SPACE)';
     this.elements.startWaveBtn.style.display = 'block';
@@ -218,8 +237,20 @@ export class UIController {
   hidePause() { this.elements.pauseOverlay.style.display = 'none'; }
 
   showGameOver(score, wave) {
+    this.hideUnlockTracker();
     this.elements.finalScore.textContent = score;
     this.elements.finalWave.textContent = wave;
+
+    const nextUnlockEl = document.getElementById('next-unlock-hint');
+    const next = this.game.progressTracker.getNextUnlock(score);
+    if (next && nextUnlockEl) {
+      const remaining = next.score - Math.max(this.game.progressTracker.bestScore, score);
+      nextUnlockEl.innerHTML = `Next unlock: <span style="color:${TOWER_DEFS[next.type].color}">${next.name}</span> in <span style="color:#ffd700">${remaining.toLocaleString()}</span> pts`;
+      nextUnlockEl.style.display = 'block';
+    } else if (nextUnlockEl) {
+      nextUnlockEl.style.display = 'none';
+    }
+
     this.elements.gameOverScreen.style.display = 'flex';
   }
 
@@ -227,6 +258,63 @@ export class UIController {
     document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
     });
+  }
+
+  updateUnlockTracker() {
+    const el = document.getElementById('unlock-tracker');
+    if (!el) return;
+    const score = this.game.scoreTracker.score;
+    if (score === this._lastTrackerScore) return;
+    this._lastTrackerScore = score;
+
+    const best = this.game.progressTracker.bestScore;
+    const effective = Math.max(score, best);
+    const next = this.game.progressTracker.getNextUnlock(effective);
+
+    if (!next) {
+      el.classList.add('hidden');
+      return;
+    }
+
+    const allThresholds = Object.values(TOWER_DEFS)
+      .map(d => d.unlockScore || 0)
+      .sort((a, b) => a - b);
+    const prevThreshold = allThresholds.filter(t => t <= effective).pop() || 0;
+    const range = next.score - prevThreshold;
+    const progress = Math.min((effective - prevThreshold) / range, 1);
+    const color = TOWER_DEFS[next.type].color;
+
+    el.innerHTML = `
+      <div class="unlock-label" style="color:${color}">${next.name}</div>
+      <div class="unlock-bar-bg">
+        <div class="unlock-bar-fill" style="width:${Math.round(progress * 100)}%; background:${color}; color:${color}"></div>
+      </div>
+    `;
+    el.classList.remove('hidden');
+  }
+
+  hideUnlockTracker() {
+    const el = document.getElementById('unlock-tracker');
+    if (el) el.classList.add('hidden');
+  }
+
+  showUnlockNotifications(newUnlocks) {
+    let existing = document.getElementById('unlock-notification');
+    if (existing) existing.remove();
+
+    const container = document.createElement('div');
+    container.id = 'unlock-notification';
+    const names = newUnlocks.map(u => `<span style="color:${u.def.color}">${u.def.name}</span>`).join(', ');
+    container.innerHTML = `
+      <div class="unlock-title">NEW TOWER${newUnlocks.length > 1 ? 'S' : ''} UNLOCKED</div>
+      <div class="unlock-names">${names}</div>
+    `;
+    document.getElementById('canvas-wrapper').appendChild(container);
+    setTimeout(() => container.classList.add('unlock-visible'), 50);
+    setTimeout(() => {
+      container.classList.remove('unlock-visible');
+      setTimeout(() => container.remove(), 500);
+    }, 4000);
   }
 
   _showHighScores() {

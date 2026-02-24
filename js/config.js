@@ -36,6 +36,7 @@ export const TOWER_DEFS = {
     shape: 'diamond', range: 3.5, damage: 10, fireRate: 1.5,
     projectileSpeed: 400, targeting: 'first',
     description: 'Balanced all-rounder',
+    unlockScore: 0,
     upgrades: {
       pathA: {
         name: 'Rapid Fire',
@@ -61,6 +62,7 @@ export const TOWER_DEFS = {
     projectileSpeed: 300, targeting: 'first',
     slowAmount: 0.4, slowDuration: 2.0,
     description: 'Slows enemies',
+    unlockScore: 500,
     upgrades: {
       pathA: {
         name: 'Deep Freeze',
@@ -86,6 +88,7 @@ export const TOWER_DEFS = {
     chainCount: 3, chainRange: 2.0, chainDecay: 0.7,
     targeting: 'closest',
     description: 'Chain arcs between enemies',
+    unlockScore: 1500,
     upgrades: {
       pathA: {
         name: 'Storm',
@@ -111,6 +114,7 @@ export const TOWER_DEFS = {
     splashRadius: 1.5, splashDecay: 0.5, projectileSpeed: 250,
     targeting: 'strongest',
     description: 'AoE splash damage',
+    unlockScore: 3500,
     upgrades: {
       pathA: {
         name: 'Bombardment',
@@ -135,6 +139,7 @@ export const TOWER_DEFS = {
     shape: 'octagon', range: 6.0, damage: 50, fireRate: 0.3,
     projectileSpeed: 800, targeting: 'strongest',
     description: 'Extreme range, high damage',
+    unlockScore: 6000,
     upgrades: {
       pathA: {
         name: 'Marksman',
@@ -159,6 +164,7 @@ export const TOWER_DEFS = {
     shape: 'circle', range: 2.5, damage: 0, fireRate: 0,
     damageAmp: 0.15, buffRange: 2.5,
     description: 'Buffs nearby towers',
+    unlockScore: 10000,
     upgrades: {
       pathA: {
         name: 'Command',
