@@ -148,6 +148,8 @@ export class Renderer {
 
     game.particles.render(ctx);
     this._renderLightningChains(ctx, game);
+    this._renderFloatingTexts(ctx, game);
+    this._renderKillStreak(ctx, game);
   }
 
   _renderPortals(ctx, grid) {
@@ -341,6 +343,34 @@ export class Renderer {
       }
       ctx.stroke(); ctx.restore();
     }
+  }
+
+  _renderFloatingTexts(ctx, game) {
+    for (const ft of game.floatingTexts) {
+      const alpha = ft.life / ft.maxLife;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = ft.large ? 'bold 18px Courier New' : 'bold 12px Courier New';
+      ctx.fillStyle = ft.color;
+      ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
+      ctx.shadowColor = ft.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    }
+  }
+
+  _renderKillStreak(ctx, game) {
+    if (game.killStreak < 5 || game.killStreakTimer <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, game.killStreakTimer * 2);
+    ctx.font = 'bold 22px Courier New';
+    ctx.fillStyle = '#ff8800';
+    ctx.shadowBlur = 14 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = '#ff8800';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${game.killStreak}x COMBO`, CONFIG.CANVAS_WIDTH / 2, 70);
+    ctx.restore();
   }
 
   markDirty() { this.staticDirty = true; }

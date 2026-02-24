@@ -34,6 +34,9 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this._lightningChains = [];
+    this.floatingTexts = [];
+    this.killStreak = 0;
+    this.killStreakTimer = 0;
 
     this.lives = CONFIG.BASE_LIVES;
     this.state = 'MENU';
@@ -55,6 +58,9 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this._lightningChains = [];
+    this.floatingTexts = [];
+    this.killStreak = 0;
+    this.killStreakTimer = 0;
     this.particles.clear();
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
@@ -231,6 +237,8 @@ export class Game {
     }
 
     this.particles.update(dt);
+    this._updateFloatingTexts(dt);
+    this._updateKillStreak(dt);
 
     if (this.waveManager.isSpawningDone() && this.enemies.length === 0) {
       this.waveClearDelay += dt;
@@ -333,6 +341,17 @@ export class Game {
     this.scoreTracker.addKill(enemy, this.waveManager.currentWave);
     this.particles.emit(enemy.x, enemy.y, enemy.color, 'death');
 
+    // Floating gold text
+    this.floatingTexts.push({
+      x: enemy.x, y: enemy.y,
+      text: `+${enemy.reward}g`, color: '#ffd700',
+      life: 1.0, maxLife: 1.0,
+    });
+
+    // Kill streak
+    this.killStreak++;
+    this.killStreakTimer = 1.5;
+
     if (enemy.splitCount > 0 && enemy.splitType) {
       for (let i = 0; i < enemy.splitCount; i++) {
         const remainingPath = this.grid.path
@@ -344,6 +363,33 @@ export class Game {
         child.y = enemy.y + (Math.random() - 0.5) * 10;
         this.enemies.push(child);
       }
+    }
+  }
+
+  _updateFloatingTexts(dt) {
+    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = this.floatingTexts[i];
+      ft.y -= 30 * dt;
+      ft.life -= dt;
+      if (ft.life <= 0) this.floatingTexts.splice(i, 1);
+    }
+  }
+
+  _updateKillStreak(dt) {
+    if (this.killStreakTimer <= 0) return;
+    this.killStreakTimer -= dt;
+    if (this.killStreakTimer <= 0 && this.killStreak >= 5) {
+      const bonus = this.killStreak * 2;
+      this.economy.earn(bonus);
+      this.scoreTracker.score += bonus;
+      this.floatingTexts.push({
+        x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 20,
+        text: `${this.killStreak}x COMBO  +${bonus}g`,
+        color: '#ff8800', life: 2.0, maxLife: 2.0, large: true,
+      });
+      this.killStreak = 0;
+    } else if (this.killStreakTimer <= 0) {
+      this.killStreak = 0;
     }
   }
 
