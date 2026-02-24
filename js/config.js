@@ -2,8 +2,8 @@ export const IS_MOBILE = ('ontouchstart' in window) || (navigator.maxTouchPoints
 export const SHADOW_BLUR_SCALE = IS_MOBILE ? 0.3 : 1.0;
 
 export const CONFIG = {
-  GRID_COLS: 20,
-  GRID_ROWS: 15,
+  GRID_COLS: IS_MOBILE ? 12 : 20,
+  GRID_ROWS: IS_MOBILE ? 9 : 15,
   TILE_SIZE: 40,
   get CANVAS_WIDTH() { return this.GRID_COLS * this.TILE_SIZE; },
   get CANVAS_HEIGHT() { return this.GRID_ROWS * this.TILE_SIZE; },
