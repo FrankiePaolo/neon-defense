@@ -1,4 +1,4 @@
-import { TOWER_DEFS, ENEMY_DEFS } from './config.js';
+import { TOWER_DEFS, ENEMY_DEFS, IS_MOBILE } from './config.js';
 import { gridToPixel } from './utils.js';
 import { CONFIG } from './config.js';
 
@@ -184,6 +184,7 @@ export class UIController {
 
   showBetweenWaves() {
     this.elements.towerPanel.classList.remove('hidden');
+    this.elements.startWaveBtn.textContent = IS_MOBILE ? 'START WAVE' : 'START WAVE (SPACE)';
     this.elements.startWaveBtn.style.display = 'block';
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {

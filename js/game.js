@@ -11,6 +11,7 @@ import { Economy, ScoreTracker } from './economy.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
+import { Tutorial } from './tutorial.js';
 
 export class Game {
   constructor() {
@@ -24,6 +25,7 @@ export class Game {
     this.waveManager = new WaveManager();
     this.input = new InputHandler(this.canvas, this);
     this.ui = new UIController(this);
+    this.tutorial = new Tutorial(this);
 
     this.towers = [];
     this.enemies = [];
@@ -62,6 +64,7 @@ export class Game {
     this.ui.hideUpgradePanel();
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
+    this.tutorial.start();
   }
 
   startNextWave() {
@@ -144,6 +147,8 @@ export class Game {
       const dt = rawDt * this.speedMultiplier;
       this._update(dt);
     }
+
+    if (this.tutorial.active) this.tutorial.check();
 
     if (this.state !== 'MENU') {
       this.renderer.renderFrame(this);
