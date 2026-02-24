@@ -149,8 +149,15 @@ export class UIController {
       this.game.startNextWave();
     });
 
-    document.getElementById('save-score-btn').addEventListener('click', () => {
-      const name = document.getElementById('player-name').value.trim() || 'ANON';
+    const saveBtn = document.getElementById('save-score-btn');
+    const nameInput = document.getElementById('player-name');
+    saveBtn.disabled = true;
+    nameInput.addEventListener('input', () => {
+      saveBtn.disabled = !nameInput.value.trim();
+    });
+    saveBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (!name) return;
       this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
@@ -336,6 +343,11 @@ export class UIController {
     } else if (nextUnlockEl) {
       nextUnlockEl.style.display = 'none';
     }
+
+    const nameInput = document.getElementById('player-name');
+    const saveBtn = document.getElementById('save-score-btn');
+    nameInput.value = '';
+    saveBtn.disabled = true;
 
     this.elements.gameOverScreen.style.display = 'flex';
   }
