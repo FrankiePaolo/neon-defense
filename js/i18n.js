@@ -85,11 +85,11 @@ const STRINGS = {
     'up.support.B': 'Economy',
 
     // Upgrade level descriptions
-    'up.blaster.A.0': '+33% fire rate',
-    'up.blaster.A.1': '+100% fire rate',
+    'up.blaster.A.0': '+67% fire rate',
+    'up.blaster.A.1': '+167% fire rate',
     'up.blaster.A.2': 'Overclocked',
-    'up.blaster.B.0': '+80% damage',
-    'up.blaster.B.1': '+200% damage',
+    'up.blaster.B.0': '+120% damage',
+    'up.blaster.B.1': '+300% damage',
     'up.blaster.B.2': 'Armor-piercing',
 
     'up.frost.A.0': '50% slow',
@@ -123,9 +123,9 @@ const STRINGS = {
     'up.support.A.0': '+25% damage amp',
     'up.support.A.1': 'Wider aura',
     'up.support.A.2': '+50% dmg +20% rate',
-    'up.support.B.0': '+20 gold/wave',
-    'up.support.B.1': '+50 gold/wave',
-    'up.support.B.2': '+100g +10% sell',
+    'up.support.B.0': '+25 gold/wave',
+    'up.support.B.1': '+60 gold/wave',
+    'up.support.B.2': '+120g +10% sell',
 
     // Enemy names
     'enemy.basic': 'Drone',
@@ -226,11 +226,11 @@ const STRINGS = {
     'up.support.B': 'Economia',
 
     // Upgrade level descriptions
-    'up.blaster.A.0': '+33% cadenza di tiro',
-    'up.blaster.A.1': '+100% cadenza di tiro',
+    'up.blaster.A.0': '+67% cadenza di tiro',
+    'up.blaster.A.1': '+167% cadenza di tiro',
     'up.blaster.A.2': 'Overcloccato',
-    'up.blaster.B.0': '+80% danno',
-    'up.blaster.B.1': '+200% danno',
+    'up.blaster.B.0': '+120% danno',
+    'up.blaster.B.1': '+300% danno',
     'up.blaster.B.2': 'Perforante',
 
     'up.frost.A.0': '50% rallentamento',
@@ -264,9 +264,9 @@ const STRINGS = {
     'up.support.A.0': '+25% amplif. danno',
     'up.support.A.1': 'Aura più ampia',
     'up.support.A.2': '+50% danno +20% cadenza',
-    'up.support.B.0': '+20 oro/ondata',
-    'up.support.B.1': '+50 oro/ondata',
-    'up.support.B.2': '+100o +10% vendita',
+    'up.support.B.0': '+25 oro/ondata',
+    'up.support.B.1': '+60 oro/ondata',
+    'up.support.B.2': '+120o +10% vendita',
 
     // Enemy names
     'enemy.basic': 'Drone',
