@@ -36,7 +36,7 @@ export class Grid {
       this.entry = { x: 0, y: entryY };
       this.exit = { x: this.cols - 1, y: exitY };
 
-      const path = this._randomWalk();
+      const path = this._randomWalk(minLength);
       if (path && path.length >= minLength) {
         for (const p of path) {
           this.cells[p.y][p.x] = CELL_PATH;
@@ -51,7 +51,7 @@ export class Grid {
     return true;
   }
 
-  _randomWalk() {
+  _randomWalk(minLength = 25) {
     const visited = new Set();
     const path = [];
     let x = this.entry.x;
@@ -82,7 +82,9 @@ export class Grid {
         if (this._countPathNeighbors(nx, ny, visited) > 1 && !(nx === this.exit.x && ny === this.exit.y)) continue;
 
         let weight = 1;
-        if (dir.dx > 0) weight += 3;
+        const rightBias = path.length < minLength ? 1 : 3;
+        if (dir.dx > 0) weight += rightBias;
+        if (dir.dy !== 0 && path.length < minLength) weight += 2;
         if ((ny > y && this.exit.y > y) || (ny < y && this.exit.y < y)) weight += 1;
         if (ny <= 0 || ny >= this.rows - 1) weight *= 0.3;
 
@@ -114,7 +116,7 @@ export class Grid {
       visited.add(key(x, y));
       path.push({ x, y });
 
-      if (Math.abs(x - this.exit.x) + Math.abs(y - this.exit.y) <= 3 && path.length >= 20) {
+      if (Math.abs(x - this.exit.x) + Math.abs(y - this.exit.y) <= 3 && path.length >= minLength) {
         const direct = this._directConnect(x, y, this.exit.x, this.exit.y, visited);
         if (direct) {
           for (const p of direct) {
