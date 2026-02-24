@@ -162,9 +162,11 @@ export class Game {
     if (this.state === 'PLAYING' || this.state === 'BETWEEN_WAVES') {
       this._prevState = this.state;
       this.state = 'PAUSED';
+      this.audio.stopMusic();
       this.ui.showPause();
     } else if (this.state === 'PAUSED') {
       this.state = this._prevState || 'PLAYING';
+      this.audio.playTrack('gameplay');
       this.ui.hidePause();
     }
   }
