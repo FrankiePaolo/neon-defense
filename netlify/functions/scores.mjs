@@ -1,10 +1,10 @@
-import { neon } from "@neondatabase/serverless";
+import { neon } from "@netlify/neon";
 
 const MAX_SCORE_PER_WAVE = 2000;
 const MAX_NAME_LENGTH = 12;
 
 export default async (req) => {
-  const sql = neon(process.env.NETLIFY_DATABASE_URL);
+  const sql = neon();
 
   if (req.method === "GET") {
     const rows = await sql`
