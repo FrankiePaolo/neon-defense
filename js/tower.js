@@ -2,6 +2,8 @@ import { CONFIG, TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 import { gridToPixel, distance, drawShape } from './utils.js';
 import { COLORS } from './config.js';
 
+const SB = SHADOW_BLUR_SCALE;
+
 export class Tower {
   constructor(type, gx, gy) {
     this.type = type;
@@ -112,23 +114,72 @@ export class Tower {
     return null;
   }
 
+  // ── Render helpers ──
+
+  _glow(ctx, pulse, hasTarget) {
+    ctx.shadowBlur = (hasTarget ? 16 : 8) * SB * pulse;
+    ctx.shadowColor = this.def.glowColor;
+  }
+
+  _body(ctx, shape, size) {
+    ctx.fillStyle = this.def.color;
+    drawShape(ctx, shape, 0, 0, size);
+    ctx.fill();
+  }
+
+  _outline(ctx, shape, size, alpha = 0.35) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = alpha;
+    drawShape(ctx, shape, 0, 0, size);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  _barrel(ctx, size, { length = size + 5, width = 2, offset = 0 } = {}) {
+    ctx.strokeStyle = this.def.color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(2, offset);
+    ctx.lineTo(length, offset);
+    ctx.stroke();
+  }
+
+  _barrelStyle(ctx, hasTarget) {
+    ctx.globalAlpha = hasTarget ? 0.9 : 0.5;
+    ctx.shadowBlur = hasTarget ? 6 * SB : 0;
+    ctx.shadowColor = this.def.glowColor;
+  }
+
+  _rotated(ctx, fn) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    fn(ctx);
+    ctx.restore();
+  }
+
+  _circle(ctx, x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+  }
+
+  // ── Main render ──
+
   render(ctx, isSelected, isHovered) {
     const upgrades = this.upgradesA + this.upgradesB;
-    const size = CONFIG.TILE_SIZE * 0.35 + upgrades * 1;
+    const size = CONFIG.TILE_SIZE * 0.35 + upgrades;
     const color = this.def.color;
-    const glow = this.def.glowColor;
     const t = Date.now() / 1000;
     const pulse = 0.85 + 0.15 * Math.sin(t * 2.5);
-    const hasTarget = this.target && this.target.active;
+    const hasTarget = !!(this.target && this.target.active);
 
-    // Range circle
     if (isSelected || isHovered) {
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.globalAlpha = 0.2;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.currentStats.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
+      this._circle(ctx, this.x, this.y, this.currentStats.range * CONFIG.TILE_SIZE);
       ctx.stroke();
       ctx.fillStyle = COLORS.TOWER_RANGE;
       ctx.fill();
@@ -140,129 +191,84 @@ export class Tower {
     ctx.fillStyle = '#151520';
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size + 3, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, size + 3);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
 
-    // Type-specific rendering
     switch (this.type) {
-      case 'blaster':  this._renderBlaster(ctx, size, t, pulse, hasTarget); break;
-      case 'frost':    this._renderFrost(ctx, size, t, pulse, hasTarget); break;
-      case 'lightning': this._renderLightning(ctx, size, t, pulse, hasTarget); break;
-      case 'cannon':   this._renderCannon(ctx, size, t, pulse, hasTarget); break;
-      case 'sniper':   this._renderSniper(ctx, size, t, pulse, hasTarget); break;
-      case 'support':  this._renderSupport(ctx, size, t, pulse); break;
+      case 'blaster':   this._renderBlaster(ctx, size, t, pulse, hasTarget); break;
+      case 'frost':     this._renderFrost(ctx, size, t, pulse, hasTarget); break;
+      case 'lightning':  this._renderLightning(ctx, size, t, pulse, hasTarget); break;
+      case 'cannon':    this._renderCannon(ctx, size, t, pulse, hasTarget); break;
+      case 'sniper':    this._renderSniper(ctx, size, t, pulse, hasTarget); break;
+      case 'support':   this._renderSupport(ctx, size, t, pulse); break;
     }
 
     // Upgrade pips
     if (upgrades > 0) {
-      const pipRadius = size + 6;
+      const pipR = size + 6;
       for (let i = 0; i < upgrades; i++) {
-        const a = -Math.PI / 2 + (i / Math.max(upgrades, 1)) * Math.PI * 2;
-        const px = this.x + Math.cos(a) * pipRadius;
-        const py = this.y + Math.sin(a) * pipRadius;
+        const a = -Math.PI / 2 + (i / upgrades) * Math.PI * 2;
         ctx.save();
-        ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE;
+        ctx.shadowBlur = 4 * SB;
         ctx.shadowColor = color;
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+        this._circle(ctx, this.x + Math.cos(a) * pipR, this.y + Math.sin(a) * pipR, 1.5);
         ctx.fill();
         ctx.restore();
       }
     }
   }
 
-  // Blaster: clean twin-barrel turret
+  // ── Tower-specific renders ──
+
   _renderBlaster(ctx, size, t, pulse, hasTarget) {
-    const color = this.def.color;
-    const glow = this.def.glowColor;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
+    this._rotated(ctx, (c) => {
+      this._glow(c, pulse, hasTarget);
+      this._body(c, 'diamond', size);
+      this._outline(c, 'diamond', size);
 
-    // Body
-    ctx.shadowBlur = (hasTarget ? 16 : 8) * SHADOW_BLUR_SCALE * pulse;
-    ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    drawShape(ctx, 'diamond', 0, 0, size);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.35;
-    drawShape(ctx, 'diamond', 0, 0, size);
-    ctx.stroke();
+      // Twin barrels
+      this._barrelStyle(c, hasTarget);
+      this._barrel(c, size, { width: 1.5, offset: -3 });
+      this._barrel(c, size, { width: 1.5, offset: 3 });
 
-    // Twin barrels
-    ctx.globalAlpha = hasTarget ? 0.9 : 0.5;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = hasTarget ? 6 * SHADOW_BLUR_SCALE : 0;
-    const bLen = size + 5;
-    ctx.beginPath();
-    ctx.moveTo(2, -3); ctx.lineTo(bLen, -3);
-    ctx.moveTo(2, 3); ctx.lineTo(bLen, 3);
-    ctx.stroke();
-
-    // Inner core
-    ctx.globalAlpha = 0.6 * pulse;
-    ctx.fillStyle = '#fff';
-    ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = '#fff';
-    ctx.beginPath();
-    ctx.arc(0, 0, size * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
+      // Core
+      c.globalAlpha = 0.6 * pulse;
+      c.fillStyle = '#fff';
+      c.shadowBlur = 4 * SB;
+      c.shadowColor = '#fff';
+      this._circle(c, 0, 0, size * 0.25);
+      c.fill();
+    });
   }
 
-  // Frost: crystalline hexagon with orbiting ice shards
   _renderFrost(ctx, size, t, pulse, hasTarget) {
-    const color = this.def.color;
-    const glow = this.def.glowColor;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
+    this._rotated(ctx, (c) => {
+      this._glow(c, pulse, hasTarget);
+      this._body(c, 'hexagon', size);
+      this._outline(c, 'hexagon', size, 0.5);
 
-    // Body
-    ctx.shadowBlur = 12 * SHADOW_BLUR_SCALE * pulse;
-    ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    drawShape(ctx, 'hexagon', 0, 0, size);
-    ctx.fill();
+      // Inner crystalline ring
+      c.strokeStyle = '#fff';
+      c.globalAlpha = 0.2;
+      drawShape(c, 'hexagon', 0, 0, size * 0.7);
+      c.stroke();
 
-    // Crystalline edges
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5;
-    drawShape(ctx, 'hexagon', 0, 0, size);
-    ctx.stroke();
-    ctx.globalAlpha = 0.2;
-    drawShape(ctx, 'hexagon', 0, 0, size * 0.7);
-    ctx.stroke();
+      // Barrel
+      this._barrelStyle(c, hasTarget);
+      c.strokeStyle = '#aaddff';
+      this._barrel(c, size, { width: 2, length: size + 4 });
+    });
 
-    // Barrel
-    ctx.globalAlpha = hasTarget ? 0.8 : 0.4;
-    ctx.strokeStyle = '#aaddff';
-    ctx.lineWidth = 2;
-    const bLen = size + 4;
-    ctx.beginPath();
-    ctx.moveTo(2, 0); ctx.lineTo(bLen, 0);
-    ctx.stroke();
-
-    ctx.restore();
-
-    // Orbiting ice shards (unrotated, around tower)
+    // Orbiting ice shards
     for (let i = 0; i < 4; i++) {
       const a = t * 1.5 + i * Math.PI / 2;
       const dist = size + 4 + Math.sin(t * 2 + i) * 2;
-      const sx = this.x + Math.cos(a) * dist;
-      const sy = this.y + Math.sin(a) * dist;
       ctx.save();
-      ctx.translate(sx, sy);
+      ctx.translate(this.x + Math.cos(a) * dist, this.y + Math.sin(a) * dist);
       ctx.rotate(a + t * 3);
       ctx.fillStyle = '#aaddff';
       ctx.globalAlpha = 0.5 + 0.2 * Math.sin(t * 3 + i);
@@ -271,67 +277,43 @@ export class Tower {
     }
   }
 
-  // Lightning: triangle with crackling arcs
   _renderLightning(ctx, size, t, pulse, hasTarget) {
-    const color = this.def.color;
-    const glow = this.def.glowColor;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
+    this._rotated(ctx, (c) => {
+      this._glow(c, pulse, hasTarget);
+      this._body(c, 'triangle', size);
+      this._outline(c, 'triangle', size, 0.4);
 
-    // Body
-    ctx.shadowBlur = (hasTarget ? 20 : 10) * SHADOW_BLUR_SCALE * pulse;
-    ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    drawShape(ctx, 'triangle', 0, 0, size);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.4;
-    drawShape(ctx, 'triangle', 0, 0, size);
-    ctx.stroke();
+      // Inner bolt symbol
+      c.globalAlpha = 0.7 * pulse;
+      c.strokeStyle = '#fff';
+      c.lineWidth = 1.5;
+      c.shadowBlur = 6 * SB;
+      c.shadowColor = '#fff';
+      c.beginPath();
+      c.moveTo(-2, -size * 0.35);
+      c.lineTo(1, -1);
+      c.lineTo(-1, 1);
+      c.lineTo(2, size * 0.35);
+      c.stroke();
 
-    // Inner bolt symbol
-    ctx.globalAlpha = 0.7 * pulse;
-    ctx.fillStyle = '#fff';
-    ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(-2, -size * 0.35);
-    ctx.lineTo(1, -1);
-    ctx.lineTo(-1, 1);
-    ctx.lineTo(2, size * 0.35);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#fff';
-    ctx.stroke();
+      // Barrel
+      this._barrelStyle(c, hasTarget);
+      this._barrel(c, size, { width: 2, length: size + 4 });
+    });
 
-    // Barrel
-    ctx.globalAlpha = hasTarget ? 0.9 : 0.4;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = hasTarget ? 8 * SHADOW_BLUR_SCALE : 0;
-    ctx.shadowColor = glow;
-    ctx.beginPath();
-    ctx.moveTo(2, 0); ctx.lineTo(size + 4, 0);
-    ctx.stroke();
-
-    ctx.restore();
-
-    // Crackling arcs around tower (unrotated)
+    // Crackling arcs
     if (hasTarget || Math.sin(t * 5) > 0.3) {
       ctx.save();
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = this.def.color;
       ctx.lineWidth = 0.8;
       ctx.globalAlpha = 0.4 + 0.3 * Math.random();
-      ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
-      ctx.shadowColor = color;
+      ctx.shadowBlur = 6 * SB;
+      ctx.shadowColor = this.def.color;
       for (let i = 0; i < 3; i++) {
         const a = t * 4 + i * 2.1;
-        const r1 = size * 0.6;
-        const r2 = size + 3;
+        const r1 = size * 0.6, r2 = size + 3, midA = a + 0.3;
         ctx.beginPath();
         ctx.moveTo(this.x + Math.cos(a) * r1, this.y + Math.sin(a) * r1);
-        const midA = a + 0.3;
         ctx.lineTo(
           this.x + Math.cos(midA) * (r1 + r2) * 0.5 + (Math.random() - 0.5) * 4,
           this.y + Math.sin(midA) * (r1 + r2) * 0.5 + (Math.random() - 0.5) * 4
@@ -343,160 +325,121 @@ export class Tower {
     }
   }
 
-  // Cannon: heavy square with thick double barrel
   _renderCannon(ctx, size, t, pulse, hasTarget) {
-    const color = this.def.color;
-    const glow = this.def.glowColor;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
+    this._rotated(ctx, (c) => {
+      this._glow(c, pulse, hasTarget);
 
-    // Body — filled square with darker inner
-    ctx.shadowBlur = (hasTarget ? 14 : 8) * SHADOW_BLUR_SCALE * pulse;
-    ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    ctx.fillRect(-size, -size, size * 2, size * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(-size * 0.6, -size * 0.6, size * 1.2, size * 1.2);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.3;
-    ctx.strokeRect(-size, -size, size * 2, size * 2);
+      // Body — square with dark inner
+      c.fillStyle = this.def.color;
+      c.fillRect(-size, -size, size * 2, size * 2);
+      c.fillStyle = 'rgba(0,0,0,0.3)';
+      c.fillRect(-size * 0.6, -size * 0.6, size * 1.2, size * 1.2);
+      c.strokeStyle = '#fff';
+      c.lineWidth = 1;
+      c.globalAlpha = 0.3;
+      c.strokeRect(-size, -size, size * 2, size * 2);
 
-    // Heavy barrel
-    ctx.globalAlpha = hasTarget ? 1 : 0.6;
-    ctx.fillStyle = color;
-    ctx.shadowBlur = hasTarget ? 8 * SHADOW_BLUR_SCALE : 0;
-    const bLen = size + 7;
-    ctx.fillRect(0, -3.5, bLen, 7);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.5;
-    ctx.globalAlpha = 0.25;
-    ctx.strokeRect(0, -3.5, bLen, 7);
+      // Heavy barrel
+      c.globalAlpha = hasTarget ? 1 : 0.6;
+      c.fillStyle = this.def.color;
+      c.shadowBlur = hasTarget ? 8 * SB : 0;
+      const bLen = size + 7;
+      c.fillRect(0, -3.5, bLen, 7);
+      c.strokeStyle = '#fff';
+      c.lineWidth = 0.5;
+      c.globalAlpha = 0.25;
+      c.strokeRect(0, -3.5, bLen, 7);
 
-    // Muzzle brake
-    ctx.globalAlpha = hasTarget ? 0.8 : 0.4;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(bLen - 2, -5, 2, 10);
-
-    ctx.restore();
+      // Muzzle brake
+      c.globalAlpha = hasTarget ? 0.8 : 0.4;
+      c.fillStyle = '#fff';
+      c.fillRect(bLen - 2, -5, 2, 10);
+    });
   }
 
-  // Sniper: octagon with long thin barrel and crosshair
   _renderSniper(ctx, size, t, pulse, hasTarget) {
+    this._rotated(ctx, (c) => {
+      this._glow(c, pulse, hasTarget);
+      this._body(c, 'octagon', size);
+      this._outline(c, 'octagon', size);
+
+      // Long barrel
+      this._barrelStyle(c, hasTarget);
+      this._barrel(c, size, { width: 1.5, length: size + 10 });
+    });
+
+    // Scope crosshair
+    const cr = size * 0.55;
     const color = this.def.color;
-    const glow = this.def.glowColor;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-
-    // Body
-    ctx.shadowBlur = (hasTarget ? 14 : 8) * SHADOW_BLUR_SCALE * pulse;
-    ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    drawShape(ctx, 'octagon', 0, 0, size);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.35;
-    drawShape(ctx, 'octagon', 0, 0, size);
-    ctx.stroke();
-
-    // Long barrel
-    ctx.globalAlpha = hasTarget ? 0.9 : 0.5;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = hasTarget ? 6 * SHADOW_BLUR_SCALE : 0;
-    ctx.shadowColor = glow;
-    const bLen = size + 10;
-    ctx.beginPath();
-    ctx.moveTo(2, 0); ctx.lineTo(bLen, 0);
-    ctx.stroke();
-
-    ctx.restore();
-
-    // Scope crosshair (unrotated, on the tower body)
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 0.6;
     ctx.globalAlpha = 0.4 + 0.15 * Math.sin(t * 2);
-    ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = glow;
-    const cr = size * 0.55;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, cr, 0, Math.PI * 2);
+    ctx.shadowBlur = 4 * SB;
+    ctx.shadowColor = this.def.glowColor;
+    this._circle(ctx, this.x, this.y, cr);
     ctx.stroke();
-    // Cross lines
     ctx.beginPath();
     ctx.moveTo(this.x - cr, this.y); ctx.lineTo(this.x - cr * 0.3, this.y);
     ctx.moveTo(this.x + cr * 0.3, this.y); ctx.lineTo(this.x + cr, this.y);
     ctx.moveTo(this.x, this.y - cr); ctx.lineTo(this.x, this.y - cr * 0.3);
     ctx.moveTo(this.x, this.y + cr * 0.3); ctx.lineTo(this.x, this.y + cr);
     ctx.stroke();
-    // Center dot
     ctx.fillStyle = color;
     ctx.globalAlpha = 0.6 * pulse;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, 1.5);
     ctx.fill();
     ctx.restore();
   }
 
-  // Support: pulsing circle with radiating wave rings
   _renderSupport(ctx, size, t, pulse) {
     const color = this.def.color;
     const glow = this.def.glowColor;
     const auraR = this.currentStats.buffRange * CONFIG.TILE_SIZE;
 
-    // Aura rings
+    // Dashed aura ring
     ctx.save();
     ctx.strokeStyle = glow;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.2 + 0.1 * Math.sin(t * 2);
     ctx.setLineDash([4, 6]);
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, auraR, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, auraR);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
 
     // Radiating pulse wave
-    const wavePhase = (t * 0.8) % 1;
+    const phase = (t * 0.8) % 1;
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.3 * (1 - wavePhase);
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size + wavePhase * (auraR - size), 0, Math.PI * 2);
+    ctx.globalAlpha = 0.3 * (1 - phase);
+    this._circle(ctx, this.x, this.y, size + phase * (auraR - size));
     ctx.stroke();
     ctx.restore();
 
     // Body — glowing orb
     ctx.save();
-    ctx.shadowBlur = 15 * SHADOW_BLUR_SCALE * pulse;
+    ctx.shadowBlur = 15 * SB * pulse;
     ctx.shadowColor = glow;
     ctx.fillStyle = color;
     ctx.globalAlpha = 0.15;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size + 2, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, size + 2);
     ctx.fill();
     ctx.globalAlpha = 0.9;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, size);
     ctx.fill();
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 0.8;
     ctx.globalAlpha = 0.4;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+    this._circle(ctx, this.x, this.y, size);
     ctx.stroke();
 
     // Inner plus symbol
     ctx.globalAlpha = 0.6 * pulse;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
-    ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
+    ctx.shadowBlur = 6 * SB;
     ctx.shadowColor = '#fff';
     const s = size * 0.45;
     ctx.beginPath();
