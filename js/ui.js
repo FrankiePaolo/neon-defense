@@ -21,6 +21,7 @@ export class UIController {
       finalScore: document.getElementById('final-score'),
       finalWave: document.getElementById('final-wave'),
       highScoresList: document.getElementById('high-scores-list'),
+      towerPanel: document.getElementById('tower-panel'),
     };
 
     this._buildTowerPanel();
@@ -148,6 +149,7 @@ export class UIController {
   }
 
   showBetweenWaves() {
+    this.elements.towerPanel.classList.remove('hidden');
     this.elements.startWaveBtn.style.display = 'block';
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
@@ -159,6 +161,7 @@ export class UIController {
   }
 
   hideBetweenWaves() {
+    this.elements.towerPanel.classList.add('hidden');
     this.elements.startWaveBtn.style.display = 'none';
     this.elements.wavePreview.style.display = 'none';
   }
