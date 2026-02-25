@@ -53,7 +53,7 @@ export class ScoreTracker {
     try {
       const res = await fetch('/api/scores');
       if (res.ok) {
-        this.highScores = await res.json();
+        this.highScores = (await res.json()).sort((a, b) => b.score - a.score);
         this.globalLoaded = true;
       }
     } catch {}
@@ -71,7 +71,10 @@ export class ScoreTracker {
   }
 
   _loadLocal() {
-    try { return JSON.parse(localStorage.getItem('neon_td_scores')) || []; } catch { return []; }
+    try {
+      const scores = JSON.parse(localStorage.getItem('neon_td_scores')) || [];
+      return scores.sort((a, b) => b.score - a.score);
+    } catch { return []; }
   }
 }
 

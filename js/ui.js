@@ -179,7 +179,7 @@ export class UIController {
     nameInput.addEventListener('keyup', updateSaveBtn);
     saveBtn.addEventListener('click', () => {
       const name = nameInput.value.trim();
-      if (!name || saveBtn.disabled) return;
+      if (!name) return;
       saveBtn.disabled = true;
       try { localStorage.setItem('neon_td_player_name', name); } catch {}
       this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
