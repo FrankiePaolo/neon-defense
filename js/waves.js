@@ -22,7 +22,7 @@ export class WaveManager {
   }
 
   generateWave(waveNum) {
-    const baseCount = Math.floor(4 + waveNum * 1.5 + Math.max(0, waveNum - 10) * 1.5);
+    const baseCount = Math.floor(6 + waveNum * 1.5 + Math.max(0, waveNum - 10) * 1.5);
     const hpMult = Math.pow(1.08, waveNum - 1) * (1 + Math.max(0, waveNum - 12) * 0.12);
     const speedMult = 1 + (waveNum - 1) * 0.02 + Math.max(0, waveNum - 15) * 0.03;
     const armorBonus = Math.max(0, Math.floor((waveNum - 10) * 0.5 + Math.max(0, waveNum - 20) * 0.8));
