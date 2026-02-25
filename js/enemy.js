@@ -34,7 +34,7 @@ export class Enemy {
     this.shieldRegenDelay = def.shieldRegenDelay || 0;
     this.shieldRegenTimer = 0;
 
-    this.path = path;
+    this.path = this.flying ? this._simplifyPath(path, 6) : path;
     this.pathIndex = 0;
     if (path.length > 0) {
       this.x = path[0].x;
@@ -54,11 +54,7 @@ export class Enemy {
 
     const speed = this.baseSpeed * this._getSpeedMult();
 
-    if (this.flying) {
-      this._moveStraight(dt, speed);
-    } else {
-      this._moveAlongPath(dt, speed);
-    }
+    this._moveAlongPath(dt, speed);
 
     if (this.healRange > 0) this.healTimer -= dt;
     if (this.bossRegen > 0) this.hp = Math.min(this.maxHp, this.hp + this.bossRegen * dt);
@@ -145,20 +141,14 @@ export class Enemy {
     if (this.pathIndex >= this.path.length - 1) this.reachedEnd = true;
   }
 
-  _moveStraight(dt, speed) {
-    const target = this.path[this.path.length - 1];
-    const dx = target.x - this.x;
-    const dy = target.y - this.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist <= speed * dt) {
-      this.x = target.x;
-      this.y = target.y;
-      this.reachedEnd = true;
-    } else {
-      this.x += (dx / dist) * speed * dt;
-      this.y += (dy / dist) * speed * dt;
+  _simplifyPath(path, step) {
+    if (path.length <= 2) return path;
+    const simplified = [path[0]];
+    for (let i = step; i < path.length - 1; i += step) {
+      simplified.push(path[i]);
     }
+    simplified.push(path[path.length - 1]);
+    return simplified;
   }
 
   _moveAngle() {
