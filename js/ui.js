@@ -173,12 +173,15 @@ export class UIController {
     const saveBtn = document.getElementById('save-score-btn');
     const nameInput = document.getElementById('player-name');
     saveBtn.disabled = true;
-    nameInput.addEventListener('input', () => {
-      saveBtn.disabled = !nameInput.value.trim();
-    });
+    const updateSaveBtn = () => { saveBtn.disabled = !nameInput.value.trim(); };
+    nameInput.addEventListener('input', updateSaveBtn);
+    nameInput.addEventListener('change', updateSaveBtn);
+    nameInput.addEventListener('keyup', updateSaveBtn);
     saveBtn.addEventListener('click', () => {
       const name = nameInput.value.trim();
-      if (!name) return;
+      if (!name || saveBtn.disabled) return;
+      saveBtn.disabled = true;
+      try { localStorage.setItem('neon_td_player_name', name); } catch {}
       this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
@@ -391,8 +394,9 @@ export class UIController {
 
     const nameInput = document.getElementById('player-name');
     const saveBtn = document.getElementById('save-score-btn');
-    nameInput.value = '';
-    saveBtn.disabled = true;
+    const lastUsed = localStorage.getItem('neon_td_player_name') || '';
+    nameInput.value = lastUsed;
+    saveBtn.disabled = !lastUsed;
 
     this.elements.gameOverScreen.style.display = 'flex';
   }
