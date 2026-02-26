@@ -81,6 +81,7 @@ export class Game {
     this.input.placingType = null;
     this.input.movingTower = null;
     this.ui.hideUpgradePanel();
+    this.ui.dismissUnlockNotification();
     this.ui.refreshTowerPanel();
     this.ui.updateSpeedButtons(1);
     this.ui.updateHUD();
@@ -359,6 +360,7 @@ export class Game {
   _onEnemyKilled(enemy) {
     this.economy.earn(enemy.reward);
     this.scoreTracker.addKill(enemy, this.waveManager.currentWave);
+    this._checkUnlocks();
     this.particles.emit(enemy.x, enemy.y, enemy.color, 'death');
 
     // Floating gold text
@@ -488,12 +490,18 @@ export class Game {
     this.renderer.markDirty();
   }
 
-  _processEndOfGame() {
+  _checkUnlocks() {
     const score = this.scoreTracker.score;
-    const previousBest = this.progressTracker.updateBestScore(score);
+    const previousBest = this.progressTracker.bestScore;
     const newUnlocks = this.progressTracker.getNewlyUnlockedTowers(previousBest, score);
     if (newUnlocks.length > 0) {
+      this.progressTracker.updateBestScore(score);
       this.ui.showUnlockNotifications(newUnlocks);
+      this.ui.refreshTowerPanel();
     }
+  }
+
+  _processEndOfGame() {
+    this.progressTracker.updateBestScore(this.scoreTracker.score);
   }
 }

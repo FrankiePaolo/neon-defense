@@ -446,6 +446,11 @@ export class UIController {
     if (el) el.classList.add('hidden');
   }
 
+  dismissUnlockNotification() {
+    const el = document.getElementById('unlock-notification');
+    if (el) el.remove();
+  }
+
   showUnlockNotifications(newUnlocks) {
     let existing = document.getElementById('unlock-notification');
     if (existing) existing.remove();
