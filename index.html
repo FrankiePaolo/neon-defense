@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>NEON DEFENSE</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%230a0a0a'/%3E%3Cpolygon points='16,4 28,28 4,28' fill='none' stroke='%2300ffff' stroke-width='2'/%3E%3Ccircle cx='16' cy='18' r='4' fill='%2300ffff' opacity='0.8'/%3E%3C/svg%3E">
 <link rel="manifest" href="/manifest.json">
@@ -741,32 +741,32 @@ canvas {
     border-left: none;
     border-top: 1px solid #1a1a2e;
     flex-direction: column;
-    padding: 6px 8px;
-    gap: 4px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 5px;
     overflow-y: visible;
   }
 
   #tower-panel h3 {
-    font-size: 13px;
+    font-size: 14px;
     margin-bottom: 2px;
   }
 
   #tower-list {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 6px;
   }
 
   .tower-btn {
     min-width: 0;
-    min-height: 52px;
-    padding: 6px;
-    gap: 2px;
+    min-height: 58px;
+    padding: 8px;
+    gap: 3px;
   }
 
-  .tower-btn .tower-name { font-size: 13px; }
-  .tower-btn .tower-cost { font-size: 12px; }
-  .tower-btn .tower-unlock-req { font-size: 11px; }
+  .tower-btn .tower-name { font-size: 14px; }
+  .tower-btn .tower-cost { font-size: 13px; }
+  .tower-btn .tower-unlock-req { font-size: 12px; }
   .tower-btn .tower-desc { display: none; }
 
   #upgrade-panel {
