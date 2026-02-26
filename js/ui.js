@@ -163,7 +163,8 @@ export class UIController {
       }
     });
 
-    document.getElementById('high-scores-btn').addEventListener('click', () => {
+    document.getElementById('high-scores-btn').addEventListener('click', (e) => {
+      e.currentTarget.blur();
       this._showHighScores();
     });
 
