@@ -471,9 +471,12 @@ export class UIController {
 
     const container = document.createElement('div');
     container.id = 'unlock-notification';
+    const color = newUnlocks[0].def.color;
+    container.style.borderColor = color;
+    container.style.boxShadow = `0 0 30px ${color}66, 0 0 60px ${color}26`;
     const names = newUnlocks.map(u => `<span style="color:${u.def.color}">${t('tower.' + u.type)}</span>`).join(', ');
     container.innerHTML = `
-      <div class="unlock-title">${newUnlocks.length > 1 ? t('unlock.plural') : t('unlock.single')}</div>
+      <div class="unlock-title" style="color:${color}; text-shadow:0 0 15px ${color}99">${newUnlocks.length > 1 ? t('unlock.plural') : t('unlock.single')}</div>
       <div class="unlock-names">${names}</div>
     `;
     document.getElementById('canvas-wrapper').appendChild(container);
