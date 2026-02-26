@@ -1,7 +1,7 @@
 import { neon } from "@netlify/neon";
 
-const MAX_SCORE_PER_WAVE = 2000;
 const MAX_NAME_LENGTH = 12;
+const MAX_WAVES = 35;
 
 export default async (req) => {
   const sql = neon();
@@ -32,11 +32,11 @@ export default async (req) => {
     if (!Number.isInteger(score) || score < 0) {
       return new Response("Invalid score", { status: 400 });
     }
-    if (!Number.isInteger(wave) || wave < 1 || wave > 100) {
+    if (!Number.isInteger(wave) || wave < 1 || wave > MAX_WAVES) {
       return new Response("Invalid wave", { status: 400 });
     }
 
-    const maxPlausible = wave * MAX_SCORE_PER_WAVE;
+    const maxPlausible = wave * wave * 500 + 5000;
     if (score > maxPlausible) {
       return new Response("Score rejected", { status: 400 });
     }
