@@ -332,33 +332,38 @@ canvas {
 #upgrade-panel .move-btn { font-size: 10px; color: #00aaff; cursor: pointer; }
 #upgrade-panel .sell-btn { font-size: 10px; color: #ff6666; cursor: pointer; }
 
-/* Wave Preview */
-#wave-preview {
+/* Wave Controls Wrapper */
+#wave-controls {
   position: absolute;
-  bottom: 10px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
-  padding: 6px 16px;
-  font-size: 12px;
-  color: #888;
-  border: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   z-index: 10;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
 
-#wave-preview.visible {
+#wave-controls.visible {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* Wave Preview */
+#wave-preview {
+  background: rgba(0,0,0,0.7);
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #888;
+  border: 1px solid #222;
 }
 
 /* Start Wave Button */
 #start-wave-btn {
-  position: absolute;
-  bottom: 50px;
-  left: 50%;
-  transform: translateX(-50%);
   background: rgba(0, 255, 255, 0.1);
   color: #00ffff;
   border: 1px solid #00ffff;
@@ -366,16 +371,8 @@ canvas {
   font-family: 'Courier New', monospace;
   font-size: 16px;
   cursor: pointer;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-}
-
-#start-wave-btn.visible {
-  opacity: 1;
-  pointer-events: auto;
+  transition: all 0.2s;
 }
 
 #start-wave-btn:hover {
@@ -758,14 +755,16 @@ canvas {
   #upgrade-panel .move-btn { font-size: 15px; padding: 8px 0; }
   #upgrade-panel .sell-btn { font-size: 15px; padding: 8px 0; }
 
+  #wave-controls {
+    bottom: 10px;
+  }
+
   #start-wave-btn {
     padding: 8px 24px;
     font-size: 14px;
-    bottom: 28px;
   }
 
   #wave-preview {
-    bottom: 6px;
     font-size: 13px;
     padding: 4px 10px;
   }
@@ -875,8 +874,10 @@ canvas {
       <button class="speed-btn" id="mute-btn" title="Toggle music">&#9835;</button>
     </div>
 
-    <div id="wave-preview">Next: <span id="wave-preview-content"></span></div>
-    <button id="start-wave-btn">START WAVE</button>
+    <div id="wave-controls">
+      <div id="wave-preview">Next: <span id="wave-preview-content"></span></div>
+      <button id="start-wave-btn">START WAVE</button>
+    </div>
     <button id="cancel-place-btn" class="hidden">CANCEL</button>
     <div id="tutorial-overlay" class="hidden"></div>
     <div id="upgrade-panel"></div>

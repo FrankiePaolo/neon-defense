@@ -407,6 +407,7 @@ export class Game {
       const bonus = Math.min(this.killStreak * 2, 20);
       this.economy.earn(bonus);
       this.scoreTracker.score += bonus;
+      this._checkUnlocks();
       this.floatingTexts.push({
         x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 20,
         text: `${this.killStreak}x COMBO  +${bonus}g`,
@@ -435,6 +436,7 @@ export class Game {
     if (this.livesLostThisWave === 0) {
       this.scoreTracker.addPerfectWaveBonus(this.waveManager.currentWave);
     }
+    this._checkUnlocks();
     this.economy.applyInterest();
     this.economy.earn(20 + this.waveManager.currentWave * 3);
 
