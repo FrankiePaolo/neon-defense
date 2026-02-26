@@ -30,6 +30,7 @@ export class ScoreTracker {
     this.score = 0;
     this.highScores = this._loadLocal();
     this.globalLoaded = false;
+    this._flushPendingScores();
     this.fetchGlobalScores();
   }
 
@@ -60,13 +61,43 @@ export class ScoreTracker {
   }
 
   async _submitRemote(name, wave) {
+    const payload = { name, score: this.score, wave };
     try {
       await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, score: this.score, wave }),
+        body: JSON.stringify(payload),
       });
       this.fetchGlobalScores();
+    } catch {
+      // Offline — queue for later sync
+      try {
+        const pending = JSON.parse(localStorage.getItem('neon_td_pending_scores') || '[]');
+        pending.push(payload);
+        localStorage.setItem('neon_td_pending_scores', JSON.stringify(pending));
+      } catch {}
+    }
+  }
+
+  async _flushPendingScores() {
+    try {
+      const pending = JSON.parse(localStorage.getItem('neon_td_pending_scores') || '[]');
+      if (!pending.length) return;
+      const remaining = [];
+      for (const entry of pending) {
+        try {
+          const res = await fetch('/api/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+          });
+          if (!res.ok) remaining.push(entry);
+        } catch {
+          remaining.push(entry);
+        }
+      }
+      localStorage.setItem('neon_td_pending_scores', JSON.stringify(remaining));
+      if (remaining.length < pending.length) this.fetchGlobalScores();
     } catch {}
   }
 
