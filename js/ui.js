@@ -230,6 +230,9 @@ export class UIController {
     this.elements.waveValue.textContent = this.game.waveManager.currentWave;
     this.elements.livesValue.textContent = this.game.lives;
     this.elements.scoreValue.textContent = this.game.scoreTracker.score;
+    if (this.game.state === 'BETWEEN_WAVES') {
+      this.elements.startWaveBtn.disabled = this.game.towers.length === 0;
+    }
     this.updateUnlockTracker();
     this._updateTowerAffordability();
   }
@@ -356,6 +359,7 @@ export class UIController {
     this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('panel-hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
+    this.elements.startWaveBtn.disabled = this.game.towers.length === 0;
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
       const def = ENEMY_DEFS[type];

@@ -381,9 +381,17 @@ canvas {
   transition: all 0.2s;
 }
 
-#start-wave-btn:hover {
+#start-wave-btn:hover:not(:disabled) {
   background: rgba(0, 255, 255, 0.2);
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+#start-wave-btn:disabled {
+  color: #333;
+  border-color: #333;
+  background: transparent;
+  text-shadow: none;
+  cursor: default;
 }
 
 /* Menu Screen */
