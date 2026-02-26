@@ -112,6 +112,7 @@ export class Game {
 
   placeTower(type, gx, gy) {
     if (this.state !== 'BETWEEN_WAVES') return false;
+    if (this.tutorial.isBlocking()) return false;
     const def = TOWER_DEFS[type];
     if (!def) return false;
     if (!this.progressTracker.isTowerUnlocked(type, this.scoreTracker.score)) return false;

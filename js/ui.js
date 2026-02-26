@@ -121,6 +121,7 @@ export class UIController {
           <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
         `;
         btn.addEventListener('click', () => {
+          if (this.game.tutorial.isBlocking()) return;
           if (!this.game.economy.canAfford(def.cost)) return;
           const currentlySelected = btn.classList.contains('selected');
           document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));

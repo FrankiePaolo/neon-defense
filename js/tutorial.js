@@ -128,6 +128,11 @@ export class Tutorial {
     }
   }
 
+  isBlocking() {
+    if (!this.active || this.step < 0 || this.step >= STEPS.length) return false;
+    return !!STEPS[this.step].btnKey;
+  }
+
   check() {
     if (!this.active || this.step < 0 || this.step >= STEPS.length) return;
     const s = STEPS[this.step];
