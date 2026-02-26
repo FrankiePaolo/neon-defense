@@ -88,6 +88,9 @@ export class Game {
     this.ui.showBetweenWaves();
     this.audio.init();
     this.audio.playTrack('gameplay');
+    const muteBtn = document.getElementById('mute-btn');
+    muteBtn.classList.toggle('active', !this.audio.muted);
+    muteBtn.style.opacity = this.audio.muted ? '0.4' : '';
     this.tutorial.start();
   }
 
