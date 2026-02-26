@@ -41,6 +41,10 @@ export class ScoreTracker {
   addWaveBonus(wave) { this.score += wave * 100; }
   addPerfectWaveBonus(wave) { this.score += wave * 200; }
 
+  hasName(name) {
+    return this.highScores.some(s => s.name.toLowerCase() === name.toLowerCase());
+  }
+
   save(name, wave) {
     const entry = { name, score: this.score, wave, date: Date.now() };
     this.highScores.push(entry);

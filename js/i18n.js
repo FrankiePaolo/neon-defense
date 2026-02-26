@@ -24,6 +24,7 @@ const STRINGS = {
     'game.wave': 'Wave',
     'game.enterName': 'Enter name',
     'game.saveScore': 'SAVE SCORE',
+    'game.nameTaken': 'Name already taken — choose a different one',
     'game.playAgain': 'PLAY AGAIN',
     'game.next': 'Next',
 
@@ -165,6 +166,7 @@ const STRINGS = {
     'game.wave': 'Ondata',
     'game.enterName': 'Inserisci nome',
     'game.saveScore': 'SALVA PUNTEGGIO',
+    'game.nameTaken': 'Nome già in uso — scegline un altro',
     'game.playAgain': 'GIOCA ANCORA',
     'game.next': 'Prossimi',
 
