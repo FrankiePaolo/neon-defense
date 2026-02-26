@@ -19,7 +19,7 @@ export const CONFIG = {
 
 export const COLORS = {
   BACKGROUND: '#0a0a0a',
-  GRID_LINE: '#1a1a2e',
+  GRID_LINE: '#2a2a44',
   PATH: '#16213e',
   PATH_BORDER: '#0f3460',
   PATH_GLOW: 'rgba(15, 52, 96, 0.4)',

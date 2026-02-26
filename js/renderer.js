@@ -26,7 +26,7 @@ export class Renderer {
     const ts = CONFIG.TILE_SIZE;
 
     ctx.strokeStyle = COLORS.GRID_LINE;
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 0.8;
     for (let x = 0; x <= grid.cols; x++) {
       ctx.beginPath(); ctx.moveTo(x * ts, 0); ctx.lineTo(x * ts, this.height); ctx.stroke();
     }
