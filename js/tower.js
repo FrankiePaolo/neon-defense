@@ -48,10 +48,8 @@ export class Tower {
     const pathKey = path === 'A' ? 'pathA' : 'pathB';
     const upgradeLevels = this.def.upgrades[pathKey].levels;
     if (level >= upgradeLevels.length) return null;
-    if (level === 2) {
-      const otherLevel = path === 'A' ? this.upgradesB : this.upgradesA;
-      if (otherLevel >= 3) return null;
-    }
+    const otherLevel = path === 'A' ? this.upgradesB : this.upgradesA;
+    if (otherLevel > 0) return null;
     return upgradeLevels[level].cost;
   }
 
