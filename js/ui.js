@@ -471,6 +471,7 @@ export class UIController {
   async _showHighScores() {
     const list = this.elements.highScoresList;
     const tracker = this.game.scoreTracker;
+    const wasVisible = list.style.display === 'block';
 
     if (!tracker.globalLoaded) {
       list.innerHTML = `<div style="color:#666; padding:8px">${t('scores.loading')}</div>`;
@@ -486,6 +487,6 @@ export class UIController {
         `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (${t('game.wave')} ${s.wave})</div>`
       ).join('');
     }
-    list.style.display = list.style.display === 'block' ? 'none' : 'block';
+    list.style.display = wasVisible ? 'none' : 'block';
   }
 }
