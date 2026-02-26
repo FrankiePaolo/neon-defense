@@ -354,22 +354,22 @@ export class UIController {
 
   showBetweenWaves() {
     this._buildTowerPanel();
-    this.elements.towerPanel.classList.remove('hidden');
+    this.elements.towerPanel.classList.remove('panel-hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
-    this.elements.startWaveBtn.style.display = 'block';
+    this.elements.startWaveBtn.classList.add('visible');
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
       const def = ENEMY_DEFS[type];
       return `<span style="color:${def.color}">${count}x ${t('enemy.' + type)}</span>`;
     }).join(' ');
     this.elements.wavePreviewContent.innerHTML = text;
-    this.elements.wavePreview.style.display = 'block';
+    this.elements.wavePreview.classList.add('visible');
   }
 
   hideBetweenWaves() {
-    this.elements.towerPanel.classList.add('hidden');
-    this.elements.startWaveBtn.style.display = 'none';
-    this.elements.wavePreview.style.display = 'none';
+    this.elements.towerPanel.classList.add('panel-hidden');
+    this.elements.startWaveBtn.classList.remove('visible');
+    this.elements.wavePreview.classList.remove('visible');
     this.hideCancelButton();
   }
 

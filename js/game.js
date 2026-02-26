@@ -95,7 +95,14 @@ export class Game {
     this.state = 'PLAYING';
     this.livesLostThisWave = 0;
     this.waveManager.startWave();
-    const isBoss = this.waveManager.currentWave % CONFIG.BOSS_INTERVAL === 0;
+    const wave = this.waveManager.currentWave;
+    const isBoss = wave % CONFIG.BOSS_INTERVAL === 0;
+    this.waveBanner = {
+      text: isBoss ? `WAVE ${wave} — BOSS` : `WAVE ${wave}`,
+      color: isBoss ? '#ff4444' : '#00ffff',
+      timer: 2.0,
+      duration: 2.0,
+    };
     this.audio.playTrack(isBoss ? 'boss' : 'gameplay');
     this.audio.playSfx('wave');
     this.ui.hideBetweenWaves();

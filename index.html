@@ -139,6 +139,12 @@ canvas {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  transition: opacity 0.3s ease;
+}
+
+#tower-panel.panel-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 #tower-panel h3 {
@@ -338,7 +344,13 @@ canvas {
   color: #888;
   border: 1px solid #222;
   z-index: 10;
-  display: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#wave-preview.visible {
+  opacity: 1;
 }
 
 /* Start Wave Button */
@@ -355,9 +367,15 @@ canvas {
   font-size: 16px;
   cursor: pointer;
   z-index: 10;
-  display: none;
-  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+#start-wave-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #start-wave-btn:hover {
@@ -896,7 +914,7 @@ canvas {
     </div>
   </div>
 
-  <div id="tower-panel" class="hidden">
+  <div id="tower-panel" class="panel-hidden">
     <h3>TOWERS</h3>
     <div id="tower-list"></div>
   </div>
