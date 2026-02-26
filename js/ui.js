@@ -493,6 +493,8 @@ export class UIController {
         `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (${t('game.wave')} ${s.wave})</div>`
       ).join('');
     }
-    list.style.display = wasVisible ? 'none' : 'block';
+    const nowVisible = !wasVisible;
+    list.style.display = nowVisible ? 'block' : 'none';
+    document.getElementById('high-scores-btn').classList.toggle('active', nowVisible);
   }
 }

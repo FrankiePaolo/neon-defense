@@ -438,7 +438,20 @@ canvas {
   transition: all 0.3s;
 }
 
-.menu-btn:hover {
+@media (hover: hover) {
+  .menu-btn:hover {
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+}
+
+.menu-btn.touching {
+  background: rgba(0, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  transition: none;
+}
+
+.menu-btn.active {
   background: rgba(0, 255, 255, 0.15);
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
 }
@@ -958,6 +971,17 @@ canvas {
       navigator.serviceWorker.register('/sw.js');
     });
   }
+  // Touch feedback for menu buttons (CSS :active is unreliable on iOS)
+  document.addEventListener('touchstart', (e) => {
+    const btn = e.target.closest('.menu-btn');
+    if (btn) btn.classList.add('touching');
+  }, { passive: true });
+  ['touchend', 'touchcancel'].forEach((ev) => {
+    document.addEventListener(ev, (e) => {
+      const btn = e.target.closest('.menu-btn');
+      if (btn) btn.classList.remove('touching');
+    }, { passive: true });
+  });
 </script>
 </body>
 </html>
