@@ -276,7 +276,7 @@ export class UIController {
         const currentLevel = pathKey === 'A' ? tower.upgradesA : tower.upgradesB;
         const purchased = i < currentLevel;
         const available = i === currentLevel && tower.getUpgradeCost(pathKey) !== null;
-        const canAfford = available && game.economy.canAfford(level.cost);
+        const canAfford = available && canModify && game.economy.canAfford(level.cost);
         const desc = t('up.' + type + '.' + pathKey + '.' + i);
 
         const changes = formatStatChanges(level.stats);
