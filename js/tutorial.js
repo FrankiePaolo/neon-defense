@@ -116,6 +116,8 @@ export class Tutorial {
         this._advance();
       });
       document.getElementById('tower-panel').classList.add('tutorial-blocked');
+      const startBtn = document.getElementById('start-wave-btn');
+      if (startBtn) startBtn.disabled = true;
     }
 
     if (s.highlight) {
