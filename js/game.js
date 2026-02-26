@@ -155,6 +155,7 @@ export class Game {
   }
 
   upgradeTower(tower, path) {
+    if (this.state !== 'BETWEEN_WAVES') return;
     if (!tower) return;
     const cost = tower.getUpgradeCost(path);
     if (cost === null || !this.economy.canAfford(cost)) return;
