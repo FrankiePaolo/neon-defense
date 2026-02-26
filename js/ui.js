@@ -178,7 +178,7 @@ export class UIController {
     const nameWarn = document.getElementById('name-taken-warn');
     saveBtn.disabled = true;
     const updateSaveBtn = () => {
-      nameWarn.style.display = 'none';
+      nameWarn.style.visibility = 'hidden';
       saveBtn.disabled = !nameInput.value.trim();
     };
     nameInput.addEventListener('input', updateSaveBtn);
@@ -189,7 +189,7 @@ export class UIController {
       if (!name) return;
       if (this.game.scoreTracker.hasName(name)) {
         nameWarn.textContent = t('game.nameTaken');
-        nameWarn.style.display = 'block';
+        nameWarn.style.visibility = 'visible';
         return;
       }
       saveBtn.disabled = true;
