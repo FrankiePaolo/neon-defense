@@ -169,14 +169,11 @@ export class Renderer {
 
   _renderPortals(ctx, grid) {
     const t = Date.now() / 1000;
-    if (grid.entry) {
+    if (grid.entry && grid.path && grid.path.length >= 2) {
       const p = gridToPixel(grid.entry.x, grid.entry.y);
-      this._renderPortal(ctx, p.x, p.y, COLORS.ENTRY, t, 1);
-      if (grid.path && grid.path.length >= 2) {
-        const next = gridToPixel(grid.path[1].x, grid.path[1].y);
-        const angle = Math.atan2(next.y - p.y, next.x - p.x);
-        this._renderEntryArrow(ctx, p.x, p.y, angle, COLORS.ENTRY, t);
-      }
+      const next = gridToPixel(grid.path[1].x, grid.path[1].y);
+      const angle = Math.atan2(next.y - p.y, next.x - p.x);
+      this._renderEntryArrow(ctx, p.x, p.y, angle, COLORS.ENTRY, t);
     }
     if (grid.exit) {
       const p = gridToPixel(grid.exit.x, grid.exit.y);
@@ -292,25 +289,21 @@ export class Renderer {
   }
 
   _renderEntryArrow(ctx, x, y, angle, color, t) {
-    const ts = CONFIG.TILE_SIZE;
-    const offset = ts * 0.55;
-    const ax = x + Math.cos(angle) * offset;
-    const ay = y + Math.sin(angle) * offset;
-    const size = 8 + 2 * Math.sin(t * 3);
-    const pulse = 0.6 + 0.3 * Math.sin(t * 3);
+    const size = 14 + 2 * Math.sin(t * 3);
+    const pulse = 0.7 + 0.3 * Math.sin(t * 3);
 
     ctx.save();
-    ctx.translate(ax, ay);
+    ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE;
+    ctx.shadowBlur = 14 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = color;
     ctx.fillStyle = color;
     ctx.globalAlpha = pulse;
     ctx.beginPath();
     ctx.moveTo(size, 0);
-    ctx.lineTo(-size * 0.6, -size * 0.7);
-    ctx.lineTo(-size * 0.2, 0);
-    ctx.lineTo(-size * 0.6, size * 0.7);
+    ctx.lineTo(-size * 0.6, -size * 0.8);
+    ctx.lineTo(-size * 0.15, 0);
+    ctx.lineTo(-size * 0.6, size * 0.8);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
