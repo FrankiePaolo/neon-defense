@@ -76,6 +76,7 @@ export class Tutorial {
 
   _advance() {
     this._clearHighlight();
+    document.getElementById('tower-panel').classList.remove('tutorial-blocked');
     if (this._timer) { clearTimeout(this._timer); this._timer = null; }
 
     this.step++;
@@ -110,6 +111,7 @@ export class Tutorial {
       this.overlay.querySelector('.tutorial-btn').addEventListener('click', () => {
         this._advance();
       });
+      document.getElementById('tower-panel').classList.add('tutorial-blocked');
     }
 
     if (s.highlight) {

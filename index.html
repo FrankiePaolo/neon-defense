@@ -238,6 +238,17 @@ canvas {
   letter-spacing: 1px;
 }
 
+/* Tower panel blocked by tutorial */
+#tower-panel.tutorial-blocked .tower-btn:not(.tower-locked) {
+  opacity: 0.25;
+  cursor: default;
+}
+
+#tower-panel.tutorial-blocked .tower-btn:not(.tower-locked):hover {
+  box-shadow: none;
+  background: rgba(20, 20, 30, 0.8);
+}
+
 /* Unlock notification */
 #unlock-notification {
   position: absolute;
