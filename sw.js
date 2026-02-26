@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-defense-v1';
+const CACHE_NAME = 'neon-defense-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -23,6 +23,10 @@ const STATIC_ASSETS = [
   '/js/utils.js',
   '/icons/icon.svg',
   '/icons/icon-maskable.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-192.png',
+  '/icons/icon-maskable-512.png',
 ];
 
 self.addEventListener('install', (event) => {
