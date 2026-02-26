@@ -94,6 +94,7 @@ export class Game {
   startNextWave() {
     if (this.state !== 'BETWEEN_WAVES') return;
     if (this.towers.length === 0) return;
+    if (this.tutorial.isBlocking()) return;
     this.state = 'PLAYING';
     this.livesLostThisWave = 0;
     this.waveManager.startWave();

@@ -77,6 +77,10 @@ export class Tutorial {
   _advance() {
     this._clearHighlight();
     document.getElementById('tower-panel').classList.remove('tutorial-blocked');
+    if (this.game.state === 'BETWEEN_WAVES') {
+      const btn = document.getElementById('start-wave-btn');
+      if (btn) btn.disabled = this.game.towers.length === 0;
+    }
     if (this._timer) { clearTimeout(this._timer); this._timer = null; }
 
     this.step++;
