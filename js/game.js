@@ -462,6 +462,8 @@ export class Game {
       timer: 2.5,
       duration: 2.5,
     };
+    this.killStreak = 0;
+    this.killStreakTimer = 0;
     this.state = 'BETWEEN_WAVES';
     this.ui.showBetweenWaves();
     this.ui.updateHUD();

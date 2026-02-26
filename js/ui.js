@@ -74,6 +74,7 @@ export class UIController {
     document.querySelector('#pause-overlay h2').textContent = t('game.paused');
     document.querySelector('#pause-overlay p').textContent = t('game.pauseHint');
     document.getElementById('resume-btn').textContent = t('game.resume');
+    document.getElementById('restart-btn').textContent = t('game.restart');
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t('game.gameOver');
@@ -217,6 +218,13 @@ export class UIController {
 
     document.getElementById('resume-btn').addEventListener('click', () => {
       this.game.togglePause();
+    });
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      this.game.togglePause();
+      this.hidePause();
+      this.elements.menuScreen.style.display = 'flex';
+      this.game.audio.playTrack('menu');
     });
 
     document.getElementById('mute-btn').addEventListener('click', () => {
