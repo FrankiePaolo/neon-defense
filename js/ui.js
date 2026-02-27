@@ -45,7 +45,10 @@ export class UIController {
       highScoresList: document.getElementById('high-scores-list'),
       towerPanel: document.getElementById('tower-panel'),
       cancelPlaceBtn: document.getElementById('cancel-place-btn'),
+      towerStatsTooltip: document.getElementById('tower-stats-tooltip'),
     };
+
+    this._previewingType = null;
 
     this._buildTowerPanel();
     this._bindButtons();
@@ -105,6 +108,7 @@ export class UIController {
   }
 
   _buildTowerPanel() {
+    this._hideTooltip();
     const list = this.elements.towerList;
     list.innerHTML = '';
     const progress = this.game.progressTracker;
@@ -123,15 +127,35 @@ export class UIController {
         `;
         btn.addEventListener('click', () => {
           if (this.game.tutorial.isBlocking()) return;
-          if (!this.game.economy.canAfford(def.cost)) return;
-          const currentlySelected = btn.classList.contains('selected');
-          document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-          if (currentlySelected) {
+
+          if (IS_MOBILE) {
+            if (this._previewingType === type) {
+              // Same tower tapped again — deselect
+              this._hideTooltip();
+              return;
+            }
+            // Show stats preview (PLACE button in tooltip enters placement mode)
+            document.querySelectorAll('.tower-btn').forEach(b => {
+              b.classList.remove('selected');
+              b.classList.remove('previewing');
+            });
             this.game.input.placingType = null;
             this.hideCancelButton();
+            this._previewingType = type;
+            btn.classList.add('previewing');
+            this._showMobileTooltip(type);
           } else {
-            btn.classList.add('selected');
-            this.game.input.startPlacing(type);
+            // Desktop: immediate placement toggle
+            if (!this.game.economy.canAfford(def.cost)) return;
+            const currentlySelected = btn.classList.contains('selected');
+            document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
+            if (currentlySelected) {
+              this.game.input.placingType = null;
+              this.hideCancelButton();
+            } else {
+              btn.classList.add('selected');
+              this.game.input.startPlacing(type);
+            }
           }
         });
       } else {
@@ -140,7 +164,33 @@ export class UIController {
           <span class="tower-unlock-req">${t('hud.score')} ${def.unlockScore.toLocaleString()}</span>
           <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
         `;
+        if (IS_MOBILE) {
+          btn.addEventListener('click', () => {
+            if (this._previewingType === type) {
+              this._hideTooltip();
+            } else {
+              document.querySelectorAll('.tower-btn').forEach(b => {
+                b.classList.remove('previewing');
+                b.classList.remove('selected');
+              });
+              this._previewingType = type;
+              btn.classList.add('previewing');
+              this._showMobileTooltip(type);
+            }
+          });
+        }
       }
+
+      // Desktop: hover tooltip for all towers (unlocked + locked)
+      if (!IS_MOBILE) {
+        btn.addEventListener('mouseenter', () => {
+          this._showDesktopTooltip(type, btn);
+        });
+        btn.addEventListener('mouseleave', () => {
+          this._hideTooltip();
+        });
+      }
+
       list.appendChild(btn);
     }
   }
@@ -240,6 +290,7 @@ export class UIController {
       this.game.input.selectedTower = null;
       document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
       this.hideUpgradePanel();
+      this._hideTooltip();
       this.hideCancelButton();
     });
   }
@@ -374,6 +425,114 @@ export class UIController {
     this.elements.cancelPlaceBtn.classList.add('hidden');
   }
 
+  _buildStatsTooltipHTML(type, isMobile) {
+    const def = TOWER_DEFS[type];
+    const progress = this.game.progressTracker;
+    const currentScore = this.game.scoreTracker ? this.game.scoreTracker.score : 0;
+    const unlocked = progress.isTowerUnlocked(type, currentScore);
+    const canAfford = unlocked && this.game.economy.canAfford(def.cost);
+    const color = unlocked ? def.color : '#555';
+
+    let html = `<div class="ttp-title" style="color:${color}">${t('tower.' + type)}</div>`;
+    html += `<div class="ttp-desc">${t('tower.' + type + '.desc')}</div>`;
+
+    html += `<div class="ttp-stats">`;
+    if (def.damage > 0) html += `<span>${t('stats.dmg')} <span class="ttp-stat-val" style="color:${color}">${def.damage}</span></span>`;
+    if (def.fireRate > 0) html += `<span>${t('stats.rate')} <span class="ttp-stat-val" style="color:${color}">${def.fireRate}/s</span></span>`;
+    html += `<span>${t('stats.rng')} <span class="ttp-stat-val" style="color:${color}">${def.range}</span></span>`;
+    if (def.slowAmount) html += `<span>${t('stats.slow')} <span class="ttp-stat-val" style="color:${color}">${Math.round(def.slowAmount * 100)}%</span></span>`;
+    if (def.chainCount) html += `<span>${t('stats.chain')} <span class="ttp-stat-val" style="color:${color}">${def.chainCount}</span></span>`;
+    if (def.splashRadius) html += `<span>${t('stats.splash')} <span class="ttp-stat-val" style="color:${color}">${def.splashRadius}</span></span>`;
+    if (def.damageAmp) html += `<span>${t('stats.amp')} <span class="ttp-stat-val" style="color:${color}">+${Math.round(def.damageAmp * 100)}%</span></span>`;
+    if (def.goldPerWave) html += `<span>+<span class="ttp-stat-val" style="color:${color}">${def.goldPerWave}</span>g/${t('stats.wave')}</span>`;
+    html += `</div>`;
+
+    if (def.targeting) {
+      html += `<div class="ttp-targeting">${t('stats.targeting')}: ${t('targeting.' + def.targeting)}</div>`;
+    }
+
+    if (!unlocked) {
+      html += `<div class="ttp-locked-hint">${t('stats.unlocksAt')} ${def.unlockScore.toLocaleString()} ${t('hud.score').toLowerCase()}</div>`;
+    }
+
+    if (isMobile) {
+      const disabled = !unlocked || !canAfford;
+      const label = !unlocked ? t('stats.locked') : `${t('stats.place')} ($${def.cost})`;
+      html += `<button class="ttp-place-btn" ${disabled ? 'disabled' : ''} data-tower-type="${type}">${label}</button>`;
+    }
+
+    return html;
+  }
+
+  _showDesktopTooltip(type, btnEl) {
+    const tooltip = this.elements.towerStatsTooltip;
+    tooltip.innerHTML = this._buildStatsTooltipHTML(type, false);
+    tooltip.style.borderColor = TOWER_DEFS[type].color;
+
+    // Make visible first to measure dimensions
+    tooltip.classList.add('visible');
+
+    const panelRect = this.elements.towerPanel.getBoundingClientRect();
+    const btnRect = btnEl.getBoundingClientRect();
+    const wrapperRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
+
+    const left = panelRect.left - wrapperRect.left - tooltip.offsetWidth - 8;
+    const top = btnRect.top - wrapperRect.top;
+
+    tooltip.style.left = Math.max(4, left) + 'px';
+    tooltip.style.top = Math.min(top, wrapperRect.height - tooltip.offsetHeight - 4) + 'px';
+  }
+
+  _showMobileTooltip(type) {
+    const tooltip = this.elements.towerStatsTooltip;
+    this.hideUpgradePanel();
+    tooltip.innerHTML = this._buildStatsTooltipHTML(type, true);
+    tooltip.style.borderColor = TOWER_DEFS[type].color;
+
+    const isLandscape = window.matchMedia('(max-height: 500px)').matches;
+
+    if (isLandscape) {
+      // Landscape: position left of the panel
+      tooltip.classList.add('visible');
+      const panelRect = this.elements.towerPanel.getBoundingClientRect();
+      const wrapperRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
+      const left = panelRect.left - wrapperRect.left - tooltip.offsetWidth - 8;
+      tooltip.style.left = Math.max(4, left) + 'px';
+      tooltip.style.top = '40px';
+    } else {
+      // Portrait: position above the tower panel
+      tooltip.classList.add('visible');
+      const panelRect = this.elements.towerPanel.getBoundingClientRect();
+      const wrapperRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
+      const topPos = panelRect.top - wrapperRect.top - tooltip.offsetHeight - 8;
+      tooltip.style.left = '5%';
+      tooltip.style.top = Math.max(40, topPos) + 'px';
+    }
+
+    // Bind PLACE button
+    const placeBtn = tooltip.querySelector('.ttp-place-btn');
+    if (placeBtn && !placeBtn.disabled) {
+      placeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const towerType = placeBtn.dataset.towerType;
+        this._hideTooltip();
+        document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('previewing'));
+        const targetBtn = this.elements.towerList.querySelector(`[data-tower-type="${towerType}"]`);
+        if (targetBtn) targetBtn.classList.add('selected');
+        this.game.input.startPlacing(towerType);
+      });
+    }
+  }
+
+  _hideTooltip() {
+    const tooltip = this.elements.towerStatsTooltip;
+    if (tooltip) {
+      tooltip.classList.remove('visible');
+    }
+    this._previewingType = null;
+    document.querySelectorAll('.tower-btn.previewing').forEach(b => b.classList.remove('previewing'));
+  }
+
   showBetweenWaves() {
     this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('panel-hidden');
@@ -389,6 +548,7 @@ export class UIController {
   }
 
   hideBetweenWaves() {
+    this._hideTooltip();
     this.elements.towerPanel.classList.add('panel-hidden');
     document.getElementById('wave-controls').classList.remove('visible');
     this.hideCancelButton();

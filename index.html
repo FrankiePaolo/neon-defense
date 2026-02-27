@@ -208,26 +208,12 @@ canvas {
 
 /* Unaffordable towers */
 .tower-btn.tower-unaffordable {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.tower-btn.tower-unaffordable:hover {
-  box-shadow: none;
-  background: rgba(20, 20, 30, 0.8);
+  opacity: 0.55;
 }
 
 /* Locked towers */
 .tower-btn.tower-locked {
-  opacity: 0.4;
-  cursor: default;
-  border-color: #222;
-  background: rgba(10, 10, 15, 0.6);
-}
-
-.tower-btn.tower-locked:hover {
-  box-shadow: none;
-  background: rgba(10, 10, 15, 0.6);
+  border-color: #333;
 }
 
 .tower-btn .locked-name {
@@ -351,6 +337,48 @@ canvas {
 #upgrade-panel .up-actions { margin-top: 8px; display: flex; gap: 12px; }
 #upgrade-panel .move-btn { font-size: 13px; color: #00aaff; cursor: pointer; }
 #upgrade-panel .sell-btn { font-size: 13px; color: #ff6666; cursor: pointer; }
+
+/* Tower Stats Tooltip */
+#tower-stats-tooltip {
+  position: absolute;
+  background: rgba(10, 10, 15, 0.95);
+  border: 1px solid #333;
+  padding: 10px 12px;
+  z-index: 25;
+  min-width: 220px;
+  max-width: 280px;
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  visibility: hidden;
+}
+
+#tower-stats-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+#tower-stats-tooltip .ttp-title { font-weight: bold; font-size: 15px; margin-bottom: 2px; }
+#tower-stats-tooltip .ttp-desc { font-size: 12px; color: #666; margin-bottom: 6px; }
+#tower-stats-tooltip .ttp-stats {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; color: #888;
+  padding: 4px 0; border-top: 1px solid #1a1a2e;
+}
+#tower-stats-tooltip .ttp-stats span { white-space: nowrap; }
+#tower-stats-tooltip .ttp-stat-val { font-weight: bold; }
+#tower-stats-tooltip .ttp-targeting { font-size: 11px; color: #555; margin-top: 4px; }
+#tower-stats-tooltip .ttp-locked-hint { font-size: 11px; color: #ff8800; margin-top: 6px; }
+#tower-stats-tooltip .ttp-place-btn { display: none; }
+
+.tower-btn.previewing {
+  background: rgba(255, 255, 255, 0.08);
+  border-width: 2px;
+  box-shadow: 0 0 12px var(--tower-color, #333), inset 0 0 8px rgba(255,255,255,0.05);
+}
 
 /* Wave Controls Wrapper */
 #wave-controls {
@@ -796,6 +824,44 @@ canvas {
   #upgrade-panel .move-btn { font-size: 15px; padding: 8px 0; }
   #upgrade-panel .sell-btn { font-size: 15px; padding: 8px 0; }
 
+  #tower-stats-tooltip {
+    min-width: unset;
+    width: 90%;
+    left: 5% !important;
+    top: auto !important;
+    pointer-events: auto;
+    max-height: 35vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px;
+  }
+
+  #tower-stats-tooltip .ttp-place-btn {
+    display: block;
+    margin-top: 10px;
+    background: rgba(0, 255, 255, 0.12);
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    padding: 10px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    min-height: 44px;
+    width: 100%;
+  }
+
+  #tower-stats-tooltip .ttp-place-btn:disabled {
+    color: #444;
+    border-color: #333;
+    background: transparent;
+    cursor: default;
+  }
+
+  #tower-stats-tooltip .ttp-place-btn:not(:disabled):active {
+    background: rgba(0, 255, 255, 0.25);
+  }
+
   #wave-controls {
     bottom: 10px;
   }
@@ -875,6 +941,17 @@ canvas {
 
   .tower-btn .tower-desc { display: none; }
 
+  #tower-stats-tooltip {
+    min-width: 200px;
+    max-width: 260px;
+    width: auto;
+    left: auto !important;
+    top: auto;
+    pointer-events: auto;
+  }
+
+  #tower-stats-tooltip .ttp-place-btn { display: block; }
+
   #ui-overlay {
     font-size: 11px;
     padding: 4px 8px;
@@ -927,6 +1004,7 @@ canvas {
     <button id="cancel-place-btn" class="hidden">CANCEL</button>
     <div id="tutorial-overlay" class="hidden"></div>
     <div id="upgrade-panel"></div>
+    <div id="tower-stats-tooltip"></div>
 
     <div id="menu-screen">
       <div id="lang-select">

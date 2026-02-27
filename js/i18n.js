@@ -129,6 +129,23 @@ const STRINGS = {
     'up.support.B.1': '+60 gold/wave',
     'up.support.B.2': '+120g +10% sell',
 
+    // Stats tooltip
+    'stats.dmg': 'DMG',
+    'stats.rate': 'RATE',
+    'stats.rng': 'RNG',
+    'stats.slow': 'SLOW',
+    'stats.chain': 'CHAIN',
+    'stats.splash': 'SPLASH',
+    'stats.amp': 'AMP',
+    'stats.wave': 'wave',
+    'stats.targeting': 'Targeting',
+    'stats.place': 'PLACE',
+    'stats.locked': 'LOCKED',
+    'stats.unlocksAt': 'Unlocks at',
+    'targeting.first': 'First',
+    'targeting.closest': 'Closest',
+    'targeting.strongest': 'Strongest',
+
     // Enemy names
     'enemy.basic': 'Drone',
     'enemy.fast': 'Scout',
@@ -271,6 +288,23 @@ const STRINGS = {
     'up.support.B.0': '+25 oro/ondata',
     'up.support.B.1': '+60 oro/ondata',
     'up.support.B.2': '+120o +10% vendita',
+
+    // Stats tooltip
+    'stats.dmg': 'DAN',
+    'stats.rate': 'CAD',
+    'stats.rng': 'GIT',
+    'stats.slow': 'RALL',
+    'stats.chain': 'CATENA',
+    'stats.splash': 'AREA',
+    'stats.amp': 'AMPL',
+    'stats.wave': 'ondata',
+    'stats.targeting': 'Bersaglio',
+    'stats.place': 'PIAZZA',
+    'stats.locked': 'BLOCCATA',
+    'stats.unlocksAt': 'Sblocco a',
+    'targeting.first': 'Primo',
+    'targeting.closest': 'Piu vicino',
+    'targeting.strongest': 'Piu forte',
 
     // Enemy names
     'enemy.basic': 'Drone',

@@ -86,9 +86,12 @@ export class InputHandler {
       if (tower) {
         this.selectedTower = tower;
         game.ui.showUpgradePanel(tower);
-      } else if (this.selectedTower) {
-        this.selectedTower = null;
-        game.ui.hideUpgradePanel();
+      } else {
+        if (this.selectedTower) {
+          this.selectedTower = null;
+          game.ui.hideUpgradePanel();
+        }
+        game.ui._hideTooltip();
       }
     }
   }

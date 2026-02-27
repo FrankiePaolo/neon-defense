@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-defense-v10';
+const CACHE_NAME = 'neon-defense-v11';
 
 const STATIC_ASSETS = [
   '/',
