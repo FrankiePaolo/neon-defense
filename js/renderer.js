@@ -174,10 +174,12 @@ export class Renderer {
       const next = gridToPixel(grid.path[1].x, grid.path[1].y);
       const angle = Math.atan2(next.y - p.y, next.x - p.x);
       this._renderEntryArrow(ctx, p.x, p.y, angle, COLORS.ENTRY, t);
+      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.ENTRY, t, 'START');
     }
     if (grid.exit) {
       const p = gridToPixel(grid.exit.x, grid.exit.y);
       this._renderPortal(ctx, p.x, p.y, COLORS.EXIT, t, -1);
+      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.EXIT, t, 'END');
     }
   }
 
@@ -306,6 +308,22 @@ export class Renderer {
     ctx.lineTo(-size * 0.6, size * 0.8);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+  }
+
+  _renderEndpointLabel(ctx, x, y, color, t, text) {
+    const ts = CONFIG.TILE_SIZE;
+    const pulse = 0.6 + 0.3 * Math.sin(t * 2.5);
+
+    ctx.save();
+    ctx.font = `bold ${Math.round(ts * 0.28)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = pulse;
+    ctx.fillText(text, x, y + ts * 0.72);
     ctx.restore();
   }
 
