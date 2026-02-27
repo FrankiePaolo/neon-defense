@@ -492,7 +492,7 @@ export class UIController {
     setTimeout(() => {
       container.classList.remove('unlock-visible');
       setTimeout(() => container.remove(), 500);
-    }, 2500);
+    }, 1500);
   }
 
   async _showHighScores() {
