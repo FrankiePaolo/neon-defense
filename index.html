@@ -649,7 +649,7 @@ canvas {
 /* Tutorial overlay */
 #tutorial-overlay {
   position: absolute;
-  top: 40px;
+  top: 54px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 10, 20, 0.92);
@@ -683,6 +683,38 @@ canvas {
 #tutorial-overlay .tutorial-btn:hover {
   background: rgba(0, 255, 255, 0.2);
   box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+}
+
+#tutorial-overlay .tutorial-step-count {
+  font-size: 11px;
+  color: #00ffff;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+
+#tutorial-overlay .tutorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+#tutorial-overlay .tutorial-skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #99a;
+  border: 1px solid #556;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#tutorial-overlay .tutorial-skip:hover {
+  color: #00ffff;
+  border-color: rgba(0, 255, 255, 0.4);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
 }
 
 @keyframes tutorial-pulse {

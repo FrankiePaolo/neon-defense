@@ -46,15 +46,16 @@ const STRINGS = {
     'scores.empty': 'No scores yet',
 
     // Tutorial
-    'tut.1': 'Welcome to <span style="color:#00ffff">NEON DEFENSE</span>! Enemies travel along the glowing path. Place towers to stop them before they reach the exit.',
-    'tut.2': 'Select a tower from the <span style="color:#00ffff">TOWERS</span> panel to start building.',
-    'tut.3': 'Now tap a <span style="color:#aaa">dark tile</span> next to the path to place your tower.',
-    'tut.4': 'Press <span style="color:#00ffff">START WAVE</span> to send enemies. Your towers fire automatically!',
-    'tut.5': 'Enemies that reach the exit cost you a life. Destroy them all to clear the wave!',
-    'tut.6': 'You earned gold! Place more towers or tap an existing tower to see upgrades. You can only build <span style="color:#ffd700">between waves</span>.',
-    'tut.6b': 'Click on a placed tower to see its <span style="color:#00ff66">upgrade paths</span>. Each tower has two branches — <span style="color:#ffd700">choosing one locks the other</span>, so pick wisely! You can also <span style="color:#00aaff">move</span> or <span style="color:#ff6666">sell</span> towers between waves.',
-    'tut.7': "You've got the basics! Good luck, commander.",
+    'tut.1': 'Your mission: don\'t let enemies reach the <span style="color:#ff4444">END</span> of the path. Build towers to shoot them down!',
+    'tut.2': 'Pick a tower from the <span style="color:#00ffff">TOWERS</span> panel below. The <span style="color:#00ffff">Blaster</span> is a great first choice.',
+    'tut.3': 'Tap any <span style="color:#aaa">dark tile</span> to place it. Towers shoot enemies that walk nearby, so build <span style="color:#ffd700">next to the path</span>.',
+    'tut.4': 'Hit <span style="color:#00ffff">START WAVE</span> — enemies will spawn and your towers fire on their own!',
+    'tut.5': 'Each enemy that reaches the END costs you a <span style="color:#ff4444">life</span>. Lose them all and it\'s game over!',
+    'tut.6': 'Killing enemies earns <span style="color:#ffd700">gold</span>. Use it to build more towers — but you can only build <span style="color:#ffd700">between waves</span>.',
+    'tut.6b': 'Tap a tower to see its <span style="color:#00ff66">upgrades</span>. Each tower has two paths — pick one, the other locks. You can also <span style="color:#00aaff">move</span> or <span style="color:#ff6666">sell</span> towers.',
+    'tut.7': "That's it! Survive as many waves as you can. Good luck!",
     'tut.ok': 'GOT IT',
+    'tut.skip': 'SKIP TUTORIAL',
 
     // Tower names
     'tower.blaster': 'Blaster',
@@ -206,15 +207,16 @@ const STRINGS = {
     'scores.empty': 'Nessun punteggio',
 
     // Tutorial
-    'tut.1': 'Benvenuto in <span style="color:#00ffff">NEON DEFENSE</span>! I nemici percorrono il sentiero luminoso. Piazza le torri per fermarli prima che raggiungano l\'uscita.',
-    'tut.2': 'Seleziona una torre dal pannello <span style="color:#00ffff">TORRI</span> per iniziare a costruire.',
-    'tut.3': 'Tocca una <span style="color:#aaa">casella scura</span> vicino al percorso per piazzare la torre.',
-    'tut.4': 'Premi <span style="color:#00ffff">INIZIA ONDATA</span> per inviare i nemici. Le torri sparano automaticamente!',
-    'tut.5': 'I nemici che raggiungono l\'uscita ti costano una vita. Distruggili tutti per completare l\'ondata!',
-    'tut.6': 'Hai guadagnato oro! Piazza altre torri o tocca una torre per i potenziamenti. Puoi costruire solo <span style="color:#ffd700">tra le ondate</span>.',
-    'tut.6b': 'Clicca su una torre piazzata per vedere i suoi <span style="color:#00ff66">percorsi di potenziamento</span>. Ogni torre ha due rami — <span style="color:#ffd700">sceglierne uno blocca l\'altro</span>, quindi scegli bene! Puoi anche <span style="color:#00aaff">spostare</span> o <span style="color:#ff6666">vendere</span> le torri tra le ondate.',
-    'tut.7': 'Hai imparato le basi! Buona fortuna, comandante.',
+    'tut.1': 'La tua missione: non far arrivare i nemici alla <span style="color:#ff4444">FINE</span> del percorso. Costruisci torri per abbatterli!',
+    'tut.2': 'Scegli una torre dal pannello <span style="color:#00ffff">TORRI</span> in basso. Il <span style="color:#00ffff">Blaster</span> è un\'ottima scelta per iniziare.',
+    'tut.3': 'Tocca una <span style="color:#aaa">casella scura</span> per piazzarla. Le torri sparano ai nemici vicini, quindi costruisci <span style="color:#ffd700">accanto al percorso</span>.',
+    'tut.4': 'Premi <span style="color:#00ffff">INIZIA ONDATA</span> — i nemici appariranno e le torri spareranno da sole!',
+    'tut.5': 'Ogni nemico che arriva alla FINE ti costa una <span style="color:#ff4444">vita</span>. Se le perdi tutte, è game over!',
+    'tut.6': 'Uccidere i nemici ti dà <span style="color:#ffd700">oro</span>. Usalo per costruire più torri — ma puoi costruire solo <span style="color:#ffd700">tra le ondate</span>.',
+    'tut.6b': 'Tocca una torre per vedere i suoi <span style="color:#00ff66">potenziamenti</span>. Ogni torre ha due rami — scegline uno, l\'altro si blocca. Puoi anche <span style="color:#00aaff">spostare</span> o <span style="color:#ff6666">vendere</span> le torri.',
+    'tut.7': 'Tutto qui! Sopravvivi a più ondate possibili. Buona fortuna!',
     'tut.ok': 'CAPITO',
+    'tut.skip': 'SALTA TUTORIAL',
 
     // Tower names
     'tower.blaster': 'Blaster',

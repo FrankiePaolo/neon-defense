@@ -3,51 +3,33 @@ import { t } from './i18n.js';
 const STEPS = [
   {
     msgKey: 'tut.1',
-    highlight: null,
-    btnKey: 'tut.ok',
-    condition: null,
+    showSkip: true,
   },
   {
     msgKey: 'tut.2',
-    highlight: 'tower-panel',
-    btnKey: null,
-    condition: (game) => game.input.placingType !== null,
   },
   {
     msgKey: 'tut.3',
-    highlight: null,
-    btnKey: null,
+    highlight: 'tower-panel',
     condition: (game) => game.towers.length > 0,
   },
   {
     msgKey: 'tut.4',
     highlight: 'start-wave-btn',
-    btnKey: null,
     condition: (game) => game.state === 'PLAYING',
   },
   {
     msgKey: 'tut.5',
-    highlight: null,
-    btnKey: null,
-    autoAdvance: 4000,
   },
   {
     msgKey: 'tut.6',
-    highlight: null,
-    btnKey: 'tut.ok',
     waitForState: 'BETWEEN_WAVES',
   },
   {
     msgKey: 'tut.6b',
-    highlight: null,
-    btnKey: 'tut.ok',
-    condition: null,
   },
   {
     msgKey: 'tut.7',
-    highlight: null,
-    btnKey: null,
-    autoAdvance: 2500,
   },
 ];
 
@@ -58,8 +40,8 @@ export class Tutorial {
     this.game = game;
     this.step = -1;
     this.active = false;
+    this._awaitingAction = false;
     this.overlay = document.getElementById('tutorial-overlay');
-    this._timer = null;
     this._highlightEl = null;
   }
 
@@ -71,17 +53,13 @@ export class Tutorial {
     if (!this.shouldRun()) return;
     this.step = -1;
     this.active = true;
+    this._awaitingAction = false;
     this._advance();
   }
 
   _advance() {
     this._clearHighlight();
-    document.getElementById('tower-panel').classList.remove('tutorial-blocked');
-    if (this.game.state === 'BETWEEN_WAVES') {
-      const btn = document.getElementById('start-wave-btn');
-      if (btn) btn.disabled = this.game.towers.length === 0;
-    }
-    if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+    this._awaitingAction = false;
 
     this.step++;
     if (this.step >= STEPS.length) {
@@ -97,35 +75,60 @@ export class Tutorial {
     }
 
     this._render(s);
+  }
 
-    if (s.autoAdvance) {
-      this._timer = setTimeout(() => this._advance(), s.autoAdvance);
+  _blockUI() {
+    document.getElementById('tower-panel').classList.add('tutorial-blocked');
+    const btn = document.getElementById('start-wave-btn');
+    if (btn) btn.disabled = true;
+  }
+
+  _unblockUI() {
+    document.getElementById('tower-panel').classList.remove('tutorial-blocked');
+    const btn = document.getElementById('start-wave-btn');
+    if (btn) btn.disabled = this.game.towers.length === 0;
+  }
+
+  _dismiss() {
+    const s = STEPS[this.step];
+    this.overlay.classList.add('hidden');
+    this._unblockUI();
+
+    if (s.condition) {
+      this._awaitingAction = true;
+      if (s.highlight) {
+        const el = document.getElementById(s.highlight);
+        if (el) {
+          el.classList.add('tutorial-highlight');
+          this._highlightEl = el;
+        }
+      }
+    } else {
+      this._clearHighlight();
+      this._advance();
     }
   }
 
   _render(s) {
-    let html = `<div class="tutorial-msg">${t(s.msgKey)}</div>`;
-    if (s.btnKey) {
-      html += `<button class="tutorial-btn">${t(s.btnKey)}</button>`;
+    let html = `<div class="tutorial-step-count">${this.step + 1} / ${STEPS.length}</div>`;
+    html += `<div class="tutorial-msg">${t(s.msgKey)}</div>`;
+    if (s.showSkip) {
+      html += `<div class="tutorial-actions"><button class="tutorial-btn">${t('tut.ok')}</button><div class="tutorial-skip">${t('tut.skip')}</div></div>`;
+    } else {
+      html += `<button class="tutorial-btn">${t('tut.ok')}</button>`;
     }
     this.overlay.innerHTML = html;
     this.overlay.classList.remove('hidden');
+    this._blockUI();
 
-    if (s.btnKey) {
-      this.overlay.querySelector('.tutorial-btn').addEventListener('click', () => {
-        this._advance();
+    this.overlay.querySelector('.tutorial-btn').addEventListener('click', () => {
+      this._dismiss();
+    });
+
+    if (s.showSkip) {
+      this.overlay.querySelector('.tutorial-skip').addEventListener('click', () => {
+        this._complete();
       });
-      document.getElementById('tower-panel').classList.add('tutorial-blocked');
-      const startBtn = document.getElementById('start-wave-btn');
-      if (startBtn) startBtn.disabled = true;
-    }
-
-    if (s.highlight) {
-      const el = document.getElementById(s.highlight);
-      if (el) {
-        el.classList.add('tutorial-highlight');
-        this._highlightEl = el;
-      }
     }
   }
 
@@ -138,7 +141,7 @@ export class Tutorial {
 
   isBlocking() {
     if (!this.active || this.step < 0 || this.step >= STEPS.length) return false;
-    return !!STEPS[this.step].btnKey;
+    return !this._awaitingAction;
   }
 
   check() {
@@ -150,15 +153,17 @@ export class Tutorial {
       s.waitForState = null;
     }
 
-    if (s.condition && s.condition(this.game)) {
+    if (this._awaitingAction && s.condition && s.condition(this.game)) {
       this._advance();
     }
   }
 
   _complete() {
     this._clearHighlight();
+    this._unblockUI();
     this.overlay.classList.add('hidden');
     this.active = false;
+    this._awaitingAction = false;
     localStorage.setItem(STORAGE_KEY, 'true');
   }
 
