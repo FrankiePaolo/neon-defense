@@ -28,7 +28,10 @@ body {
 #game-container {
   display: flex;
   width: 100vw;
+  height: 100dvh;
   height: 100vh;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: #0a0a0a;
 }
 
 #canvas-wrapper {
@@ -55,7 +58,7 @@ canvas {
   right: 0;
   display: flex;
   justify-content: space-between;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px;
+  padding: 10px 20px;
   background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0.2), transparent);
   pointer-events: none;
   font-size: 20px;
@@ -79,7 +82,7 @@ canvas {
 /* Unlock Tracker */
 #unlock-tracker {
   position: absolute;
-  top: calc(56px + env(safe-area-inset-top, 0px));
+  top: 56px;
   left: 16px;
   z-index: 10;
   font-family: 'Courier New', monospace;
@@ -110,7 +113,7 @@ canvas {
 /* Speed Controls */
 #speed-controls {
   position: absolute;
-  top: calc(56px + env(safe-area-inset-top, 0px));
+  top: 56px;
   right: 16px;
   display: flex;
   gap: 4px;
@@ -715,7 +718,7 @@ canvas {
   }
 
   #unlock-tracker {
-    top: calc(44px + env(safe-area-inset-top, 0px));
+    top: 44px;
     left: 8px;
     font-size: 12px;
   }
@@ -725,7 +728,7 @@ canvas {
   }
 
   #speed-controls {
-    top: calc(44px + env(safe-area-inset-top, 0px));
+    top: 44px;
     right: 8px;
   }
 
