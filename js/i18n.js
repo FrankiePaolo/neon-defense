@@ -158,6 +158,18 @@ const STRINGS = {
     'enemy.boss': 'Overlord',
     'enemy.stealth': 'Phantom',
     'enemy.shielded': 'Guardian',
+
+    // Share
+    'share.button': 'CHALLENGE A FRIEND',
+    'share.copied': 'Link copied!',
+    'share.card.beatThis': 'CAN YOU BEAT THIS?',
+    'share.text.low': 'I survived {wave} waves in NEON DEFENSE. Think you can do better? 🎮',
+    'share.text.mid': 'Wave {wave}, {score} points in NEON DEFENSE. Come beat me 🔥',
+    'share.text.high': 'I crushed {score} points (Wave {wave}) in NEON DEFENSE. Your move 💀',
+    'share.text.victory': 'I BEAT NEON DEFENSE 🏆 {score} points. I dare you to try.',
+    'challenge.from': 'CHALLENGE FROM',
+    'challenge.beat': 'YOU BEAT {name}!',
+    'challenge.lost': '{name} still leads...',
   },
 
   it: {
@@ -319,6 +331,18 @@ const STRINGS = {
     'enemy.boss': 'Supremo',
     'enemy.stealth': 'Fantasma',
     'enemy.shielded': 'Guardiano',
+
+    // Share
+    'share.button': 'SFIDA UN AMICO',
+    'share.copied': 'Link copiato!',
+    'share.card.beatThis': 'RIESCI A BATTERMI?',
+    'share.text.low': 'Ho sopravvissuto {wave} ondate in NEON DEFENSE. Riesci a fare meglio? 🎮',
+    'share.text.mid': 'Ondata {wave}, {score} punti in NEON DEFENSE. Prova a battermi 🔥',
+    'share.text.high': 'Ho totalizzato {score} punti (Ondata {wave}) in NEON DEFENSE. Tocca a te 💀',
+    'share.text.victory': 'HO BATTUTO NEON DEFENSE 🏆 {score} punti. Ti sfido a provarci.',
+    'challenge.from': 'SFIDA DA',
+    'challenge.beat': 'HAI BATTUTO {name}!',
+    'challenge.lost': '{name} è ancora in testa...',
   },
 };
 

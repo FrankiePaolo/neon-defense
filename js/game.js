@@ -53,6 +53,7 @@ export class Game {
   }
 
   startNewGame(difficulty = 'normal') {
+    this.difficulty = difficulty;
     const cols = this.grid.cols;
     const pathLengths = { hard: cols, normal: Math.floor(cols * 2.5), easy: cols * 4 };
     this.grid.generate(pathLengths[difficulty] || Math.floor(cols * 2.5));
@@ -410,7 +411,7 @@ export class Game {
     if (this.killStreakTimer <= 0) return;
     this.killStreakTimer -= dt;
     if (this.killStreakTimer <= 0 && this.killStreak >= 8) {
-      const bonus = Math.min(this.killStreak * 2, 20);
+      const bonus = Math.min(this.killStreak * 2, 15);
       this.economy.earn(bonus);
       this.scoreTracker.score += bonus;
       this._checkUnlocks();
@@ -444,7 +445,7 @@ export class Game {
     }
     this._checkUnlocks();
     this.economy.applyInterest();
-    this.economy.earn(25 + this.waveManager.currentWave * 5);
+    this.economy.earn(15 + this.waveManager.currentWave * 3);
 
     for (const tower of this.towers) {
       if (tower.type === 'support' && tower.currentStats.goldPerWave) {

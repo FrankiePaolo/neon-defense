@@ -22,11 +22,11 @@ export class WaveManager {
   }
 
   generateWave(waveNum) {
-    const baseCount = Math.floor(5 + waveNum * 1.2 + Math.max(0, waveNum - 12) * 1.0);
-    const hpMult = Math.pow(1.08, waveNum - 1) * (1 + Math.max(0, waveNum - 10) * 0.08);
-    const speedMult = 1 + (waveNum - 1) * 0.015 + Math.max(0, waveNum - 12) * 0.02;
-    const armorBonus = Math.max(0, Math.floor((waveNum - 10) * 0.4 + Math.max(0, waveNum - 22) * 0.5));
-    const rewardMult = 1 + (waveNum - 1) * 0.06;
+    const baseCount = Math.floor(6 + waveNum * 1.5 + Math.max(0, waveNum - 15) * 1.2);
+    const hpMult = Math.pow(1.10, waveNum - 1) * (1 + Math.max(0, waveNum - 8) * 0.10 + Math.max(0, waveNum - 22) * 0.12);
+    const speedMult = 1 + (waveNum - 1) * 0.018 + Math.max(0, waveNum - 15) * 0.025;
+    const armorBonus = Math.max(0, Math.floor((waveNum - 8) * 0.5 + Math.max(0, waveNum - 18) * 0.6 + Math.max(0, waveNum - 28) * 0.8));
+    const rewardMult = 1 + (waveNum - 1) * 0.03;
     const isBoss = waveNum % CONFIG.BOSS_INTERVAL === 0;
 
     const available = ENEMY_UNLOCK.filter(u => waveNum >= u.wave).map(u => u.type);
@@ -50,7 +50,7 @@ export class WaveManager {
       queue.push({
         type: 'boss',
         interval: 1.5,
-        waveMult: { hp: hpMult * 0.5, speed: 1, reward: rewardMult * 2, armor: armorBonus },
+        waveMult: { hp: Math.pow(1.08, waveNum - 1) * 0.5, speed: 1, reward: rewardMult * 2, armor: Math.floor(armorBonus * 0.4) },
       });
     }
 

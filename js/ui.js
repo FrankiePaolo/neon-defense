@@ -87,6 +87,7 @@ export class UIController {
     this.elements.finalWave = document.getElementById('final-wave');
     document.getElementById('player-name').placeholder = t('game.enterName');
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
+    document.getElementById('share-score-btn').textContent = t('share.button');
     document.getElementById('play-again-btn').textContent = t('game.playAgain');
 
     // Tower panel title
@@ -254,6 +255,10 @@ export class UIController {
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
       this.game.audio.playTrack('menu');
+    });
+
+    document.getElementById('share-score-btn').addEventListener('click', () => {
+      this._shareScore();
     });
 
     document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
@@ -559,6 +564,8 @@ export class UIController {
 
   showGameOver(score, wave) {
     this.hideUnlockTracker();
+    this._lastScore = score;
+    this._lastWave = wave;
     this.elements.finalScore.textContent = score;
     this.elements.finalWave.textContent = wave;
 
@@ -573,12 +580,31 @@ export class UIController {
       nextUnlockEl.style.display = 'none';
     }
 
+    // Challenge result
+    const resultEl = document.getElementById('challenge-result');
+    const challenge = window._challengeData;
+    if (challenge && resultEl) {
+      if (score > challenge.s) {
+        resultEl.textContent = t('challenge.beat').replace('{name}', challenge.n);
+        resultEl.className = 'beat';
+      } else {
+        resultEl.textContent = t('challenge.lost').replace('{name}', challenge.n);
+        resultEl.className = 'lost';
+      }
+      resultEl.style.display = 'block';
+    } else if (resultEl) {
+      resultEl.style.display = 'none';
+    }
+
     const nameInput = document.getElementById('player-name');
     const saveBtn = document.getElementById('save-score-btn');
     const lastUsed = localStorage.getItem('neon_td_player_name') || '';
     nameInput.value = lastUsed;
     saveBtn.disabled = !lastUsed;
     document.getElementById('name-taken-warn').style.display = 'none';
+
+    // Share button
+    document.getElementById('share-score-btn').textContent = t('share.button');
 
     this.elements.gameOverScreen.style.display = 'flex';
   }
@@ -677,5 +703,167 @@ export class UIController {
     const nowVisible = !wasVisible;
     list.style.display = nowVisible ? 'block' : 'none';
     document.getElementById('high-scores-btn').classList.toggle('active', nowVisible);
+  }
+
+  // ── Share Feature ──
+
+  showChallengeBanner(data) {
+    const banner = document.getElementById('challenge-banner');
+    if (!banner || !data) return;
+    banner.innerHTML = `
+      <div class="challenge-from">${t('challenge.from')}</div>
+      <div class="challenge-name">${data.n}</div>
+      <div class="challenge-stats">${data.s.toLocaleString()} pts · Wave ${data.w}</div>
+    `;
+    banner.classList.remove('hidden');
+  }
+
+  _getShareText(score, wave) {
+    const maxWave = CONFIG.MAX_WAVES;
+    let key;
+    if (wave >= maxWave) key = 'share.text.victory';
+    else if (wave > 20) key = 'share.text.high';
+    else if (wave > 5) key = 'share.text.mid';
+    else key = 'share.text.low';
+    return t(key).replace('{score}', score.toLocaleString()).replace('{wave}', wave);
+  }
+
+  _generateScoreCard(score, wave, playerName) {
+    return new Promise((resolve) => {
+      const W = 600, H = 340;
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, W, H);
+
+      // Subtle grid
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.3;
+      for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+
+      // Top/bottom accent lines
+      ctx.fillStyle = '#00ffff';
+      ctx.shadowColor = '#00ffff';
+      ctx.shadowBlur = 20;
+      ctx.fillRect(0, 0, W, 2);
+      ctx.fillRect(0, H - 2, W, 2);
+      ctx.shadowBlur = 0;
+
+      ctx.textAlign = 'center';
+
+      // Title
+      ctx.font = 'bold 22px "Courier New", monospace';
+      ctx.fillStyle = '#00ffff';
+      ctx.shadowColor = '#00ffff';
+      ctx.shadowBlur = 15;
+      ctx.fillText('NEON DEFENSE', W / 2, 42);
+      ctx.shadowBlur = 0;
+
+      // Player name
+      if (playerName) {
+        ctx.font = '14px "Courier New", monospace';
+        ctx.fillStyle = '#888';
+        ctx.fillText(playerName, W / 2, 64);
+      }
+
+      // Score
+      ctx.font = 'bold 64px "Courier New", monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 25;
+      ctx.fillText(score.toLocaleString(), W / 2, 145);
+      ctx.shadowBlur = 0;
+
+      // POINTS label
+      ctx.font = '14px "Courier New", monospace';
+      ctx.fillStyle = '#666';
+      ctx.fillText('POINTS', W / 2, 168);
+
+      // Stats row
+      const diffLabels = { hard: 'SHORT PATH', normal: 'MEDIUM PATH', easy: 'LONG PATH' };
+      const diff = this.game.difficulty || 'normal';
+      ctx.font = 'bold 16px "Courier New", monospace';
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`WAVE ${wave}  ·  ${diffLabels[diff] || 'MEDIUM PATH'}`, W / 2, 208);
+      ctx.shadowBlur = 0;
+
+      // Divider
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(100, 235);
+      ctx.lineTo(W - 100, 235);
+      ctx.stroke();
+
+      // CTA
+      ctx.font = 'bold 18px "Courier New", monospace';
+      ctx.fillStyle = '#ff8800';
+      ctx.shadowColor = '#ff8800';
+      ctx.shadowBlur = 10;
+      ctx.fillText(t('share.card.beatThis'), W / 2, 272);
+      ctx.shadowBlur = 0;
+
+      // URL
+      ctx.font = '12px "Courier New", monospace';
+      ctx.fillStyle = '#555';
+      ctx.fillText(window.location.hostname || 'neondefense.netlify.app', W / 2, 300);
+
+      c.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  }
+
+  async _shareScore() {
+    const score = this._lastScore;
+    const wave = this._lastWave;
+    const playerName = document.getElementById('player-name').value.trim() ||
+                       localStorage.getItem('neon_td_player_name') || '';
+    const diff = this.game.difficulty || 'normal';
+
+    const challengeData = btoa(JSON.stringify({ n: playerName || 'Anon', s: score, w: wave, d: diff }));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?c=${challengeData}`;
+    const shareText = this._getShareText(score, wave);
+
+    try {
+      const blob = await this._generateScoreCard(score, wave, playerName);
+      const file = new File([blob], 'neon-defense-score.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'NEON DEFENSE',
+          text: shareText,
+          url: shareUrl,
+          files: [file],
+        });
+        return;
+      }
+    } catch (e) {
+      // Share cancelled or not supported — fall through to clipboard
+      if (e.name === 'AbortError') return;
+    }
+
+    // Desktop fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+    } catch {
+      // Last resort: prompt
+      prompt(t('share.copied'), `${shareText}\n${shareUrl}`);
+      return;
+    }
+    this._showShareToast();
+  }
+
+  _showShareToast() {
+    const toast = document.getElementById('share-toast');
+    toast.textContent = t('share.copied');
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 2500);
   }
 }

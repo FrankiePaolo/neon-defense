@@ -565,7 +565,7 @@ canvas {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: #0a0a0a;
   z-index: 50;
 }
 
@@ -1003,6 +1003,59 @@ canvas {
   #cancel-place-btn { min-height: 44px; }
   #pause-overlay p { display: none; }
 }
+
+/* Challenge banner on menu */
+#challenge-banner {
+  background: rgba(255, 136, 0, 0.08);
+  border: 1px solid rgba(255, 136, 0, 0.4);
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin-bottom: 12px;
+  text-align: center;
+  animation: challenge-pulse 2s ease-in-out infinite;
+}
+#challenge-banner .challenge-from {
+  font-size: 11px;
+  color: #ff8800;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+#challenge-banner .challenge-name {
+  font-size: 18px;
+  color: #fff;
+  font-weight: bold;
+}
+#challenge-banner .challenge-stats {
+  font-size: 14px;
+  color: #ffd700;
+  margin-top: 4px;
+}
+@keyframes challenge-pulse {
+  0%, 100% { border-color: rgba(255, 136, 0, 0.3); box-shadow: 0 0 8px rgba(255, 136, 0, 0.1); }
+  50% { border-color: rgba(255, 136, 0, 0.7); box-shadow: 0 0 16px rgba(255, 136, 0, 0.25); }
+}
+
+/* Share toast */
+#share-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 255, 102, 0.15);
+  border: 1px solid #00ff66;
+  color: #00ff66;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  z-index: 200;
+  transition: opacity 0.3s;
+}
+#share-toast.hidden { display: none; }
+
+/* Challenge result on game over */
+#challenge-result.beat { color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.5); }
+#challenge-result.lost { color: #ff8800; text-shadow: 0 0 10px rgba(255,136,0,0.5); }
 </style>
 </head>
 <body>
@@ -1043,11 +1096,12 @@ canvas {
         <button class="lang-btn" data-lang="it">IT</button>
       </div>
       <h1>NEON DEFENSE</h1>
+      <div id="challenge-banner" class="hidden"></div>
       <div id="difficulty-label">SELECT DIFFICULTY</div>
       <div id="difficulty-buttons">
-        <button class="menu-btn difficulty-btn" data-difficulty="hard">SHORT PATH</button>
-        <button class="menu-btn difficulty-btn" data-difficulty="normal">MEDIUM PATH</button>
         <button class="menu-btn difficulty-btn" data-difficulty="easy">LONG PATH</button>
+        <button class="menu-btn difficulty-btn" data-difficulty="normal">MEDIUM PATH</button>
+        <button class="menu-btn difficulty-btn" data-difficulty="hard">SHORT PATH</button>
       </div>
       <button class="menu-btn" id="high-scores-btn">GLOBAL SCORES</button>
       <div id="high-scores-list"></div>
@@ -1067,7 +1121,9 @@ canvas {
       <p id="next-unlock-hint" style="display:none; font-size: 13px; color: #aaa;"></p>
       <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off">
       <p id="name-taken-warn" style="visibility:hidden; color:#ff6666; font-size:12px; margin:4px 0 0;">&nbsp;</p>
+      <p id="challenge-result" style="display:none; font-size: 16px; font-weight: bold; margin: 6px 0;"></p>
       <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
+      <button class="menu-btn" id="share-score-btn" style="background: rgba(0,255,102,0.12); border-color: #00ff66; color: #00ff66;">CHALLENGE A FRIEND</button>
       <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>
     </div>
   </div>
@@ -1076,6 +1132,8 @@ canvas {
     <h3>TOWERS</h3>
     <div id="tower-list"></div>
   </div>
+
+  <div id="share-toast" class="hidden">Link copied!</div>
 </div>
 
 <script type="module" src="js/main.js"></script>
