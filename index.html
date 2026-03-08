@@ -1195,9 +1195,12 @@ canvas {
     const isAndroid = /Android/.test(navigator.userAgent);
     if (!isIOS && !isAndroid) return;
 
-    const lang = localStorage.getItem('neon_td_lang') || (navigator.language || '').slice(0, 2);
-    const isIT = lang === 'it';
     let deferredPrompt = null;
+
+    function getIsIT() {
+      const lang = localStorage.getItem('neon_td_lang') || (navigator.language || '').slice(0, 2);
+      return lang === 'it';
+    }
 
     function showBanner(text) {
       const banner = document.getElementById('pwa-banner');
@@ -1210,19 +1213,21 @@ canvas {
     }
 
     if (isIOS) {
-      const iosText = isIT
-        ? 'Installa come app: tocca <strong style="color:#00ffff">Condividi</strong> poi <strong style="color:#00ffff">Aggiungi alla Home</strong>'
-        : 'Install as app: tap <strong style="color:#00ffff">Share</strong> then <strong style="color:#00ffff">Add to Home Screen</strong>';
-      setTimeout(() => showBanner(iosText), 2000);
+      setTimeout(() => {
+        const text = getIsIT()
+          ? 'Installa come app: tocca <strong style="color:#00ffff">Condividi</strong> poi <strong style="color:#00ffff">Aggiungi alla Home</strong>'
+          : 'Install as app: tap <strong style="color:#00ffff">Share</strong> then <strong style="color:#00ffff">Add to Home Screen</strong>';
+        showBanner(text);
+      }, 2000);
     } else {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        const androidText = isIT
-          ? 'Installa come app per la migliore esperienza! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALLA</strong>'
-          : 'Install as app for the best experience! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALL</strong>';
         setTimeout(() => {
-          showBanner(androidText);
+          const text = getIsIT()
+            ? 'Installa come app per la migliore esperienza! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALLA</strong>'
+            : 'Install as app for the best experience! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALL</strong>';
+          showBanner(text);
           document.getElementById('pwa-install-btn')?.addEventListener('click', () => {
             deferredPrompt.prompt();
             document.getElementById('pwa-banner').classList.add('hidden');
