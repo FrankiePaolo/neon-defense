@@ -70,7 +70,9 @@ export class Enemy {
   takeDamage(amount, damageType) {
     const brittle = this.effects.get('brittle');
     if (brittle) amount *= (1 + brittle.magnitude);
-    amount = Math.max(1, amount - this.armor);
+    // Percentage-based armor with diminishing returns: armor/(armor+25)
+    const armorReduction = this.armor / (this.armor + 25);
+    amount = Math.max(1, amount * (1 - armorReduction));
 
     if (this.shield > 0) {
       this.shieldRegenTimer = this.shieldRegenDelay;

@@ -444,7 +444,7 @@ export class Game {
     }
     this._checkUnlocks();
     this.economy.applyInterest();
-    this.economy.earn(20 + this.waveManager.currentWave * 3);
+    this.economy.earn(25 + this.waveManager.currentWave * 5);
 
     for (const tower of this.towers) {
       if (tower.type === 'support' && tower.currentStats.goldPerWave) {

@@ -9,7 +9,7 @@ export const CONFIG = {
   get CANVAS_HEIGHT() { return this.GRID_ROWS * this.TILE_SIZE; },
   BASE_LIVES: 20,
   START_GOLD: 100,
-  INTEREST_RATE: 0.03,
+  INTEREST_RATE: 0.04,
   INTEREST_CAP: 200,
   MAX_WAVES: 35,
   BOSS_INTERVAL: 5,
@@ -32,7 +32,7 @@ export const COLORS = {
 
 export const TOWER_DEFS = {
   blaster: {
-    name: 'Blaster', cost: 75, color: '#00ffff', glowColor: '#00ccff',
+    name: 'Blaster', cost: 80, color: '#00ffff', glowColor: '#00ccff',
     shape: 'diamond', range: 3.5, damage: 10, fireRate: 1.5,
     projectileSpeed: 400, targeting: 'first',
     description: 'Balanced all-rounder',
@@ -41,17 +41,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Rapid Fire',
         levels: [
-          { cost: 40, stats: { fireRate: 2.5 }, desc: '+67% fire rate' },
-          { cost: 100, stats: { fireRate: 4.0 }, desc: '+167% fire rate' },
-          { cost: 225, stats: { fireRate: 6.0, damage: 18 }, desc: 'Overclocked' },
+          { cost: 45, stats: { fireRate: 2.5 }, desc: '+67% fire rate' },
+          { cost: 110, stats: { fireRate: 3.5, damage: 12 }, desc: '+133% fire rate' },
+          { cost: 250, stats: { fireRate: 5.0, damage: 16 }, desc: 'Overclocked' },
         ]
       },
       pathB: {
         name: 'Heavy Rounds',
         levels: [
-          { cost: 40, stats: { damage: 22 }, desc: '+120% damage' },
-          { cost: 100, stats: { damage: 40 }, desc: '+300% damage' },
-          { cost: 225, stats: { damage: 65, range: 4.5 }, desc: 'Armor-piercing' },
+          { cost: 45, stats: { damage: 20 }, desc: '+100% damage' },
+          { cost: 110, stats: { damage: 38 }, desc: '+280% damage' },
+          { cost: 250, stats: { damage: 55, range: 4.0 }, desc: 'Armor-piercing' },
         ]
       }
     }
@@ -60,24 +60,24 @@ export const TOWER_DEFS = {
     name: 'Frost', cost: 100, color: '#88ccff', glowColor: '#4488ff',
     shape: 'hexagon', range: 3.0, damage: 3, fireRate: 1.0,
     projectileSpeed: 300, targeting: 'first',
-    slowAmount: 0.4, slowDuration: 2.0,
+    slowAmount: 0.35, slowDuration: 2.0,
     description: 'Slows enemies',
     unlockScore: 500,
     upgrades: {
       pathA: {
         name: 'Deep Freeze',
         levels: [
-          { cost: 50, stats: { slowAmount: 0.5 }, desc: '50% slow' },
-          { cost: 125, stats: { slowAmount: 0.6, slowDuration: 3.0 }, desc: '60% slow' },
-          { cost: 275, stats: { slowAmount: 0.75 }, desc: 'AoE freeze pulse' },
+          { cost: 55, stats: { slowAmount: 0.45 }, desc: '45% slow' },
+          { cost: 130, stats: { slowAmount: 0.55, slowDuration: 2.5 }, desc: '55% slow' },
+          { cost: 300, stats: { slowAmount: 0.65, range: 3.5 }, desc: 'AoE freeze pulse' },
         ]
       },
       pathB: {
         name: 'Frostbite',
         levels: [
-          { cost: 50, stats: { damage: 10 }, desc: 'Frostbite damage' },
-          { cost: 125, stats: { damage: 18 }, desc: '+20% vuln (brittle)' },
-          { cost: 275, stats: { damage: 30 }, desc: '+35% vuln (shatter)' },
+          { cost: 55, stats: { damage: 8, fireRate: 1.2 }, desc: 'Frostbite damage' },
+          { cost: 130, stats: { damage: 15, fireRate: 1.4 }, desc: '+20% vuln (brittle)' },
+          { cost: 300, stats: { damage: 24, fireRate: 1.6 }, desc: '+30% vuln (shatter)' },
         ]
       }
     }
@@ -93,17 +93,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Storm',
         levels: [
-          { cost: 75, stats: { chainCount: 5 }, desc: '5 chain targets' },
-          { cost: 175, stats: { chainCount: 7, chainDecay: 0.8 }, desc: '7 chains' },
-          { cost: 375, stats: { chainCount: 10 }, desc: 'Storm strike AoE' },
+          { cost: 80, stats: { chainCount: 4, chainRange: 2.2 }, desc: '4 chain targets' },
+          { cost: 185, stats: { chainCount: 6, chainDecay: 0.75 }, desc: '6 chains, less decay' },
+          { cost: 400, stats: { chainCount: 8, chainRange: 2.5 }, desc: 'Storm strike AoE' },
         ]
       },
       pathB: {
         name: 'Overload',
         levels: [
-          { cost: 75, stats: { damage: 18 }, desc: 'High voltage' },
-          { cost: 175, stats: { damage: 30 }, desc: '15% stun chance' },
-          { cost: 375, stats: { damage: 50 }, desc: '30% stun' },
+          { cost: 80, stats: { damage: 15 }, desc: 'High voltage' },
+          { cost: 185, stats: { damage: 25 }, desc: '15% stun chance' },
+          { cost: 400, stats: { damage: 40, fireRate: 1.0 }, desc: '30% stun' },
         ]
       }
     }
@@ -119,23 +119,23 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Bombardment',
         levels: [
-          { cost: 85, stats: { splashRadius: 2.0 }, desc: 'Wider explosions' },
-          { cost: 200, stats: { splashRadius: 2.5, fireRate: 0.65 }, desc: 'Carpet bomb' },
-          { cost: 400, stats: { splashRadius: 3.0 }, desc: 'Napalm rounds' },
+          { cost: 90, stats: { splashRadius: 2.0, damage: 38 }, desc: 'Wider explosions' },
+          { cost: 210, stats: { splashRadius: 2.5, damage: 50, fireRate: 0.6 }, desc: 'Carpet bomb' },
+          { cost: 425, stats: { splashRadius: 3.0, damage: 65 }, desc: 'Napalm rounds' },
         ]
       },
       pathB: {
         name: 'Demolisher',
         levels: [
-          { cost: 85, stats: { damage: 55 }, desc: 'HE shells' },
-          { cost: 200, stats: { damage: 95 }, desc: 'Shreds 30% armor' },
-          { cost: 400, stats: { damage: 150 }, desc: 'Critical strikes' },
+          { cost: 90, stats: { damage: 50 }, desc: 'HE shells' },
+          { cost: 210, stats: { damage: 85 }, desc: 'Shreds 30% armor' },
+          { cost: 425, stats: { damage: 130 }, desc: 'Critical strikes' },
         ]
       }
     }
   },
   sniper: {
-    name: 'Sniper', cost: 200, color: '#00ff66', glowColor: '#00cc44',
+    name: 'Sniper', cost: 225, color: '#00ff66', glowColor: '#00cc44',
     shape: 'octagon', range: 6.0, damage: 50, fireRate: 0.3,
     projectileSpeed: 800, targeting: 'strongest',
     description: 'Extreme range, high damage',
@@ -144,42 +144,42 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Marksman',
         levels: [
-          { cost: 100, stats: { range: 8.0 }, desc: 'Extended range' },
-          { cost: 225, stats: { range: 10.0, damage: 80 }, desc: 'Eagle eye' },
-          { cost: 450, stats: { range: 100, damage: 140 }, desc: 'Infinite range' },
+          { cost: 110, stats: { range: 7.5 }, desc: 'Extended range' },
+          { cost: 250, stats: { range: 9.0, damage: 70 }, desc: 'Eagle eye' },
+          { cost: 500, stats: { range: 12.0, damage: 110 }, desc: 'Full-map range' },
         ]
       },
       pathB: {
         name: 'Assassin',
         levels: [
-          { cost: 100, stats: { damage: 90 }, desc: 'Hollow-point' },
-          { cost: 225, stats: { damage: 150 }, desc: 'Execute < 30% HP' },
-          { cost: 450, stats: { damage: 225 }, desc: 'Death mark' },
+          { cost: 110, stats: { damage: 80 }, desc: 'Hollow-point' },
+          { cost: 250, stats: { damage: 130 }, desc: 'Execute < 30% HP' },
+          { cost: 500, stats: { damage: 190 }, desc: 'Death mark' },
         ]
       }
     }
   },
   support: {
-    name: 'Support', cost: 225, color: '#ffffff', glowColor: '#aaaaff',
+    name: 'Support', cost: 200, color: '#ffffff', glowColor: '#aaaaff',
     shape: 'circle', range: 2.5, damage: 0, fireRate: 0,
     damageAmp: 0.15, buffRange: 2.5,
     description: 'Buffs nearby towers',
-    unlockScore: 10000,
+    unlockScore: 5000,
     upgrades: {
       pathA: {
         name: 'Command',
         levels: [
-          { cost: 100, stats: { damageAmp: 0.25 }, desc: '+25% damage amp' },
-          { cost: 225, stats: { damageAmp: 0.35, buffRange: 3.0 }, desc: 'Wider aura' },
-          { cost: 450, stats: { damageAmp: 0.5 }, desc: '+50% dmg +20% rate' },
+          { cost: 100, stats: { damageAmp: 0.20 }, desc: '+20% damage amp' },
+          { cost: 225, stats: { damageAmp: 0.30, buffRange: 3.0 }, desc: 'Wider aura' },
+          { cost: 450, stats: { damageAmp: 0.40 }, desc: '+40% dmg +15% rate' },
         ]
       },
       pathB: {
         name: 'Economy',
         levels: [
-          { cost: 100, stats: { goldPerWave: 25 }, desc: '+25 gold/wave' },
-          { cost: 225, stats: { goldPerWave: 60 }, desc: '+60 gold/wave' },
-          { cost: 450, stats: { goldPerWave: 120 }, desc: '+120g +10% sell' },
+          { cost: 100, stats: { goldPerWave: 20 }, desc: '+20 gold/wave' },
+          { cost: 225, stats: { goldPerWave: 45 }, desc: '+45 gold/wave' },
+          { cost: 450, stats: { goldPerWave: 80 }, desc: '+80g +10% sell' },
         ]
       }
     }
@@ -188,15 +188,15 @@ export const TOWER_DEFS = {
 
 export const ENEMY_DEFS = {
   basic:    { name: 'Drone',    hp: 30,   speed: 60,  armor: 0, reward: 5,   color: '#ff4444', shape: 'circle',   size: 8 },
-  fast:     { name: 'Scout',    hp: 20,   speed: 120, armor: 0, reward: 4,   color: '#ff8844', shape: 'triangle', size: 6 },
-  tank:     { name: 'Brute',    hp: 150,  speed: 30,  armor: 0, reward: 15,  color: '#aa44aa', shape: 'square',   size: 12 },
-  armored:  { name: 'Sentinel', hp: 80,   speed: 45,  armor: 5, reward: 12,  color: '#888888', shape: 'pentagon', size: 10 },
-  healer:   { name: 'Medic',    hp: 50,   speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healAmount: 5, healInterval: 1.0 },
-  splitter: { name: 'Hydra',    hp: 60,   speed: 50,  armor: 0, reward: 8,   color: '#44ffff', shape: 'diamond',  size: 10, splitCount: 2, splitType: 'basic' },
-  flying:   { name: 'Wraith',   hp: 45,   speed: 70,  armor: 0, reward: 10,  color: '#ff44ff', shape: 'triangle', size: 7,  flying: true },
-  boss:     { name: 'Overlord', hp: 1000, speed: 20,  armor: 3, reward: 200, color: '#ff0000', shape: 'hexagon',  size: 18, bossRegen: 2 },
+  fast:     { name: 'Scout',    hp: 20,   speed: 120, armor: 0, reward: 5,   color: '#ff8844', shape: 'triangle', size: 6 },
+  tank:     { name: 'Brute',    hp: 120,  speed: 30,  armor: 0, reward: 15,  color: '#aa44aa', shape: 'square',   size: 12 },
+  armored:  { name: 'Sentinel', hp: 70,   speed: 45,  armor: 3, reward: 12,  color: '#888888', shape: 'pentagon', size: 10 },
+  healer:   { name: 'Medic',    hp: 45,   speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healAmount: 3, healInterval: 1.0 },
+  splitter: { name: 'Hydra',    hp: 55,   speed: 50,  armor: 0, reward: 8,   color: '#44ffff', shape: 'diamond',  size: 10, splitCount: 2, splitType: 'basic' },
+  flying:   { name: 'Wraith',   hp: 40,   speed: 70,  armor: 0, reward: 10,  color: '#ff44ff', shape: 'triangle', size: 7,  flying: true },
+  boss:     { name: 'Overlord', hp: 800,  speed: 20,  armor: 3, reward: 150, color: '#ff0000', shape: 'hexagon',  size: 18, bossRegen: 3 },
   stealth:  { name: 'Phantom',  hp: 35,   speed: 80,  armor: 0, reward: 15,  color: '#666666', shape: 'circle',   size: 6,  stealth: true, revealRange: 2.0 },
-  shielded: { name: 'Guardian', hp: 60,   speed: 40,  armor: 0, reward: 18,  color: '#4488ff', shape: 'octagon',  size: 10, shield: 40, shieldRegen: 3, shieldRegenDelay: 3.0 },
+  shielded: { name: 'Guardian', hp: 55,   speed: 40,  armor: 0, reward: 18,  color: '#4488ff', shape: 'octagon',  size: 10, shield: 30, shieldRegen: 2, shieldRegenDelay: 3.0 },
 };
 
 export const PARTICLE_PRESETS = {
