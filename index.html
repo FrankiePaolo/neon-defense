@@ -1195,6 +1195,8 @@ canvas {
     const isAndroid = /Android/.test(navigator.userAgent);
     if (!isIOS && !isAndroid) return;
 
+    const lang = localStorage.getItem('neon_td_lang') || (navigator.language || '').slice(0, 2);
+    const isIT = lang === 'it';
     let deferredPrompt = null;
 
     function showBanner(text) {
@@ -1205,19 +1207,22 @@ canvas {
         banner.classList.add('hidden');
         localStorage.setItem('neon_td_pwa_dismissed', '1');
       });
-      setTimeout(() => {
-        if (!banner.classList.contains('hidden')) banner.classList.add('hidden');
-      }, 12000);
     }
 
     if (isIOS) {
-      setTimeout(() => showBanner('Install as app: tap <strong style="color:#00ffff">Share</strong> then <strong style="color:#00ffff">Add to Home Screen</strong>'), 2000);
+      const iosText = isIT
+        ? 'Installa come app: tocca <strong style="color:#00ffff">Condividi</strong> poi <strong style="color:#00ffff">Aggiungi alla Home</strong>'
+        : 'Install as app: tap <strong style="color:#00ffff">Share</strong> then <strong style="color:#00ffff">Add to Home Screen</strong>';
+      setTimeout(() => showBanner(iosText), 2000);
     } else {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
+        const androidText = isIT
+          ? 'Installa come app per la migliore esperienza! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALLA</strong>'
+          : 'Install as app for the best experience! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALL</strong>';
         setTimeout(() => {
-          showBanner('Install as app for the best experience! <strong style="color:#00ffff;cursor:pointer" id="pwa-install-btn">INSTALL</strong>');
+          showBanner(androidText);
           document.getElementById('pwa-install-btn')?.addEventListener('click', () => {
             deferredPrompt.prompt();
             document.getElementById('pwa-banner').classList.add('hidden');
