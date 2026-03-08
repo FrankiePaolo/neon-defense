@@ -559,8 +559,14 @@ export class UIController {
     this.hideCancelButton();
   }
 
-  showPause() { this.elements.pauseOverlay.style.display = 'flex'; }
-  hidePause() { this.elements.pauseOverlay.style.display = 'none'; }
+  showPause() {
+    this.elements.pauseOverlay.style.display = 'flex';
+    document.getElementById('tower-panel').style.display = 'none';
+  }
+  hidePause() {
+    this.elements.pauseOverlay.style.display = 'none';
+    document.getElementById('tower-panel').style.display = '';
+  }
 
   showGameOver(score, wave) {
     this.hideUnlockTracker();
