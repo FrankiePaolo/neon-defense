@@ -80,6 +80,18 @@ canvas {
 #hud-lives { color: #ff4444; }
 #hud-score { color: #ffffff; }
 
+/* Inline SVG icons (js/icons.js) */
+.icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+  margin-right: 0.25em;
+}
+
+.hud-item .icon { width: 0.95em; height: 0.95em; margin-right: 0; }
+.hud-total { opacity: 0.55; font-size: 0.8em; margin-left: -2px; }
+
 /* Unlock Tracker */
 #unlock-tracker {
   position: absolute;
@@ -92,7 +104,12 @@ canvas {
 }
 
 #unlock-tracker .unlock-label {
-  color: #666;
+  color: #aaa;
+  max-width: 150px;
+}
+
+#unlock-tracker .unlock-togo {
+  color: #777;
   margin-bottom: 3px;
 }
 
@@ -173,9 +190,52 @@ canvas {
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 }
+
+.tower-btn .tower-pic {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.tower-btn .tower-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tower-btn.tower-locked .tower-pic {
+  filter: grayscale(1) brightness(0.45);
+}
+
+.tower-pic-wrap {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.tower-pic-wrap .icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 55%;
+  height: 55%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: #ff8800;
+  filter: drop-shadow(0 0 2px #000);
+}
+
+.tower-btn .tower-need {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #ff8866;
+}
+
+.tower-btn .tower-need:empty { display: none; }
 
 .tower-btn:hover {
   box-shadow: 0 0 12px var(--tower-color, #333);
@@ -207,8 +267,11 @@ canvas {
 }
 
 /* Unaffordable towers */
-.tower-btn.tower-unaffordable {
-  opacity: 0.55;
+.tower-btn.tower-unaffordable .tower-pic,
+.tower-btn.tower-unaffordable .tower-name,
+.tower-btn.tower-unaffordable .tower-cost,
+.tower-btn.tower-unaffordable .tower-desc {
+  opacity: 0.45;
 }
 
 /* Locked towers */
@@ -227,18 +290,6 @@ canvas {
   letter-spacing: 1px;
 }
 
-/* Tower panel blocked by tutorial */
-#tower-panel.tutorial-blocked .tower-btn:not(.tower-locked) {
-  opacity: 0.25;
-  cursor: default;
-}
-
-#tower-panel.tutorial-blocked .tower-btn:not(.tower-locked):hover {
-  box-shadow: none;
-  background: rgba(20, 20, 30, 0.8);
-}
-
-/* Unlock notification */
 #unlock-notification {
   position: absolute;
   top: 35%;
@@ -294,6 +345,8 @@ canvas {
 }
 #upgrade-panel .up-stats span { white-space: nowrap; }
 #upgrade-panel .up-path-name { margin-top: 6px; color: #aaa; font-size: 14px; letter-spacing: 1px; }
+#upgrade-panel .up-path-locked { color: #ff8866; font-size: 12px; margin: 2px 0; }
+#upgrade-panel .up-cost .icon { color: inherit; }
 #upgrade-panel .up-level {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 6px; margin: 2px 0; border: 1px solid transparent; border-radius: 2px;
@@ -361,7 +414,8 @@ canvas {
   visibility: visible;
 }
 
-#tower-stats-tooltip .ttp-title { font-weight: bold; font-size: 15px; margin-bottom: 2px; }
+#tower-stats-tooltip .ttp-title { font-weight: bold; font-size: 15px; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+#tower-stats-tooltip .ttp-pic { width: 32px; height: 32px; }
 #tower-stats-tooltip .ttp-desc { font-size: 12px; color: #666; margin-bottom: 6px; }
 #tower-stats-tooltip .ttp-stats {
   display: flex; gap: 8px; flex-wrap: wrap;
@@ -369,6 +423,7 @@ canvas {
   padding: 4px 0; border-top: 1px solid #1a1a2e;
 }
 #tower-stats-tooltip .ttp-stats span { white-space: nowrap; }
+.stat .icon { opacity: 0.8; }
 #tower-stats-tooltip .ttp-stat-val { font-weight: bold; }
 #tower-stats-tooltip .ttp-targeting { font-size: 11px; color: #555; margin-top: 4px; }
 #tower-stats-tooltip .ttp-locked-hint { font-size: 11px; color: #ff8800; margin-top: 6px; }
@@ -408,6 +463,54 @@ canvas {
   color: #888;
   border: 1px solid #222;
 }
+
+/* Phase: label above the wave controls, panel dimmed during a wave */
+#phase-label {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #00ffff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+#game-container[data-phase="wave"] #phase-label { color: #ff8800; text-shadow: 0 0 8px rgba(255, 136, 0, 0.5); }
+#game-container[data-phase="wave"] #wave-preview,
+#game-container[data-phase="wave"] #start-wave-btn { display: none; }
+
+#build-note {
+  display: none;
+  font-size: 12px;
+  color: #ff8800;
+  text-align: center;
+}
+
+#game-container[data-phase="wave"] #build-note { display: block; }
+#game-container[data-phase="wave"] #tower-list {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Wave preview enemy pictures */
+#wave-preview { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+#wave-preview-content { display: inline-flex; flex-wrap: wrap; align-items: center; }
+.wp-enemy { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; }
+.wp-pic { width: 22px; height: 22px; }
+
+/* HUD feedback */
+@keyframes hud-hit {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px) scale(1.25); color: #fff; }
+  30% { transform: translateX(4px) scale(1.25); }
+  45% { transform: translateX(-3px) scale(1.15); color: #fff; }
+  60% { transform: translateX(3px); }
+}
+#hud-lives.hud-hit { animation: hud-hit 0.5s ease-out; }
+
+@keyframes hud-pulse {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.2); color: #fff6b0; }
+}
+#hud-gold.hud-pulse { animation: hud-pulse 0.35s ease-out; }
 
 /* Start Wave Button */
 #start-wave-btn {
@@ -523,6 +626,15 @@ canvas {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.difficulty-btn .diff-sub {
+  display: block;
+  font-size: 0.7em;
+  opacity: 0.6;
+  margin-top: 3px;
+  letter-spacing: 1px;
+  text-transform: lowercase;
 }
 
 .difficulty-btn {
@@ -648,99 +760,77 @@ canvas {
 /* Tutorial overlay */
 #tutorial-overlay {
   position: absolute;
-  top: 54px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 10, 20, 0.92);
+  background: rgba(0, 10, 20, 0.94);
   border: 1px solid #00ffff;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 30px rgba(0, 255, 255, 0.05);
-  padding: 16px 24px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  padding: 10px 14px;
   max-width: 420px;
-  width: 90%;
-  z-index: 60;
+  width: 92%;
+  z-index: 960;
   text-align: center;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #ddd;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #eee;
 }
 
-#tutorial-overlay .tutorial-msg {
-  margin-bottom: 12px;
-}
-
-#tutorial-overlay .tutorial-btn {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  border: 1px solid #00ffff;
-  padding: 8px 24px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-#tutorial-overlay .tutorial-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
-}
-
-#tutorial-overlay .tutorial-step-count {
-  font-size: 11px;
-  color: #00ffff;
-  opacity: 0.5;
-  margin-bottom: 6px;
-}
+#tutorial-overlay .tutorial-msg { margin-bottom: 8px; }
 
 #tutorial-overlay .tutorial-actions {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
-#tutorial-overlay .tutorial-skip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #99a;
-  border: 1px solid #556;
-  padding: 8px 24px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-#tutorial-overlay .tutorial-skip:hover {
+#tutorial-overlay .tutorial-continue {
+  font-size: 12px;
   color: #00ffff;
-  border-color: rgba(0, 255, 255, 0.4);
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+  animation: pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes tutorial-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 255, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.7), 0 0 40px rgba(0, 255, 255, 0.3); }
+#tutorial-overlay .tutorial-skip {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #889;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 0;
 }
 
-.tutorial-highlight {
-  animation: tutorial-pulse 1.2s ease-in-out infinite !important;
-  border-color: #00ffff !important;
+#tutorial-overlay .tutorial-skip:hover { color: #00ffff; }
+
+/* Transparent blockers around the step target */
+.tutorial-blocker {
+  position: fixed;
+  z-index: 900;
 }
 
-@media (max-width: 768px) {
-  #tutorial-overlay {
-    bottom: auto;
-    top: 40px;
-    font-size: 15px;
-    padding: 12px 16px;
-  }
+/* Pointing hand; its fingertip sits on the target point */
+#tutorial-pointer {
+  position: fixed;
+  z-index: 950;
+  width: 44px;
+  height: 44px;
+  margin: -2px 0 0 -19px;
+  pointer-events: none;
+  color: #ffffff;
+  filter: drop-shadow(0 0 6px #00ffff) drop-shadow(0 0 2px #000);
+  animation: tutorial-tap 1s ease-in-out infinite;
 }
 
-@media (pointer: coarse) {
-  #tutorial-overlay .tutorial-btn {
-    min-height: 44px;
-    padding: 10px 28px;
-  }
+@keyframes tutorial-tap {
+  0%, 100% { transform: translate(0, 6px); }
+  50% { transform: translate(0, 0) scale(0.9); }
 }
+
+/* While coaching, the caption replaces the phase label and wave preview */
+#game-container.tutorial-on #phase-label,
+#game-container.tutorial-on #wave-preview { display: none; }
 
 /* Cancel placement button */
 #cancel-place-btn {
@@ -779,11 +869,13 @@ canvas {
   #unlock-tracker {
     top: 44px;
     left: 8px;
-    font-size: 12px;
+    font-size: 11px;
+    max-width: calc(100% - 262px);
   }
 
   #unlock-tracker .unlock-bar-bg {
     width: 90px;
+    max-width: 100%;
   }
 
   #speed-controls {
@@ -822,14 +914,16 @@ canvas {
   .tower-btn {
     min-width: 0;
     min-height: 58px;
-    padding: 8px;
-    gap: 3px;
+    padding: 6px;
+    gap: 5px;
   }
 
-  .tower-btn .tower-name { font-size: 14px; }
+  .tower-btn .tower-name { font-size: 13px; }
   .tower-btn .tower-cost { font-size: 13px; }
-  .tower-btn .tower-unlock-req { font-size: 12px; }
+  .tower-btn .tower-unlock-req { font-size: 11px; letter-spacing: 0; }
+  .tower-btn .tower-need { font-size: 11px; }
   .tower-btn .tower-desc { display: none; }
+  .tower-btn .tower-pic { width: 28px; height: 28px; }
 
   #upgrade-panel {
     min-width: unset;
@@ -1118,11 +1212,19 @@ canvas {
     </div>
 
     <div id="wave-controls">
+      <div id="phase-label"></div>
       <div id="wave-preview">Next: <span id="wave-preview-content"></span></div>
       <button id="start-wave-btn">START WAVE</button>
     </div>
     <button id="cancel-place-btn" class="hidden">CANCEL</button>
     <div id="tutorial-overlay" class="hidden"></div>
+    <div class="tutorial-blocker hidden"></div>
+    <div class="tutorial-blocker hidden"></div>
+    <div class="tutorial-blocker hidden"></div>
+    <div class="tutorial-blocker hidden"></div>
+    <div id="tutorial-pointer" class="hidden">
+      <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true"><path fill="currentColor" stroke="#003" stroke-width="0.8" d="M9 2.5a1.6 1.6 0 0 1 3.2 0V10l.1-.1a1.6 1.6 0 0 1 3 .6v.3a1.6 1.6 0 0 1 3 .7v.6a1.6 1.6 0 0 1 3 .8V17c0 3-2.4 5.5-5.4 5.5h-2.3c-1.8 0-3.4-.9-4.4-2.4L4.6 15a1.6 1.6 0 0 1 2.4-2l2 1.8z"/></svg>
+    </div>
     <div id="upgrade-panel"></div>
     <div id="tower-stats-tooltip"></div>
 
@@ -1147,6 +1249,7 @@ canvas {
       <h2>PAUSED</h2>
       <p>Press SPACE or ESC to resume</p>
       <button class="menu-btn" id="resume-btn" style="margin-top: 16px;">RESUME</button>
+      <button class="menu-btn" id="replay-tutorial-btn" style="margin-top: 8px;">REPLAY TUTORIAL</button>
       <button class="menu-btn" id="restart-btn" style="margin-top: 8px;">RESTART</button>
     </div>
 
@@ -1166,6 +1269,7 @@ canvas {
 
   <div id="tower-panel" class="panel-hidden">
     <h3>TOWERS</h3>
+    <div id="build-note"></div>
     <div id="tower-list"></div>
   </div>
 

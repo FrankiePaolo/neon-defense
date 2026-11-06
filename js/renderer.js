@@ -1,6 +1,7 @@
 import { CONFIG, COLORS, TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 import { gridToPixel } from './utils.js';
-import { CELL_PATH, CELL_ENTRY, CELL_EXIT } from './grid.js';
+import { t } from './i18n.js';
+import { Tower } from './tower.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -34,85 +35,97 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(0, y * ts); ctx.lineTo(this.width, y * ts); ctx.stroke();
     }
 
-    // ── Path tiles ──
-    const isPathCell = (px, py) => {
-      if (px < 0 || px >= grid.cols || py < 0 || py >= grid.rows) return false;
-      const c = grid.cells[py][px];
-      return c === CELL_PATH || c === CELL_ENTRY || c === CELL_EXIT;
-    };
-
-    // Base fill with subtle radial gradient
-    for (let y = 0; y < grid.rows; y++) {
-      for (let x = 0; x < grid.cols; x++) {
-        if (!isPathCell(x, y)) continue;
-        const cx = x * ts + ts / 2;
-        const cy = y * ts + ts / 2;
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ts * 0.7);
-        grad.addColorStop(0, '#1c2d50');
-        grad.addColorStop(1, '#141e38');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x * ts + 1, y * ts + 1, ts - 2, ts - 2);
-      }
-    }
-
-    // Glowing neon edges on outer boundaries of the path (channel walls)
-    ctx.save();
-    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = '#1a6fff';
-    ctx.strokeStyle = '#1e50aa';
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.6;
-    for (let y = 0; y < grid.rows; y++) {
-      for (let x = 0; x < grid.cols; x++) {
-        if (!isPathCell(x, y)) continue;
-        const px = x * ts;
-        const py = y * ts;
-        if (!isPathCell(x, y - 1)) { ctx.beginPath(); ctx.moveTo(px, py + 0.5); ctx.lineTo(px + ts, py + 0.5); ctx.stroke(); }
-        if (!isPathCell(x, y + 1)) { ctx.beginPath(); ctx.moveTo(px, py + ts - 0.5); ctx.lineTo(px + ts, py + ts - 0.5); ctx.stroke(); }
-        if (!isPathCell(x - 1, y)) { ctx.beginPath(); ctx.moveTo(px + 0.5, py); ctx.lineTo(px + 0.5, py + ts); ctx.stroke(); }
-        if (!isPathCell(x + 1, y)) { ctx.beginPath(); ctx.moveTo(px + ts - 0.5, py); ctx.lineTo(px + ts - 0.5, py + ts); ctx.stroke(); }
-      }
-    }
-    ctx.restore();
-
-    // Dashed center-line along path direction
-    if (grid.path && grid.path.length >= 2) {
+    // ── Road: one continuous stroked strip from START to END ──
+    const road = this._roadPoints(grid);
+    if (road.length >= 2) {
+      const traceRoad = () => {
+        ctx.beginPath();
+        ctx.moveTo(road[0].x, road[0].y);
+        for (let i = 1; i < road.length; i++) ctx.lineTo(road[i].x, road[i].y);
+      };
       ctx.save();
-      ctx.strokeStyle = '#2a4a7a';
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.25;
-      ctx.setLineDash([4, 8]);
-      ctx.beginPath();
-      ctx.moveTo(grid.path[0].x * ts + ts / 2, grid.path[0].y * ts + ts / 2);
-      for (let i = 1; i < grid.path.length; i++) {
-        ctx.lineTo(grid.path[i].x * ts + ts / 2, grid.path[i].y * ts + ts / 2);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'butt';
 
-    // Node dots at path turns
-    if (grid.path && grid.path.length >= 3) {
-      ctx.save();
-      ctx.fillStyle = '#2a5aaa';
-      ctx.globalAlpha = 0.3;
-      for (let i = 1; i < grid.path.length - 1; i++) {
-        const prev = grid.path[i - 1];
-        const curr = grid.path[i];
-        const next = grid.path[i + 1];
-        const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
-        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
-        if (dx1 !== dx2 || dy1 !== dy2) {
-          ctx.beginPath();
-          ctx.arc(curr.x * ts + ts / 2, curr.y * ts + ts / 2, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+      // Outer glow
+      ctx.shadowBlur = 12 * SHADOW_BLUR_SCALE;
+      ctx.shadowColor = '#1a6fff';
+      ctx.strokeStyle = 'rgba(30, 80, 170, 0.35)';
+      ctx.lineWidth = ts * 0.86;
+      traceRoad(); ctx.stroke();
+
+      // Border
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#2a64c8';
+      ctx.lineWidth = ts * 0.76;
+      traceRoad(); ctx.stroke();
+
+      // Fill
+      ctx.strokeStyle = '#16213e';
+      ctx.lineWidth = ts * 0.68;
+      traceRoad(); ctx.stroke();
       ctx.restore();
     }
 
     this.staticDirty = false;
+  }
+
+  // Tile centres of the path, extended to the left and right board edges
+  // (START is always in the first column, END in the last).
+  _roadPoints(grid) {
+    const path = grid.path;
+    if (!path || path.length < 2) return [];
+    const pts = path.map(p => gridToPixel(p.x, p.y));
+    const half = CONFIG.TILE_SIZE / 2;
+    const first = pts[0], last = pts[pts.length - 1];
+    return [{ x: first.x - half, y: first.y }, ...pts, { x: last.x + half, y: last.y }];
+  }
+
+  // Chevrons that flow along the road toward END
+  _renderRoadArrows(ctx, grid) {
+    if (this._arrowPath !== grid.path) {
+      this._arrowPath = grid.path;
+      const pts = this._roadPoints(grid);
+      const segs = [];
+      let total = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, start: total, len });
+        total += len;
+      }
+      this._arrowSegs = segs;
+      this._arrowTotal = total;
+    }
+    const segs = this._arrowSegs;
+    if (!segs || segs.length === 0) return;
+
+    const ts = CONFIG.TILE_SIZE;
+    const spacing = ts;
+    const size = ts * 0.13;
+    const offset = (Date.now() / 1000 * ts * 0.8) % spacing;
+
+    ctx.save();
+    ctx.strokeStyle = '#5a9cff';
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    let si = 0;
+    for (let d = offset + ts * 0.5; d < this._arrowTotal - ts * 0.5; d += spacing) {
+      while (si < segs.length - 1 && d > segs[si].start + segs[si].len) si++;
+      const sg = segs[si];
+      const f = (d - sg.start) / sg.len;
+      const ux = (sg.b.x - sg.a.x) / sg.len, uy = (sg.b.y - sg.a.y) / sg.len;
+      const x = sg.a.x + (sg.b.x - sg.a.x) * f;
+      const y = sg.a.y + (sg.b.y - sg.a.y) * f;
+      ctx.moveTo(x - ux * size - uy * size, y - uy * size + ux * size);
+      ctx.lineTo(x + ux * size, y + uy * size);
+      ctx.lineTo(x - ux * size + uy * size, y - uy * size - ux * size);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   renderFrame(game) {
@@ -132,22 +145,28 @@ export class Renderer {
     if (this.staticDirty) this.renderStatic(game.grid);
     ctx.drawImage(this.staticCanvas, 0, 0);
 
+    this._renderRoadArrows(ctx, game.grid);
+    this._baseFlash = game.baseFlash || 0;
     this._renderPortals(ctx, game.grid);
 
-    if (game.input && game.input.hoveredCell && game.input.placingType) {
-      this._renderPlacementPreview(ctx, game);
+    if (game.input && (game.input.placingType || game.input.movingTower)) {
+      this._renderBuildableTiles(ctx, game);
     }
 
-    if (game.input && game.input.hoveredCell && game.input.movingTower) {
-      this._renderMovePreview(ctx, game);
+    // The carried tower replaces the tutorial ghost once placing starts
+    if (game.tutorial && game.tutorial.ghost && !(game.input && game.input.placingType && game.input.hoveredCell)) {
+      this._renderGhost(ctx, game.tutorial.ghost);
     }
 
+    const moving = game.input && game.input.movingTower;
     for (const tower of game.towers) {
+      if (tower === moving) { this._tileCorners(ctx, tower.gx, tower.gy, tower.def.color, 0.35); continue; }
       const isSelected = game.input && game.input.selectedTower === tower;
       const isHovered = game.input && game.input.hoveredCell &&
         tower.gx === game.input.hoveredCell.x && tower.gy === game.input.hoveredCell.y;
       tower.render(ctx, isSelected, isHovered);
     }
+    if (game.input) this._renderCarry(ctx, game);
 
     for (const enemy of game.enemies) {
       enemy.render(ctx, game.towers);
@@ -168,125 +187,54 @@ export class Renderer {
   }
 
   _renderPortals(ctx, grid) {
-    const t = Date.now() / 1000;
+    const time = Date.now() / 1000;
     if (grid.entry && grid.path && grid.path.length >= 2) {
       const p = gridToPixel(grid.entry.x, grid.entry.y);
       const next = gridToPixel(grid.path[1].x, grid.path[1].y);
       const angle = Math.atan2(next.y - p.y, next.x - p.x);
-      this._renderEntryArrow(ctx, p.x, p.y, angle, COLORS.ENTRY, t);
-      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.ENTRY, t, 'START');
+      this._renderEntryArrow(ctx, p.x, p.y, angle, COLORS.ENTRY, time);
+      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.ENTRY, t('map.start'));
     }
     if (grid.exit) {
       const p = gridToPixel(grid.exit.x, grid.exit.y);
-      this._renderPortal(ctx, p.x, p.y, COLORS.EXIT, t, -1);
-      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.EXIT, t, 'END');
+      this._renderBase(ctx, p.x, p.y, COLORS.EXIT, time);
+      this._renderEndpointLabel(ctx, p.x, p.y, COLORS.EXIT, t('map.end'));
     }
   }
 
-  _renderPortal(ctx, x, y, color, t, dir) {
+  // Player base: a hexagon with a heart, the lives the player must protect.
+  // Flashes while game.baseFlash > 0 (0..1, set when an enemy gets through).
+  _renderBase(ctx, x, y, color, t) {
     const ts = CONFIG.TILE_SIZE;
-    const pulse = 0.7 + 0.3 * Math.sin(t * 3);
-    const r = ts * 0.42;
+    const flash = this._baseFlash || 0;
+    const pulse = 0.75 + 0.25 * Math.sin(t * 3);
+    const r = ts * 0.44 * (1 + flash * 0.25);
 
-    // Ambient glow
     ctx.save();
-    ctx.shadowBlur = 25 * SHADOW_BLUR_SCALE;
+    ctx.fillStyle = '#1a0a0e';
+    ctx.strokeStyle = flash > 0 ? '#ffffff' : color;
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = (12 + flash * 25) * SHADOW_BLUR_SCALE;
     ctx.shadowColor = color;
-    ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 2);
-    ctx.fillStyle = color;
+    ctx.globalAlpha = Math.min(1, pulse + flash);
     ctx.beginPath();
-    ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // Outer ring — slow rotation, dashed
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(t * 0.5 * dir);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.4 * pulse;
-    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = color;
-    ctx.setLineDash([6, 8]);
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    // Middle ring — faster, opposite direction
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(-t * 1.2 * dir);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5 * pulse;
-    ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = color;
-    ctx.setLineDash([3, 10]);
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    // Orbiting particles (6 dots at varying distances)
     for (let i = 0; i < 6; i++) {
-      const angle = t * (0.8 + i * 0.3) * dir + (i * Math.PI / 3);
-      const dist = r * (0.4 + 0.25 * Math.sin(t * 2 + i));
-      const px = x + Math.cos(angle) * dist;
-      const py = y + Math.sin(angle) * dist;
-      const size = 1.2 + 0.8 * Math.sin(t * 4 + i * 1.5);
-      ctx.save();
-      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 3 + i);
-      ctx.shadowBlur = 6 * SHADOW_BLUR_SCALE;
-      ctx.shadowColor = color;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(px, py, size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      const a = Math.PI / 3 * i - Math.PI / 2;
+      const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
-
-    // Core — bright pulsing center
-    ctx.save();
-    ctx.shadowBlur = 18 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = color;
-    ctx.globalAlpha = 0.6 + 0.3 * pulse;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(x, y, 3 * pulse, 0, Math.PI * 2);
+    ctx.closePath();
     ctx.fill();
-    ctx.globalAlpha = 0.4 * pulse;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, 5 * pulse, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    ctx.stroke();
 
-    // Energy arcs — 3 rotating spokes from core to ring
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(t * 0.8 * dir);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.2 + 0.1 * Math.sin(t * 4);
-    ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = color;
-    for (let i = 0; i < 3; i++) {
-      const a = (i * Math.PI * 2) / 3;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      const jitter = Math.sin(t * 6 + i * 2) * 3;
-      ctx.quadraticCurveTo(
-        Math.cos(a + 0.3) * r * 0.5 + jitter,
-        Math.sin(a + 0.3) * r * 0.5 + jitter,
-        Math.cos(a) * r * 0.9,
-        Math.sin(a) * r * 0.9
-      );
-      ctx.stroke();
-    }
+    // Heart
+    const h = r * 0.45;
+    ctx.fillStyle = flash > 0 ? '#ffffff' : color;
+    ctx.beginPath();
+    ctx.moveTo(x, y + h * 0.9);
+    ctx.bezierCurveTo(x - h * 1.4, y - h * 0.1, x - h * 0.6, y - h * 1.1, x, y - h * 0.4);
+    ctx.bezierCurveTo(x + h * 0.6, y - h * 1.1, x + h * 1.4, y - h * 0.1, x, y + h * 0.9);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -311,67 +259,186 @@ export class Renderer {
     ctx.restore();
   }
 
-  _renderEndpointLabel(ctx, x, y, color, t, text) {
+  _renderEndpointLabel(ctx, x, y, color, text) {
     const ts = CONFIG.TILE_SIZE;
-    const pulse = 0.6 + 0.3 * Math.sin(t * 2.5);
-
     ctx.save();
-    ctx.font = `bold ${Math.round(ts * 0.28)}px monospace`;
+    ctx.font = `bold ${Math.round(ts * 0.32)}px monospace`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE;
-    ctx.shadowColor = color;
+    ctx.textBaseline = 'middle';
+    const w = ctx.measureText(text).width + 8;
+    const h = ts * 0.42;
+    const cx = Math.max(w / 2 + 1, Math.min(this.width - w / 2 - 1, x));
+    // Below the tile, or above it on the bottom row
+    let cy = y + ts * 0.5 + h / 2 + 1;
+    if (cy + h / 2 > this.height) cy = y - ts * 0.5 - h / 2 - 1;
+
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 3);
+    ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = color;
-    ctx.globalAlpha = pulse;
-    ctx.fillText(text, x, y + ts * 0.72);
+    ctx.fillText(text, cx, cy + 1);
     ctx.restore();
   }
 
-  _renderPlacementPreview(ctx, game) {
-    const cell = game.input.hoveredCell;
-    const ts = CONFIG.TILE_SIZE;
-    const valid = game.grid.isPlaceable(cell.x, cell.y) &&
-      game.economy.canAfford(TOWER_DEFS[game.input.placingType].cost);
-
-    ctx.fillStyle = valid ? COLORS.VALID_PLACEMENT : COLORS.INVALID_PLACEMENT;
-    ctx.fillRect(cell.x * ts, cell.y * ts, ts, ts);
-    ctx.strokeStyle = valid ? 'rgba(0, 255, 100, 0.6)' : 'rgba(255, 0, 0, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cell.x * ts + 1, cell.y * ts + 1, ts - 2, ts - 2);
-
-    if (valid) {
-      const def = TOWER_DEFS[game.input.placingType];
-      const center = gridToPixel(cell.x, cell.y);
-      ctx.save();
-      ctx.strokeStyle = def.color; ctx.lineWidth = 1; ctx.globalAlpha = 0.2;
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, def.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
-      ctx.stroke(); ctx.restore();
+  // Empty tiles from which a tower of this range reaches the road
+  buildableTiles(grid, range) {
+    const key = `${range}|${[...grid.towers.keys()].join(";")}`;
+    if (this._buildable && this._buildable.path === grid.path && this._buildable.key === key) {
+      return this._buildable.tiles;
     }
+    const tiles = [];
+    const r2 = range * range;
+    for (let y = 0; y < grid.rows; y++) {
+      for (let x = 0; x < grid.cols; x++) {
+        if (!grid.isPlaceable(x, y)) continue;
+        if (grid.path.some(p => (p.x - x) ** 2 + (p.y - y) ** 2 <= r2)) tiles.push({ x, y });
+      }
+    }
+    this._buildable = { path: grid.path, key, tiles };
+    return tiles;
   }
 
-  _renderMovePreview(ctx, game) {
-    const cell = game.input.hoveredCell;
-    const tower = game.input.movingTower;
+  _renderBuildableTiles(ctx, game) {
+    const input = game.input;
+    const color = input.movingTower ? input.movingTower.def.color : TOWER_DEFS[input.placingType].color;
+    const range = input.movingTower ? input.movingTower.currentStats.range : TOWER_DEFS[input.placingType].range;
     const ts = CONFIG.TILE_SIZE;
-    const valid = game.grid.isPlaceable(cell.x, cell.y);
-
-    ctx.fillStyle = valid ? COLORS.VALID_PLACEMENT : COLORS.INVALID_PLACEMENT;
-    ctx.fillRect(cell.x * ts, cell.y * ts, ts, ts);
-    ctx.strokeStyle = valid ? 'rgba(0, 255, 100, 0.6)' : 'rgba(255, 0, 0, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cell.x * ts + 1, cell.y * ts + 1, ts - 2, ts - 2);
-
-    const center = gridToPixel(cell.x, cell.y);
+    const pulse = 0.14 + 0.05 * Math.sin(Date.now() / 300);
     ctx.save();
-    ctx.strokeStyle = tower.def.color;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.25;
+    for (const tile of this.buildableTiles(game.grid, range)) {
+      ctx.globalAlpha = pulse;
+      ctx.fillRect(tile.x * ts + 3, tile.y * ts + 3, ts - 6, ts - 6);
+      ctx.globalAlpha = 0.35;
+      ctx.strokeRect(tile.x * ts + 3.5, tile.y * ts + 3.5, ts - 7, ts - 7);
+    }
+    ctx.restore();
+  }
+
+  // Tutorial suggestion: a see-through tower with its range
+  _renderGhost(ctx, ghost) {
+    if (!this._ghostTower || this._ghostTower.type !== ghost.type) this._ghostTower = new Tower(ghost.type, 0, 0);
+    const tower = this._ghostTower;
+    const c = gridToPixel(ghost.x, ghost.y);
+    tower.x = c.x;
+    tower.y = c.y;
+    ctx.save();
+    ctx.globalAlpha = 0.45 + 0.15 * Math.sin(Date.now() / 250);
+    ctx.strokeStyle = tower.def.color;
+    ctx.setLineDash([6, 6]);
     ctx.beginPath();
-    ctx.arc(center.x, center.y, tower.currentStats.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
+    ctx.arc(c.x, c.y, tower.def.range * CONFIG.TILE_SIZE, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = COLORS.TOWER_RANGE;
+    ctx.setLineDash([]);
+    tower.render(ctx, false, false);
+    ctx.restore();
+  }
+
+  // The tower being placed or moved floats over the tile it would land on.
+  // It glides between tiles and shows its range and a landing frame;
+  // everything turns red where it can't go.
+  _renderCarry(ctx, game) {
+    const input = game.input;
+    const cell = input.hoveredCell;
+    const moving = input.movingTower;
+    if (!cell || !(moving || input.placingType)) { this._carry = null; return; }
+
+    let tower = moving;
+    if (!tower) {
+      if (!this._carryTower || this._carryTower.type !== input.placingType) {
+        this._carryTower = new Tower(input.placingType, 0, 0);
+      }
+      tower = this._carryTower;
+    }
+    const home = moving && cell.x === moving.gx && cell.y === moving.gy;
+    const valid = home || (game.grid.isPlaceable(cell.x, cell.y) &&
+      (moving || game.economy.canAfford(tower.def.cost)));
+    const color = valid ? tower.def.color : '#ff3355';
+    const ts = CONFIG.TILE_SIZE;
+    const target = gridToPixel(cell.x, cell.y);
+
+    if (!this._carry || this._carry.tower !== tower) this._carry = { tower, x: target.x, y: target.y };
+    const pos = this._carry;
+    pos.x += (target.x - pos.x) * 0.35;
+    pos.y += (target.y - pos.y) * 0.35;
+
+    const time = Date.now() / 1000;
+    const bob = Math.sin(time * 5);
+    const lift = ts * (0.2 + 0.05 * bob);
+    const range = (moving ? moving.currentStats.range : tower.def.range) * ts;
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.07;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, range, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.lineDashOffset = -time * 12;
+    ctx.stroke();
+    ctx.restore();
+
+    if (!home) {
+      // The tile itself lights up at once; the tower glides after it
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.45 + 0.1 * bob;
+      ctx.beginPath();
+      ctx.roundRect(cell.x * ts + 3, cell.y * ts + 3, ts - 6, ts - 6, 4);
+      ctx.fill();
+      ctx.restore();
+      this._tileCorners(ctx, cell.x, cell.y, '#ffffff', 0.9);
+    }
+
+    // Soft glow on the ground, fainter while the tower is higher
+    ctx.save();
+    ctx.translate(pos.x, pos.y + ts * 0.3);
+    ctx.scale(1, 0.35);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, ts * 0.42);
+    glow.addColorStop(0, color);
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.globalAlpha = 0.5 - 0.15 * bob;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, ts * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const { x, y } = tower;
+    tower.x = pos.x;
+    tower.y = pos.y - lift;
+    tower.render(ctx, false, false);
+    tower.x = x;
+    tower.y = y;
+  }
+
+  // Neon corner brackets around a tile
+  _tileCorners(ctx, gx, gy, color, alpha) {
+    const ts = CONFIG.TILE_SIZE;
+    const x0 = gx * ts + 3, y0 = gy * ts + 3, x1 = x0 + ts - 6, y1 = y0 + ts - 6, l = ts * 0.25;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0 + l); ctx.lineTo(x0, y0); ctx.lineTo(x0 + l, y0);
+    ctx.moveTo(x1 - l, y0); ctx.lineTo(x1, y0); ctx.lineTo(x1, y0 + l);
+    ctx.moveTo(x1, y1 - l); ctx.lineTo(x1, y1); ctx.lineTo(x1 - l, y1);
+    ctx.moveTo(x0 + l, y1); ctx.lineTo(x0, y1); ctx.lineTo(x0, y1 - l);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -407,11 +474,26 @@ export class Renderer {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.font = ft.large ? 'bold 18px Courier New' : 'bold 12px Courier New';
+      ctx.textAlign = 'center';
+      let x = ft.x;
+      if (ft.boxed) {
+        // Message on a dark pill, kept inside the board
+        ctx.font = 'bold 13px Courier New';
+        ctx.textBaseline = 'middle';
+        const w = ctx.measureText(ft.text).width + 12;
+        x = Math.max(w / 2 + 2, Math.min(this.width - w / 2 - 2, x));
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.9)';
+        ctx.strokeStyle = ft.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2, ft.y - 11, w, 22, 4);
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.fillStyle = ft.color;
       ctx.shadowBlur = 8 * SHADOW_BLUR_SCALE;
       ctx.shadowColor = ft.color;
-      ctx.textAlign = 'center';
-      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.fillText(ft.text, x, ft.y);
       ctx.restore();
     }
   }

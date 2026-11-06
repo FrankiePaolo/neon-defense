@@ -2,14 +2,28 @@ import { TOWER_DEFS, ENEMY_DEFS, IS_MOBILE } from './config.js';
 import { gridToPixel } from './utils.js';
 import { CONFIG } from './config.js';
 import { t, getLang, setLang } from './i18n.js';
+import { ICONS } from './icons.js';
+import { towerSprite, enemySprite, spriteImg } from './sprites.js';
 
+// Stat key -> [i18n label key, icon]
 const STAT_LABELS = {
-  fireRate: 'RATE', damage: 'DMG', range: 'RNG',
-  slowAmount: 'SLOW', slowDuration: 'DUR',
-  chainCount: 'CHAIN', chainDecay: 'DECAY', chainRange: 'C.RNG',
-  splashRadius: 'SPLASH', damageAmp: 'AMP', buffRange: 'B.RNG',
-  goldPerWave: 'GOLD', fireRateAmp: 'SPD AMP',
+  damage: ['stats.dmg', 'damage'], fireRate: ['stats.rate', 'fireRate'], range: ['stats.rng', 'range'],
+  slowAmount: ['stats.slow', 'slow'], slowDuration: ['stats.slowDuration', 'slow'],
+  chainCount: ['stats.chain', 'chain'], chainDecay: ['stats.chainDecay', 'chain'], chainRange: ['stats.chainRange', 'chain'],
+  splashRadius: ['stats.splash', 'splash'], damageAmp: ['stats.amp', 'boost'], buffRange: ['stats.buffRange', 'boost'],
+  goldPerWave: ['stats.gold', 'coin'], fireRateAmp: ['stats.rateAmp', 'boost'],
 };
+
+// "<icon> Label value" for one stat
+function statHTML(key, val, valColor) {
+  const [labelKey, icon] = STAT_LABELS[key];
+  const shown = (key === 'damageAmp' || key === 'fireRateAmp' ? '+' : '') + formatStatVal(key, val);
+  const valHtml = valColor ? `<span class="ttp-stat-val" style="color:${valColor}">${shown}</span>` : shown;
+  return `<span class="stat">${ICONS[icon]}${t(labelKey)} ${valHtml}</span>`;
+}
+
+// Stats a tower shows in its details, in display order
+const SHOWN_STATS = ['damage', 'fireRate', 'range', 'slowAmount', 'chainCount', 'splashRadius', 'damageAmp', 'goldPerWave'];
 
 function formatStatVal(key, val) {
   if (key === 'slowAmount' || key === 'damageAmp' || key === 'fireRateAmp' ||
@@ -20,8 +34,8 @@ function formatStatVal(key, val) {
 function formatStatChanges(stats) {
   return Object.entries(stats)
     .filter(([k]) => STAT_LABELS[k])
-    .map(([k, v]) => `${STAT_LABELS[k]} ${formatStatVal(k, v)}`)
-    .join('  ');
+    .map(([k, v]) => `${t(STAT_LABELS[k][0])} ${formatStatVal(k, v)}`)
+    .join(' · ');
 }
 
 export class UIController {
@@ -59,15 +73,20 @@ export class UIController {
     // Menu
     document.querySelector('#menu-screen h1').textContent = t('menu.title');
     document.getElementById('difficulty-label').textContent = t('menu.difficulty');
-    document.querySelector('[data-difficulty="hard"]').textContent = t('menu.hard');
-    document.querySelector('[data-difficulty="normal"]').textContent = t('menu.normal');
-    document.querySelector('[data-difficulty="easy"]').textContent = t('menu.easy');
+    for (const diff of ['easy', 'normal', 'hard']) {
+      document.querySelector(`[data-difficulty="${diff}"]`).innerHTML =
+        `${t('menu.' + diff)}<span class="diff-sub">${t('menu.' + diff + '.sub')}</span>`;
+    }
     document.getElementById('high-scores-btn').textContent = t('menu.scores');
 
     // HUD
-    document.querySelector('#hud-wave').innerHTML = `${t('hud.wave')} <span id="wave-value">${this.elements.waveValue.textContent}</span>`;
+    document.querySelector('#hud-gold').innerHTML = `${ICONS.coin}<span id="gold-value">${this.elements.goldValue.textContent}</span>`;
+    document.querySelector('#hud-wave').innerHTML = `${ICONS.wave}${t('hud.wave')} <span id="wave-value">${this.elements.waveValue.textContent}</span><span class="hud-total">/${CONFIG.MAX_WAVES}</span>`;
+    document.querySelector('#hud-lives').innerHTML = `${ICONS.heart}<span id="lives-value">${this.elements.livesValue.textContent}</span>`;
     document.querySelector('#hud-score').innerHTML = `${t('hud.score')} <span id="score-value">${this.elements.scoreValue.textContent}</span>`;
+    this.elements.goldValue = document.getElementById('gold-value');
     this.elements.waveValue = document.getElementById('wave-value');
+    this.elements.livesValue = document.getElementById('lives-value');
     this.elements.scoreValue = document.getElementById('score-value');
 
     // Buttons
@@ -78,6 +97,7 @@ export class UIController {
     document.querySelector('#pause-overlay p').textContent = t('game.pauseHint');
     document.getElementById('resume-btn').textContent = t('game.resume');
     document.getElementById('restart-btn').textContent = t('game.restart');
+    document.getElementById('replay-tutorial-btn').textContent = t('game.replayTutorial');
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t('game.gameOver');
@@ -90,8 +110,10 @@ export class UIController {
     document.getElementById('share-score-btn').textContent = t('share.button');
     document.getElementById('play-again-btn').textContent = t('game.playAgain');
 
-    // Tower panel title
+    // Tower panel title and the mid-wave note
     document.querySelector('#tower-panel h3').textContent = t('towers.title');
+    document.getElementById('build-note').textContent = t('phase.buildAfter');
+    this._updatePhaseLabel();
 
     // Wave preview label
     const wpEl = document.getElementById('wave-preview');
@@ -122,12 +144,16 @@ export class UIController {
       btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
       if (unlocked) {
         btn.innerHTML = `
-          <span class="tower-name">${t('tower.' + type)}</span>
-          <span class="tower-cost">$${def.cost}</span>
-          <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
+          ${spriteImg(towerSprite(type), 'tower-pic')}
+          <span class="tower-text">
+            <span class="tower-name">${t('tower.' + type)}</span>
+            <span class="tower-cost">${ICONS.coin}${def.cost}</span>
+            <span class="tower-need"></span>
+            <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
+          </span>
         `;
         btn.addEventListener('click', () => {
-          if (this.game.tutorial.isBlocking()) return;
+          if (!this.game.tutorial.allows('pickTower')) return;
 
           if (IS_MOBILE) {
             if (this._previewingType === type) {
@@ -161,9 +187,12 @@ export class UIController {
         });
       } else {
         btn.innerHTML = `
-          <span class="tower-name locked-name">${t('tower.' + type)}</span>
-          <span class="tower-unlock-req">${t('hud.score')} ${def.unlockScore.toLocaleString()}</span>
-          <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
+          <span class="tower-pic-wrap">${spriteImg(towerSprite(type), 'tower-pic')}${ICONS.lock}</span>
+          <span class="tower-text">
+            <span class="tower-name locked-name">${t('tower.' + type)}</span>
+            <span class="tower-unlock-req">${t('panel.reach').replace('{n}', def.unlockScore.toLocaleString())}</span>
+            <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
+          </span>
         `;
         if (IS_MOBILE) {
           btn.addEventListener('click', () => {
@@ -275,6 +304,13 @@ export class UIController {
       this.game.togglePause();
     });
 
+    document.getElementById('replay-tutorial-btn').addEventListener('click', () => {
+      this.game.togglePause();
+      this.hidePause();
+      this.game.tutorial.replay();
+      this.game.startNewGame(this.game.difficulty);
+    });
+
     document.getElementById('restart-btn').addEventListener('click', () => {
       this.game.togglePause();
       this.hidePause();
@@ -306,7 +342,7 @@ export class UIController {
     this.elements.livesValue.textContent = this.game.lives;
     this.elements.scoreValue.textContent = this.game.scoreTracker.score;
     if (this.game.state === 'BETWEEN_WAVES') {
-      this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || this.game.tutorial.isBlocking();
+      this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
     }
     this.updateUnlockTracker();
     this._updateTowerAffordability();
@@ -318,7 +354,10 @@ export class UIController {
       const type = btn.dataset.towerType;
       const def = TOWER_DEFS[type];
       if (def) {
-        btn.classList.toggle('tower-unaffordable', gold < def.cost);
+        const short = def.cost - gold;
+        btn.classList.toggle('tower-unaffordable', short > 0);
+        const need = btn.querySelector('.tower-need');
+        if (need) need.textContent = short > 0 ? t('panel.need').replace('{n}', short) : '';
       }
     });
   }
@@ -336,19 +375,16 @@ export class UIController {
     // Current stats summary
     const s = tower.currentStats;
     html += `<div class="up-stats">`;
-    if (s.damage > 0) html += `<span>DMG ${s.damage}</span>`;
-    if (s.fireRate > 0) html += `<span>RATE ${s.fireRate}/s</span>`;
-    html += `<span>RNG ${s.range}</span>`;
-    if (s.slowAmount) html += `<span>SLOW ${Math.round(s.slowAmount * 100)}%</span>`;
-    if (s.chainCount) html += `<span>CHAIN ${s.chainCount}</span>`;
-    if (s.splashRadius) html += `<span>SPLASH ${s.splashRadius}</span>`;
-    if (s.damageAmp) html += `<span>AMP +${Math.round(s.damageAmp * 100)}%</span>`;
-    if (s.goldPerWave) html += `<span>+${s.goldPerWave}g/wave</span>`;
+    for (const key of SHOWN_STATS) {
+      if (s[key] > 0 || key === 'range') html += statHTML(key, s[key]);
+    }
     html += `</div>`;
 
     for (const [pathKey, pathLabel] of [['A', 'pathA'], ['B', 'pathB']]) {
       const upgradePath = def.upgrades[pathLabel];
+      const otherPicked = (pathKey === 'A' ? tower.upgradesB : tower.upgradesA) > 0;
       html += `<div class="up-path-name">${t('up.' + type + '.' + pathKey)}</div>`;
+      if (otherPicked) html += `<div class="up-path-locked">${ICONS.lock}${t('up.otherPath')}</div>`;
       for (let i = 0; i < upgradePath.levels.length; i++) {
         const level = upgradePath.levels[i];
         const currentLevel = pathKey === 'A' ? tower.upgradesA : tower.upgradesB;
@@ -366,10 +402,10 @@ export class UIController {
         } else if (available) {
           html += `<div class="upgrade-option up-level ${canAfford ? 'up-available' : 'up-unaffordable'}"
             data-upgrade-path="${canAfford ? pathKey : ''}">
-            <span class="up-cost">$${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
+            <span class="up-cost">${ICONS.coin}${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         } else {
           html += `<div class="upgrade-option up-level up-locked">
-            <span class="up-cost">$${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
+            <span class="up-cost">${ICONS.coin}${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         }
       }
     }
@@ -438,18 +474,13 @@ export class UIController {
     const canAfford = unlocked && this.game.economy.canAfford(def.cost);
     const color = unlocked ? def.color : '#555';
 
-    let html = `<div class="ttp-title" style="color:${color}">${t('tower.' + type)}</div>`;
+    let html = `<div class="ttp-title" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
     html += `<div class="ttp-desc">${t('tower.' + type + '.desc')}</div>`;
 
     html += `<div class="ttp-stats">`;
-    if (def.damage > 0) html += `<span>${t('stats.dmg')} <span class="ttp-stat-val" style="color:${color}">${def.damage}</span></span>`;
-    if (def.fireRate > 0) html += `<span>${t('stats.rate')} <span class="ttp-stat-val" style="color:${color}">${def.fireRate}/s</span></span>`;
-    html += `<span>${t('stats.rng')} <span class="ttp-stat-val" style="color:${color}">${def.range}</span></span>`;
-    if (def.slowAmount) html += `<span>${t('stats.slow')} <span class="ttp-stat-val" style="color:${color}">${Math.round(def.slowAmount * 100)}%</span></span>`;
-    if (def.chainCount) html += `<span>${t('stats.chain')} <span class="ttp-stat-val" style="color:${color}">${def.chainCount}</span></span>`;
-    if (def.splashRadius) html += `<span>${t('stats.splash')} <span class="ttp-stat-val" style="color:${color}">${def.splashRadius}</span></span>`;
-    if (def.damageAmp) html += `<span>${t('stats.amp')} <span class="ttp-stat-val" style="color:${color}">+${Math.round(def.damageAmp * 100)}%</span></span>`;
-    if (def.goldPerWave) html += `<span>+<span class="ttp-stat-val" style="color:${color}">${def.goldPerWave}</span>g/${t('stats.wave')}</span>`;
+    for (const key of SHOWN_STATS) {
+      if (def[key] > 0 || key === 'range') html += statHTML(key, def[key], color);
+    }
     html += `</div>`;
 
     if (def.targeting) {
@@ -457,12 +488,14 @@ export class UIController {
     }
 
     if (!unlocked) {
-      html += `<div class="ttp-locked-hint">${t('stats.unlocksAt')} ${def.unlockScore.toLocaleString()} ${t('hud.score').toLowerCase()}</div>`;
+      html += `<div class="ttp-locked-hint">${ICONS.lock}${t('panel.reach').replace('{n}', def.unlockScore.toLocaleString())}</div>`;
     }
 
     if (isMobile) {
       const disabled = !unlocked || !canAfford;
-      const label = !unlocked ? t('stats.locked') : `${t('stats.place')} ($${def.cost})`;
+      const label = !unlocked ? t('stats.locked')
+        : canAfford ? `${t('stats.place')} (${def.cost})`
+        : t('panel.need').replace('{n}', def.cost - this.game.economy.gold);
       html += `<button class="ttp-place-btn" ${disabled ? 'disabled' : ''} data-tower-type="${type}">${label}</button>`;
     }
 
@@ -542,21 +575,52 @@ export class UIController {
     this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('panel-hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
-    this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || this.game.tutorial.isBlocking();
+    this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
       const def = ENEMY_DEFS[type];
-      return `<span style="color:${def.color}">${count}x ${t('enemy.' + type)}</span>`;
+      return `<span class="wp-enemy" style="color:${def.color}" title="${t('enemy.' + type)}">${spriteImg(enemySprite(type), 'wp-pic')}x${count}</span>`;
     }).join(' ');
     this.elements.wavePreviewContent.innerHTML = text;
     document.getElementById('wave-controls').classList.add('visible');
+    this.setPhase('build');
   }
 
   hideBetweenWaves() {
     this._hideTooltip();
-    this.elements.towerPanel.classList.add('panel-hidden');
-    document.getElementById('wave-controls').classList.remove('visible');
     this.hideCancelButton();
+    this.setPhase('wave');
+  }
+
+  // 'build' between waves, 'wave' while enemies walk. CSS dims the tower
+  // panel and swaps the wave controls for a status label during a wave.
+  setPhase(phase) {
+    this._phase = phase;
+    document.getElementById('game-container').dataset.phase = phase;
+    this._updatePhaseLabel();
+  }
+
+  _updatePhaseLabel() {
+    const label = document.getElementById('phase-label');
+    if (!label || !this._phase) return;
+    label.textContent = this._phase === 'wave'
+      ? t('phase.wave').replace('{n}', this.game.waveManager.currentWave)
+      : t('phase.build');
+  }
+
+  flashLives() {
+    this._restartAnimation(document.getElementById('hud-lives'), 'hud-hit');
+  }
+
+  pulseGold() {
+    this._restartAnimation(document.getElementById('hud-gold'), 'hud-pulse');
+  }
+
+  _restartAnimation(el, className) {
+    if (!el) return;
+    el.classList.remove(className);
+    void el.offsetWidth; // reflow so the animation starts again
+    el.classList.add(className);
   }
 
   showPause() {
@@ -646,8 +710,10 @@ export class UIController {
     const color = TOWER_DEFS[next.type].color;
     const towerName = t('tower.' + next.type);
 
+    const toGo = next.score - effective;
     el.innerHTML = `
-      <div class="unlock-label" style="color:${color}">${towerName}</div>
+      <div class="unlock-label">${t('unlock.tracker').replace('{name}', `<span style="color:${color}">${towerName}</span>`)}</div>
+      <div class="unlock-togo">${t('unlock.toGo').replace('{n}', toGo.toLocaleString())}</div>
       <div class="unlock-bar-bg">
         <div class="unlock-bar-fill" style="width:${Math.round(progress * 100)}%; background:${color}; color:${color}"></div>
       </div>

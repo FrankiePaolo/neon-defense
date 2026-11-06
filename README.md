@@ -27,14 +27,14 @@ Each tower has two upgrade paths with 3 tiers — choose one path to specialize.
 
 ### Features
 
-- 3 difficulty levels (path length: long, medium, short)
+- 3 difficulty levels: Easy, Normal, Hard (long, medium, short path)
 - Dual upgrade paths per tower
 - Tower synergies via Support buffs
 - Percentage-based armor system
 - Interest-based economy with kill streak bonuses
 - Global leaderboard
 - Challenge friends with shareable score cards
-- Interactive tutorial for new players
+- On-map coaching tutorial for new players (replayable from the pause menu)
 - PWA — installable, works offline
 - Mobile responsive
 - English and Italian localization
@@ -57,6 +57,9 @@ netlify dev
 
 # Or just the frontend
 python3 -m http.server 8000
+
+# Check that generated paths never touch themselves
+node scripts/check-paths.mjs
 ```
 
 ## Project Structure
@@ -78,10 +81,14 @@ python3 -m http.server 8000
 │   ├── economy.js      # Gold, scores, leaderboard
 │   ├── input.js        # Mouse/touch input handling
 │   ├── ui.js           # HUD and UI panels
+│   ├── icons.js        # Inline SVG icons for HUD and panels
+│   ├── sprites.js      # Tower/enemy pictures for the HTML UI
 │   ├── audio.js        # Procedural audio engine
-│   ├── tutorial.js     # Step-by-step tutorial
+│   ├── tutorial.js     # On-map coaching tutorial
 │   ├── i18n.js         # Internationalization (EN/IT)
 │   └── utils.js        # Math and helper functions
+├── scripts/
+│   └── check-paths.mjs # Checks generated paths never touch themselves
 ├── netlify/functions/
 │   └── scores.mjs      # Leaderboard API endpoint
 ├── sw.js               # Service worker for offline support

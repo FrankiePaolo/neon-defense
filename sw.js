@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-defense-v18';
+const CACHE_NAME = 'neon-defense-v19';
 
 const STATIC_ASSETS = [
   '/',
@@ -21,6 +21,8 @@ const STATIC_ASSETS = [
   '/js/i18n.js',
   '/js/tutorial.js',
   '/js/utils.js',
+  '/js/icons.js',
+  '/js/sprites.js',
   '/icons/icon.svg',
   '/icons/icon-maskable.svg',
   '/icons/icon-192.png',

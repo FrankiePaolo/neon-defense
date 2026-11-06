@@ -42,6 +42,7 @@ export class Game {
     this.waveBanner = null;
 
     this.lives = CONFIG.BASE_LIVES;
+    this.baseFlash = 0;
     this.state = 'MENU';
     this.speedMultiplier = 1;
     this.lastTimestamp = 0;
@@ -74,6 +75,7 @@ export class Game {
     this.progressTracker.reset();
     this.waveManager = new WaveManager();
     this.lives = CONFIG.BASE_LIVES;
+    this.baseFlash = 0;
     this.state = 'BETWEEN_WAVES';
     this.speedMultiplier = 1;
     this.livesLostThisWave = 0;
@@ -98,7 +100,7 @@ export class Game {
   startNextWave() {
     if (this.state !== 'BETWEEN_WAVES') return;
     if (this.towers.length === 0) return;
-    if (this.tutorial.isBlocking()) return;
+    if (!this.tutorial.allows('startWave')) return;
     this.state = 'PLAYING';
     this.livesLostThisWave = 0;
     this.waveManager.startWave();
@@ -117,7 +119,7 @@ export class Game {
 
   placeTower(type, gx, gy) {
     if (this.state !== 'BETWEEN_WAVES') return false;
-    if (this.tutorial.isBlocking()) return false;
+    if (!this.tutorial.allows('place')) return false;
     const def = TOWER_DEFS[type];
     if (!def) return false;
     if (!this.progressTracker.isTowerUnlocked(type, this.scoreTracker.score)) return false;
@@ -267,6 +269,7 @@ export class Game {
     this._updateFloatingTexts(dt);
     this._updateKillStreak(dt);
     if (this.shakeTimer > 0) this.shakeTimer -= dt;
+    if (this.baseFlash > 0) this.baseFlash = Math.max(0, this.baseFlash - dt * 2);
 
     if (this.waveManager.isSpawningDone() && this.enemies.length === 0) {
       this.waveClearDelay += dt;
@@ -376,6 +379,7 @@ export class Game {
       text: `+${enemy.reward}g`, color: '#ffd700',
       life: 1.0, maxLife: 1.0,
     });
+    this.ui.pulseGold();
 
     // Screen shake on boss kill
     if (enemy.type === 'boss') this.triggerShake(6, 0.4);
@@ -436,6 +440,16 @@ export class Game {
     this.lives--;
     this.livesLostThisWave++;
     this.audio.playSfx('damage');
+
+    // Show it on screen too: base flashes, "-1" heart rises, lives counter flashes
+    const base = gridToPixel(this.grid.exit.x, this.grid.exit.y);
+    this.baseFlash = 1;
+    this.floatingTexts.push({
+      x: base.x, y: base.y - CONFIG.TILE_SIZE * 0.6,
+      text: '-1 \u2665', color: '#ff4444',
+      life: 1.2, maxLife: 1.2, large: true,
+    });
+    this.ui.flashLives();
   }
 
   _onWaveComplete() {

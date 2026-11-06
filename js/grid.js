@@ -29,7 +29,7 @@ export class Grid {
   }
 
   generate(minLength = 25) {
-    for (let attempt = 0; attempt < 150; attempt++) {
+    for (let attempt = 0; attempt < 400; attempt++) {
       this.init();
       const entryY = randInt(2, this.rows - 3);
       const exitY = randInt(2, this.rows - 3);
@@ -84,7 +84,7 @@ export class Grid {
         const ny = y + dir.dy;
         if (nx < 0 || nx >= this.cols || ny < 0 || ny >= this.rows) continue;
         if (visited.has(key(nx, ny))) continue;
-        if (!(nx === this.exit.x && ny === this.exit.y) && this._isTooCloseToPath(nx, ny, visited, recent)) continue;
+        if (this._isTooCloseToPath(nx, ny, visited, recent)) continue;
 
         let weight = 1;
 
@@ -173,7 +173,7 @@ export class Grid {
       else if (y > y2) y--;
       if (visited.has(key(x, y)) && !(x === x2 && y === y2)) return null;
       const recent = new Set([key(prev.x, prev.y), key(prevPrev.x, prevPrev.y)]);
-      if (!(x === x2 && y === y2) && this._isTooCloseToPath(x, y, visited, recent)) return null;
+      if (this._isTooCloseToPath(x, y, visited, recent)) return null;
       prevPrev = prev;
       prev = { x, y };
       path.push({ x, y });
@@ -183,43 +183,26 @@ export class Grid {
 
   _fallbackPath(minLength = 25) {
     this.init();
-    const startY = 1;
-    this.entry = { x: 0, y: startY };
+
+    // Serpentine of vertical runs on even columns, one empty column between
+    // runs, so the path never touches itself. Run height is sized to reach
+    // minLength, centred vertically.
+    const runs = Math.ceil((this.cols - 1) / 2);
+    const height = Math.max(1, Math.min(this.rows, Math.ceil((minLength - runs) / runs)));
+    const top = Math.floor((this.rows - height) / 2);
+    const bottom = top + height - 1;
     const path = [];
 
-    let x = 0, y = startY, goingRight = true;
-    path.push({ x, y });
-
-    // Serpentine: go right, drop down, go left, drop down, repeat
-    while (path.length < minLength) {
-      if (goingRight) {
-        if (x < this.cols - 1) {
-          x++; path.push({ x, y });
-        } else if (y + 2 <= this.rows - 2) {
-          y++; path.push({ x, y });
-          y++; path.push({ x, y });
-          goingRight = false;
-        } else {
-          break; // grid exhausted
-        }
-      } else {
-        if (x > 0) {
-          x--; path.push({ x, y });
-        } else if (y + 2 <= this.rows - 2) {
-          y++; path.push({ x, y });
-          y++; path.push({ x, y });
-          goingRight = true;
-        } else {
-          break;
-        }
-      }
-      if (path.length > 400) break;
+    for (let r = 0; r < runs; r++) {
+      const x = r * 2;
+      const down = r % 2 === 0;
+      for (let i = 0; i < height; i++) path.push({ x, y: down ? top + i : bottom - i });
+      const end = path[path.length - 1];
+      if (x + 1 < this.cols) path.push({ x: x + 1, y: end.y });
     }
 
-    // Connect to right edge for exit
-    while (x < this.cols - 1) { x++; path.push({ x, y }); }
-
-    this.exit = { x: this.cols - 1, y };
+    this.entry = path[0];
+    this.exit = path[path.length - 1];
     for (const p of path) this.cells[p.y][p.x] = CELL_PATH;
     this.cells[this.entry.y][this.entry.x] = CELL_ENTRY;
     this.cells[this.exit.y][this.exit.x] = CELL_EXIT;
