@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-defense-v20';
+const CACHE_NAME = 'neon-defense-v21';
 
 const STATIC_ASSETS = [
   '/',
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   '/js/tower.js',
   '/js/projectile.js',
   '/js/waves.js',
+  '/js/combat.js',
   '/js/economy.js',
   '/js/input.js',
   '/js/audio.js',

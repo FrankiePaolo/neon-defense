@@ -36,6 +36,7 @@ const STRINGS = {
     'game.enterName': 'Enter name',
     'game.saveScore': 'SAVE SCORE',
     'game.nameTaken': 'Name already taken — choose a different one',
+    'score.notSaved': 'Score could not be saved',
     'game.playAgain': 'PLAY AGAIN',
     'game.next': 'Next',
 
@@ -121,8 +122,8 @@ const STRINGS = {
     'up.blaster.A.0': 'Shoots faster',
     'up.blaster.A.1': 'Shoots even faster, more damage',
     'up.blaster.A.2': 'Fastest shots, more damage',
-    'up.blaster.B.0': 'Double damage',
-    'up.blaster.B.1': 'Almost 4x damage',
+    'up.blaster.B.0': 'Over double damage',
+    'up.blaster.B.1': 'Over 5x damage',
     'up.blaster.B.2': 'Huge damage, longer range',
 
     'up.frost.A.0': 'Slows enemies more',
@@ -153,12 +154,12 @@ const STRINGS = {
     'up.sniper.B.1': 'Much more damage',
     'up.sniper.B.2': 'Massive damage',
 
-    'up.support.A.0': 'Nearby towers: +20% damage',
-    'up.support.A.1': '+30% damage, wider area',
-    'up.support.A.2': '+40% damage',
-    'up.support.B.0': '+20 gold every wave',
-    'up.support.B.1': '+45 gold every wave',
-    'up.support.B.2': '+80 gold every wave',
+    'up.support.A.0': 'Nearby towers: +14% damage',
+    'up.support.A.1': '+21% damage, wider area',
+    'up.support.A.2': '+28% damage, +6% fire rate',
+    'up.support.B.0': '+30 gold every wave',
+    'up.support.B.1': '+60 gold every wave',
+    'up.support.B.2': '+100 gold every wave',
 
     // Stats tooltip
     'stats.dmg': 'Damage',
@@ -243,6 +244,7 @@ const STRINGS = {
     'game.enterName': 'Inserisci nome',
     'game.saveScore': 'SALVA PUNTEGGIO',
     'game.nameTaken': 'Nome già in uso — scegline un altro',
+    'score.notSaved': 'Punteggio non salvato',
     'game.playAgain': 'GIOCA ANCORA',
     'game.next': 'Prossimi',
 
@@ -328,8 +330,8 @@ const STRINGS = {
     'up.blaster.A.0': 'Spara più veloce',
     'up.blaster.A.1': 'Spara ancora più veloce, più danno',
     'up.blaster.A.2': 'Raffica massima, più danno',
-    'up.blaster.B.0': 'Danno doppio',
-    'up.blaster.B.1': 'Quasi 4 volte il danno',
+    'up.blaster.B.0': 'Più del doppio del danno',
+    'up.blaster.B.1': 'Oltre 5 volte il danno',
     'up.blaster.B.2': 'Danno enorme, più gittata',
 
     'up.frost.A.0': 'Rallenta di più',
@@ -360,12 +362,12 @@ const STRINGS = {
     'up.sniper.B.1': 'Molto più danno',
     'up.sniper.B.2': 'Danno enorme',
 
-    'up.support.A.0': 'Torri vicine: +20% danno',
-    'up.support.A.1': '+30% danno, area più ampia',
-    'up.support.A.2': '+40% danno',
-    'up.support.B.0': '+20 oro a ogni ondata',
-    'up.support.B.1': '+45 oro a ogni ondata',
-    'up.support.B.2': '+80 oro a ogni ondata',
+    'up.support.A.0': 'Torri vicine: +14% danno',
+    'up.support.A.1': '+21% danno, area più ampia',
+    'up.support.A.2': '+28% danno, +6% velocità di tiro',
+    'up.support.B.0': '+30 oro a ogni ondata',
+    'up.support.B.1': '+60 oro a ogni ondata',
+    'up.support.B.2': '+100 oro a ogni ondata',
 
     // Stats tooltip
     'stats.dmg': 'Danno',

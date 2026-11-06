@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generates PNG app icons for the PWA manifest using only Node.js built-ins.
- * Run: node scripts/generate-icons.js
+ * Run: node scripts/generate-icons.cjs
  */
 const zlib = require('zlib');
 const fs = require('fs');

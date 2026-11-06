@@ -10,8 +10,6 @@ const { Grid } = await import('../js/grid.js');
 
 const RUNS = Number(process.argv[2]) || 2000;
 const GRIDS = { mobile: [12, 9], desktop: [20, 15] };
-// Same minimum lengths as Game.start()
-const difficulties = (cols) => ({ hard: cols, normal: Math.floor(cols * 2.5), easy: cols * 4 });
 
 let failed = false;
 
@@ -19,7 +17,7 @@ for (const [gridName, [cols, rows]] of Object.entries(GRIDS)) {
   CONFIG.GRID_COLS = cols;
   CONFIG.GRID_ROWS = rows;
 
-  for (const [diff, minLength] of Object.entries(difficulties(cols))) {
+  for (const [diff, minLength] of Object.entries(CONFIG.DIFFICULTY)) {
     let touching = 0;
     let fallbacks = 0;
     const realFallback = Grid.prototype._fallbackPath;

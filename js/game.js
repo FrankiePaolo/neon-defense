@@ -1,12 +1,13 @@
 import { CONFIG, TOWER_DEFS, IS_MOBILE } from './config.js';
-import { distance, gridToPixel } from './utils.js';
+import { gridToPixel } from './utils.js';
 import { Grid } from './grid.js';
 import { SpatialHash } from './pathfinding.js';
 import { ParticleSystem } from './particles.js';
 import { Enemy } from './enemy.js';
 import { Projectile } from './projectile.js';
 import { Tower } from './tower.js';
-import { WaveManager } from './waves.js';
+import { WaveManager, waveBonusGold } from './waves.js';
+import { resolveHit, updateSynergies } from './combat.js';
 import { Economy, ScoreTracker, ProgressTracker } from './economy.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
@@ -49,15 +50,27 @@ export class Game {
     this.livesLostThisWave = 0;
     this.waveClearDelay = 0;
 
+    this.combatCtx = {
+      spatialHash: this.spatialHash,
+      onHit: (target, proj) => this.particles.emit(target.x, target.y, proj.color, 'hit'),
+      onSplash: (target, proj) => this.particles.emit(target.x, target.y, proj.color, 'explosion'),
+      onChain: (from, to) => {
+        this._lightningChains.push({
+          from: { x: from.x, y: from.y },
+          to: { x: to.x, y: to.y },
+          time: Date.now()
+        });
+        this.particles.emit(to.x, to.y, '#ffff00', 'lightning');
+      },
+    };
+
     this._loop = this._loop.bind(this);
     requestAnimationFrame(this._loop);
   }
 
   startNewGame(difficulty = 'normal') {
     this.difficulty = difficulty;
-    const cols = this.grid.cols;
-    const pathLengths = { hard: cols, normal: Math.floor(cols * 2.5), easy: cols * 4 };
-    this.grid.generate(pathLengths[difficulty] || Math.floor(cols * 2.5));
+    this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal);
     this.renderer.markDirty();
     this.towers = [];
     this.enemies = [];
@@ -73,7 +86,7 @@ export class Game {
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
     this.progressTracker.reset();
-    this.waveManager = new WaveManager();
+    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1);
     this.lives = CONFIG.BASE_LIVES;
     this.baseFlash = 0;
     this.state = 'BETWEEN_WAVES';
@@ -232,7 +245,7 @@ export class Game {
     this.spatialHash.clear();
     for (const e of this.enemies) this.spatialHash.insert(e);
 
-    this._updateSynergies();
+    updateSynergies(this.towers);
 
     for (const tower of this.towers) {
       const firedAt = tower.update(dt, this.enemies, this.spatialHash);
@@ -258,7 +271,7 @@ export class Game {
       const wasActive = proj.active;
       proj.update(dt);
       if (wasActive && !proj.active && proj.target) {
-        this._onProjectileHit(proj);
+        resolveHit(proj, this.combatCtx);
       }
       if (!proj.active) this.projectiles.splice(i, 1);
     }
@@ -292,77 +305,6 @@ export class Game {
   _createProjectile(tower, target) {
     const proj = new Projectile({ x: tower.x, y: tower.y }, target, tower);
     this.projectiles.push(proj);
-  }
-
-  _onProjectileHit(proj) {
-    const target = proj.target;
-    if (!target || !target.active) return;
-
-    target.takeDamage(proj.damage, proj.towerType);
-
-    if (proj.slowAmount > 0) {
-      target.applyEffect('slow', proj.slowDuration, proj.slowAmount);
-    }
-
-    if (proj.splashRadius > 0) {
-      const radius = proj.splashRadius * CONFIG.TILE_SIZE;
-      const nearby = this.spatialHash.query(target.x, target.y, radius);
-      for (const e of nearby) {
-        if (e === target || !e.active) continue;
-        const d = distance(target.x, target.y, e.x, e.y);
-        const falloff = 1 - (d / radius) * proj.splashDecay;
-        if (falloff > 0) e.takeDamage(proj.damage * falloff, proj.towerType);
-      }
-      this.particles.emit(target.x, target.y, proj.color, 'explosion');
-    }
-
-    if (proj.chainCount > 0) this._chainLightning(target, proj);
-
-    this.particles.emit(target.x, target.y, proj.color, 'hit');
-  }
-
-  _chainLightning(firstTarget, proj) {
-    const visited = new Set([firstTarget]);
-    let current = firstTarget;
-    let dmg = proj.damage;
-    const chainRange = proj.chainRange * CONFIG.TILE_SIZE;
-
-    for (let i = 0; i < proj.chainCount; i++) {
-      dmg *= proj.chainDecay;
-      const nearby = this.spatialHash.query(current.x, current.y, chainRange);
-      let next = null;
-      let minDist = Infinity;
-      for (const e of nearby) {
-        if (!e.active || visited.has(e)) continue;
-        const d = distance(current.x, current.y, e.x, e.y);
-        if (d < minDist) { minDist = d; next = e; }
-      }
-      if (!next) break;
-      visited.add(next);
-      next.takeDamage(dmg, 'lightning');
-      this._lightningChains.push({
-        from: { x: current.x, y: current.y },
-        to: { x: next.x, y: next.y },
-        time: Date.now()
-      });
-      this.particles.emit(next.x, next.y, '#ffff00', 'lightning');
-      current = next;
-    }
-  }
-
-  _updateSynergies() {
-    for (const tower of this.towers) {
-      tower.damageMultiplier = 1.0;
-      tower.fireRateMultiplier = 1.0;
-      for (const other of this.towers) {
-        if (other === tower || other.type !== 'support') continue;
-        const d = distance(tower.x, tower.y, other.x, other.y);
-        if (d <= other.currentStats.buffRange * CONFIG.TILE_SIZE) {
-          tower.damageMultiplier += other.currentStats.damageAmp || 0;
-          tower.fireRateMultiplier += other.currentStats.fireRateAmp || 0;
-        }
-      }
-    }
   }
 
   _onEnemyKilled(enemy) {
@@ -457,7 +399,7 @@ export class Game {
     }
     this._checkUnlocks();
     this.economy.applyInterest();
-    this.economy.earn(15 + this.waveManager.currentWave * 3);
+    this.economy.earn(waveBonusGold(this.waveManager.currentWave));
 
     for (const tower of this.towers) {
       if (tower.type === 'support' && tower.currentStats.goldPerWave) {

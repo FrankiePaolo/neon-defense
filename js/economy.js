@@ -51,7 +51,7 @@ export class ScoreTracker {
     this.highScores.sort((a, b) => b.score - a.score);
     this.highScores = this.highScores.slice(0, 50);
     try { localStorage.setItem('neon_td_scores', JSON.stringify(this.highScores.slice(0, 10))); } catch {}
-    this._submitRemote(name, wave);
+    return this._submitRemote(name, wave);
   }
 
   async fetchGlobalScores() {
@@ -66,12 +66,15 @@ export class ScoreTracker {
 
   async _submitRemote(name, wave) {
     const payload = { name, score: this.score, wave };
+    this.submitFailed = false;
     try {
-      await fetch('/api/scores', {
+      const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      // Rejected by the server: keep the local list, which has the run
+      if (!res.ok) { this.submitFailed = true; return; }
       this.fetchGlobalScores();
     } catch {
       // Offline — queue for later sync

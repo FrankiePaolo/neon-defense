@@ -3,6 +3,15 @@ import { neon } from "@netlify/neon";
 const MAX_NAME_LENGTH = 12;
 const MAX_WAVES = 35;
 
+// Highest score a real run can have after the given wave: at least 2x the
+// best score scripts/simulate-balance.mjs produces at every wave
+const CAP_BASE = 76000;
+const CAP_GROWTH = 1.16;
+
+export function maxPlausibleScore(wave) {
+  return CAP_BASE * CAP_GROWTH ** wave;
+}
+
 export default async (req) => {
   const sql = neon();
 
@@ -36,8 +45,7 @@ export default async (req) => {
       return new Response("Invalid wave", { status: 400 });
     }
 
-    const maxPlausible = wave * wave * 500 + 5000;
-    if (score > maxPlausible) {
+    if (score > maxPlausibleScore(wave)) {
       return new Response("Score rejected", { status: 400 });
     }
 

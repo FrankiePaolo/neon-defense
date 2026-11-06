@@ -275,7 +275,7 @@ export class UIController {
     nameInput.addEventListener('input', updateSaveBtn);
     nameInput.addEventListener('change', updateSaveBtn);
     nameInput.addEventListener('keyup', updateSaveBtn);
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
       const name = nameInput.value.trim();
       if (!name) return;
       if (this.game.scoreTracker.hasName(name)) {
@@ -285,7 +285,13 @@ export class UIController {
       }
       saveBtn.disabled = true;
       try { localStorage.setItem('neon_td_player_name', name); } catch {}
-      this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
+      await this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
+      if (this.game.scoreTracker.submitFailed) {
+        nameWarn.textContent = t('score.notSaved');
+        nameWarn.style.display = '';
+        nameWarn.style.visibility = 'visible';
+        return;
+      }
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.menuScreen.style.display = 'flex';
       this.game.audio.playTrack('menu');

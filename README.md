@@ -62,6 +62,18 @@ python3 -m http.server 8000
 node scripts/check-paths.mjs
 ```
 
+### Balance simulator
+
+`scripts/simulate-balance.mjs` plays the game headless with the real wave, enemy, tower and combat code, on both grids and all three difficulties, with a naive player (only Blasters, no upgrades) and a sensible one (upgrades, mixes tower types). It prints lives lost, gold, score and buyable-over-needed damage per wave, damage per gold by tower, the wave each tower unlocks and the top score per wave, then checks the targets in the `wave-scaling`, `tower-balance` and `difficulty-levels` specs and exits 1 if any fails. Run it after any change to a balance number:
+
+```bash
+# All grids, difficulties and players, then the checks
+npm run balance
+
+# One run, tables only
+node scripts/simulate-balance.mjs --grid mobile --difficulty normal --player sensible
+```
+
 ## Project Structure
 
 ```
@@ -71,6 +83,7 @@ node scripts/check-paths.mjs
 │   ├── game.js         # Game loop and core logic
 │   ├── config.js       # Tower/enemy/economy constants
 │   ├── waves.js        # Wave generation and scaling
+│   ├── combat.js       # Hit, splash, chain and Support aura resolution
 │   ├── grid.js         # Map generation and pathfinding grid
 │   ├── pathfinding.js  # A* pathfinding + spatial hash
 │   ├── tower.js        # Tower entity and upgrades
@@ -88,7 +101,8 @@ node scripts/check-paths.mjs
 │   ├── i18n.js         # Internationalization (EN/IT)
 │   └── utils.js        # Math and helper functions
 ├── scripts/
-│   └── check-paths.mjs # Checks generated paths never touch themselves
+│   ├── check-paths.mjs       # Checks generated paths never touch themselves
+│   └── simulate-balance.mjs  # Headless balance simulator and checks
 ├── netlify/functions/
 │   └── scores.mjs      # Leaderboard API endpoint
 ├── sw.js               # Service worker for offline support
