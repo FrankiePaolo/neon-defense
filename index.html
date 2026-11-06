@@ -14,10 +14,19 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Game-screen type and text colours. Greys stay at 4.5:1 or more on #0a0a0a. */
+:root {
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-brand: 'Courier New', monospace;
+  --text-1: #f0f0f0;
+  --text-2: #b8b8c0;
+  --text-3: #8c8c96;
+}
+
 body {
   background: #0a0a0a;
   color: #e0e0e0;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   overflow: hidden;
   user-select: none;
   touch-action: none;
@@ -51,33 +60,53 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* HUD Overlay */
-#ui-overlay {
+/* HUD: row 1 has the counters, row 2 the next-unlock progress and the controls */
+#hud {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0.2), transparent);
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px 6px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.6) 70%, transparent);
   pointer-events: none;
-  font-size: 20px;
-  font-weight: bold;
   z-index: 10;
+}
+
+#ui-overlay {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
+  font-size: 22px;
 }
 
 .hud-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-  letter-spacing: 1px;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.hud-main {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hud-label {
+  font-size: 12px;
+  color: var(--text-2);
 }
 
 #hud-gold { color: #ffd700; }
 #hud-wave { color: #00ffff; }
-#hud-lives { color: #ff4444; }
+#hud-lives { color: #ff5555; }
 #hud-score { color: #ffffff; }
 
 /* Inline SVG icons (js/icons.js) */
@@ -89,67 +118,84 @@ canvas {
   margin-right: 0.25em;
 }
 
-.hud-item .icon { width: 0.95em; height: 0.95em; margin-right: 0; }
-.hud-total { opacity: 0.55; font-size: 0.8em; margin-left: -2px; }
+/* The glow sits on the icon so the digits stay sharp */
+.hud-item .icon { width: 0.9em; height: 0.9em; margin-right: 0; filter: drop-shadow(0 0 4px currentColor); }
+.hud-total { color: var(--text-2); font-size: max(12px, 0.65em); font-weight: 600; }
+
+#hud-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
 /* Unlock Tracker */
 #unlock-tracker {
-  position: absolute;
-  top: 56px;
-  left: 16px;
-  z-index: 10;
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
+  flex: 1;
+  min-width: 0;
+  max-width: 260px;
+  font-size: 13px;
+  line-height: 1.25;
   pointer-events: none;
 }
 
+#unlock-tracker.hidden { display: block !important; visibility: hidden; }
+
 #unlock-tracker .unlock-label {
-  color: #aaa;
-  max-width: 150px;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #unlock-tracker .unlock-togo {
-  color: #777;
-  margin-bottom: 3px;
+  color: var(--text-2);
+  margin-bottom: 4px;
 }
 
 #unlock-tracker .unlock-bar-bg {
-  width: 120px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
   overflow: hidden;
 }
 
 #unlock-tracker .unlock-bar-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: width 0.4s ease-out;
   box-shadow: 0 0 6px currentColor;
 }
 
-/* Speed Controls */
+/* Speed, pause and sound */
 #speed-controls {
-  position: absolute;
-  top: 56px;
-  right: 16px;
   display: flex;
   gap: 4px;
-  z-index: 10;
+  pointer-events: auto;
 }
 
 .speed-btn {
-  background: rgba(20, 20, 20, 0.8);
-  color: #888;
-  border: 1px solid #333;
-  padding: 8px 16px;
-  font-family: 'Courier New', monospace;
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  background: rgba(20, 20, 20, 0.85);
+  color: var(--text-1);
+  border: 1px solid #555;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.speed-btn:hover { color: #fff; border-color: #666; }
+.speed-btn .icon { width: 20px; height: 20px; margin: 0; }
+.speed-btn:hover { border-color: #888; }
 .speed-btn.active {
   color: #00ffff;
   border-color: #00ffff;
@@ -174,13 +220,20 @@ canvas {
   pointer-events: none;
 }
 
+/* Heading and mid-wave note share one row, so the panel height never changes */
+#panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 12px;
+  margin-bottom: 4px;
+}
+
 #tower-panel h3 {
   color: #00ffff;
   font-size: 18px;
-  text-align: center;
-  letter-spacing: 4px;
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  margin-bottom: 4px;
 }
 
 .tower-btn {
@@ -230,7 +283,7 @@ canvas {
 }
 
 .tower-btn .tower-need {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 12px;
   color: #ff8866;
 }
@@ -248,31 +301,27 @@ canvas {
 }
 
 .tower-btn .tower-name {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 15px;
   color: var(--tower-color, #ccc);
   font-weight: bold;
 }
 
 .tower-btn .tower-cost {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 14px;
   color: #ffd700;
 }
 
 .tower-btn .tower-desc {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 13px;
-  color: #666;
+  color: var(--text-3);
 }
 
-/* Unaffordable towers */
-.tower-btn.tower-unaffordable .tower-pic,
-.tower-btn.tower-unaffordable .tower-name,
-.tower-btn.tower-unaffordable .tower-cost,
-.tower-btn.tower-unaffordable .tower-desc {
-  opacity: 0.45;
-}
+/* Unaffordable towers: the picture fades, the text stays readable and "Need N more" says why */
+.tower-btn.tower-unaffordable { border-color: #555; }
+.tower-btn.tower-unaffordable .tower-pic { opacity: 0.45; }
 
 /* Locked towers */
 .tower-btn.tower-locked {
@@ -280,14 +329,13 @@ canvas {
 }
 
 .tower-btn .locked-name {
-  color: #555 !important;
+  color: var(--text-3) !important;
 }
 
 .tower-btn .tower-unlock-req {
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
   color: #ff8800;
-  letter-spacing: 1px;
 }
 
 #unlock-notification {
@@ -301,7 +349,7 @@ canvas {
   padding: 20px 36px;
   z-index: 90;
   text-align: center;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   opacity: 0;
   transition: opacity 0.5s, transform 0.5s;
   pointer-events: none;
@@ -315,7 +363,6 @@ canvas {
 #unlock-notification .unlock-title {
   font-size: 18px;
   color: #00ff66;
-  letter-spacing: 4px;
   text-shadow: 0 0 15px rgba(0, 255, 100, 0.6);
   margin-bottom: 8px;
 }
@@ -334,17 +381,17 @@ canvas {
   z-index: 20;
   min-width: 300px;
   display: none;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
 }
 
 #upgrade-panel .up-title { font-weight: bold; margin-bottom: 4px; font-size: 16px; }
 #upgrade-panel .up-stats {
   display: flex; gap: 10px; flex-wrap: wrap;
-  font-size: 13px; color: #888; padding: 4px 0 6px;
+  font-size: 13px; color: var(--text-2); padding: 4px 0 6px;
   border-bottom: 1px solid #1a1a2e; margin-bottom: 4px;
 }
 #upgrade-panel .up-stats span { white-space: nowrap; }
-#upgrade-panel .up-path-name { margin-top: 6px; color: #aaa; font-size: 14px; letter-spacing: 1px; }
+#upgrade-panel .up-path-name { margin-top: 6px; color: var(--text-1); font-size: 14px; font-weight: 600; }
 #upgrade-panel .up-path-locked { color: #ff8866; font-size: 12px; margin: 2px 0; }
 #upgrade-panel .up-cost .icon { color: inherit; }
 #upgrade-panel .up-level {
@@ -354,13 +401,12 @@ canvas {
 #upgrade-panel .up-cost { font-size: 14px; font-weight: bold; min-width: 44px; }
 #upgrade-panel .up-info { display: flex; flex-direction: column; gap: 1px; }
 #upgrade-panel .up-desc { font-size: 13px; }
-#upgrade-panel .up-changes { font-size: 12px; color: #335566; letter-spacing: 1px; }
-#upgrade-panel .up-purchased .up-changes { color: rgba(0, 255, 100, 0.4); }
+#upgrade-panel .up-changes { font-size: 12px; color: var(--text-3); }
+#upgrade-panel .up-need { font-size: 12px; color: #ff8866; }
+#upgrade-panel .up-purchased .up-changes { color: #6fcf97; }
 #upgrade-panel .up-available .up-changes { color: #66ccff; }
-#upgrade-panel .up-unaffordable .up-changes { color: #3a3a3a; }
-#upgrade-panel .up-locked .up-changes { color: #1a1a1a; }
 #upgrade-panel .up-check { color: #00ff66; font-size: 15px; min-width: 44px; }
-#upgrade-panel .up-purchased .up-desc { color: rgba(0, 255, 100, 0.7); }
+#upgrade-panel .up-purchased .up-desc { color: #00e676; }
 #upgrade-panel .up-available {
   cursor: pointer; background: rgba(255, 215, 0, 0.12);
   border: 1px solid rgba(255, 215, 0, 0.5);
@@ -382,14 +428,13 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
 }
-#upgrade-panel .up-unaffordable .up-cost { color: #663333; }
-#upgrade-panel .up-unaffordable .up-desc { color: #888; }
-#upgrade-panel .up-unaffordable .up-changes { color: #556677; }
-#upgrade-panel .up-locked .up-cost { color: #2a2a2a; }
-#upgrade-panel .up-locked .up-desc { color: #2a2a2a; }
+#upgrade-panel .up-unaffordable .up-cost { color: var(--text-2); }
+#upgrade-panel .up-unaffordable .up-desc { color: var(--text-1); }
+#upgrade-panel .up-locked .up-cost,
+#upgrade-panel .up-locked .up-desc { color: var(--text-3); }
 #upgrade-panel .up-actions { margin-top: 8px; display: flex; gap: 12px; }
-#upgrade-panel .move-btn { font-size: 13px; color: #00aaff; cursor: pointer; }
-#upgrade-panel .sell-btn { font-size: 13px; color: #ff6666; cursor: pointer; }
+#upgrade-panel .move-btn { font-size: 14px; color: #33bbff; cursor: pointer; }
+#upgrade-panel .sell-btn { font-size: 14px; color: #ff6666; cursor: pointer; }
 
 /* Tower Stats Tooltip */
 #tower-stats-tooltip {
@@ -400,7 +445,7 @@ canvas {
   z-index: 25;
   min-width: 220px;
   max-width: 280px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   pointer-events: none;
   opacity: 0;
   transform: translateY(4px);
@@ -416,17 +461,17 @@ canvas {
 
 #tower-stats-tooltip .ttp-title { font-weight: bold; font-size: 15px; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
 #tower-stats-tooltip .ttp-pic { width: 32px; height: 32px; }
-#tower-stats-tooltip .ttp-desc { font-size: 12px; color: #666; margin-bottom: 6px; }
+#tower-stats-tooltip .ttp-desc { font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
 #tower-stats-tooltip .ttp-stats {
   display: flex; gap: 8px; flex-wrap: wrap;
-  font-size: 12px; color: #888;
+  font-size: 13px; color: var(--text-2);
   padding: 4px 0; border-top: 1px solid #1a1a2e;
 }
 #tower-stats-tooltip .ttp-stats span { white-space: nowrap; }
 .stat .icon { opacity: 0.8; }
 #tower-stats-tooltip .ttp-stat-val { font-weight: bold; }
-#tower-stats-tooltip .ttp-targeting { font-size: 11px; color: #555; margin-top: 4px; }
-#tower-stats-tooltip .ttp-locked-hint { font-size: 11px; color: #ff8800; margin-top: 6px; }
+#tower-stats-tooltip .ttp-targeting { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+#tower-stats-tooltip .ttp-locked-hint { font-size: 12px; color: #ff8800; margin-top: 6px; }
 #tower-stats-tooltip .ttp-place-btn { display: none; }
 
 .tower-btn.previewing {
@@ -460,35 +505,34 @@ canvas {
   background: rgba(0,0,0,0.7);
   padding: 6px 16px;
   font-size: 16px;
-  color: #888;
-  border: 1px solid #222;
+  color: var(--text-2);
+  border: 1px solid #333;
 }
 
-/* Phase: label above the wave controls, panel dimmed during a wave */
+/* Phase: label above the wave controls, tower list inactive during a wave */
 #phase-label {
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   color: #00ffff;
-  letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
 }
 
-#game-container[data-phase="wave"] #phase-label { color: #ff8800; text-shadow: 0 0 8px rgba(255, 136, 0, 0.5); }
+#game-container[data-phase="wave"] #phase-label { color: #ff8800; }
 #game-container[data-phase="wave"] #wave-preview,
 #game-container[data-phase="wave"] #start-wave-btn { display: none; }
 
 #build-note {
-  display: none;
-  font-size: 12px;
+  visibility: hidden;
+  font-size: 13px;
+  font-weight: 600;
   color: #ff8800;
   text-align: center;
 }
 
-#game-container[data-phase="wave"] #build-note { display: block; }
-#game-container[data-phase="wave"] #tower-list {
-  opacity: 0.35;
-  pointer-events: none;
-}
+#game-container[data-phase="wave"] #build-note { visibility: visible; }
+#game-container[data-phase="wave"] #tower-list { pointer-events: none; }
+#game-container[data-phase="wave"] .tower-btn { background: rgba(10, 10, 14, 0.9); box-shadow: none; }
+#game-container[data-phase="wave"] .tower-btn:not(.tower-locked) .tower-pic { filter: grayscale(0.7); }
 
 /* Wave preview enemy pictures */
 #wave-preview { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -518,10 +562,10 @@ canvas {
   color: #00ffff;
   border: 1px solid #00ffff;
   padding: 10px 30px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 20px;
+  font-weight: 600;
   cursor: pointer;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
   transition: all 0.2s;
 }
 
@@ -531,10 +575,9 @@ canvas {
 }
 
 #start-wave-btn:disabled {
-  color: #333;
-  border-color: #333;
+  color: var(--text-3);
+  border-color: #444;
   background: transparent;
-  text-shadow: none;
   cursor: default;
 }
 
@@ -551,6 +594,7 @@ canvas {
 }
 
 #menu-screen h1 {
+  font-family: var(--font-brand);
   font-size: 72px;
   color: #00ffff;
   letter-spacing: 12px;
@@ -682,6 +726,7 @@ canvas {
 }
 
 #pause-overlay h2 {
+  font-family: var(--font-brand);
   color: #00ffff;
   font-size: 36px;
   letter-spacing: 8px;
@@ -708,6 +753,7 @@ canvas {
 }
 
 #game-over-screen h2 {
+  font-family: var(--font-brand);
   color: #ff4444;
   font-size: 36px;
   letter-spacing: 6px;
@@ -794,7 +840,7 @@ canvas {
   margin-left: auto;
   background: none;
   border: none;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 12px;
   color: #889;
   text-decoration: underline;
@@ -841,7 +887,7 @@ canvas {
   color: #ff4444;
   border: 1px solid #ff4444;
   padding: 10px 20px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 14px;
   cursor: pointer;
   z-index: 15;
@@ -857,38 +903,14 @@ canvas {
     flex-direction: column;
   }
 
-  #canvas-wrapper {
-    min-height: 0;
-  }
 
-  #ui-overlay {
-    font-size: 14px;
-    padding: 6px 10px;
-  }
+  #canvas-wrapper { min-height: 0; }
 
-  #unlock-tracker {
-    top: 44px;
-    left: 8px;
-    font-size: 11px;
-    max-width: calc(100% - 262px);
-  }
+  #ui-overlay { font-size: 20px; }
 
-  #unlock-tracker .unlock-bar-bg {
-    width: 90px;
-    max-width: 100%;
-  }
+  #unlock-tracker { font-size: 12px; }
 
-  #speed-controls {
-    top: 44px;
-    right: 8px;
-  }
-
-  .speed-btn {
-    padding: 10px 14px;
-    font-size: 14px;
-    min-width: 44px;
-    min-height: 44px;
-  }
+  .speed-btn { padding: 0 10px; font-size: 14px; }
 
   #tower-panel {
     width: 100%;
@@ -920,21 +942,28 @@ canvas {
 
   .tower-btn .tower-name { font-size: 13px; }
   .tower-btn .tower-cost { font-size: 13px; }
-  .tower-btn .tower-unlock-req { font-size: 11px; letter-spacing: 0; }
-  .tower-btn .tower-need { font-size: 11px; }
+  .tower-btn .tower-unlock-req { font-size: 12px; }
+  .tower-btn .tower-need { font-size: 12px; }
   .tower-btn .tower-desc { display: none; }
   .tower-btn .tower-pic { width: 28px; height: 28px; }
 
+  /* Bottom sheet over the tower panel; JS caps its height at the space below the board */
   #upgrade-panel {
+    position: fixed;
     min-width: unset;
-    width: 90%;
-    left: 5% !important;
-    bottom: 8px;
+    left: 0 !important;
+    right: 0;
+    bottom: 0;
     top: auto !important;
-    max-height: 40vh;
+    max-height: 45vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 16px;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    border: none;
+    border-top: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7);
+    z-index: 30;
   }
 
   #upgrade-panel .up-title { font-size: 18px; margin-bottom: 6px; }
@@ -948,6 +977,7 @@ canvas {
   #upgrade-panel .up-actions { margin-top: 12px; gap: 20px; }
   #upgrade-panel .move-btn { font-size: 15px; padding: 8px 0; }
   #upgrade-panel .sell-btn { font-size: 15px; padding: 8px 0; }
+
 
   #tower-stats-tooltip {
     min-width: unset;
@@ -968,7 +998,7 @@ canvas {
     color: #00ffff;
     border: 1px solid #00ffff;
     padding: 10px 20px;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-ui);
     font-size: 14px;
     cursor: pointer;
     text-align: center;
@@ -977,7 +1007,7 @@ canvas {
   }
 
   #tower-stats-tooltip .ttp-place-btn:disabled {
-    color: #444;
+    color: var(--text-3);
     border-color: #333;
     background: transparent;
     cursor: default;
@@ -987,17 +1017,13 @@ canvas {
     background: rgba(0, 255, 255, 0.25);
   }
 
-  #wave-controls {
-    bottom: 10px;
-  }
-
   #start-wave-btn {
-    padding: 8px 24px;
-    font-size: 14px;
+    padding: 8px 18px;
+    font-size: 15px;
   }
 
   #wave-preview {
-    font-size: 13px;
+    font-size: 14px;
     padding: 4px 10px;
   }
 
@@ -1043,6 +1069,53 @@ canvas {
   }
 }
 
+/* Portrait phones only (a small phone in landscape also matches max-width: 768px) */
+@media (max-width: 768px) and (min-height: 501px) {
+  /* HUD, board and wave controls stack top to bottom. The board is pinned
+     under the HUD, so nothing below it can move it. */
+  #canvas-wrapper {
+    min-height: 0;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  #hud {
+    position: relative;
+    align-self: stretch;
+    flex: 0 0 auto;
+    padding: 6px 8px 6px;
+    gap: 4px;
+  }
+
+  canvas { flex: 0 0 auto; }
+
+  /* Docked just above the tower panel, below the board */
+  #tower-stats-tooltip {
+    width: auto;
+    max-width: none;
+    left: 8px !important;
+    right: 8px;
+    bottom: 6px;
+  }
+
+  /* In the flow at the bottom of the board column: phase line, then preview and button side by side */
+  #wave-controls {
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding: 6px 8px 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 8px;
+  }
+
+  #phase-label { flex-basis: 100%; text-align: center; }
+
+  #panel-head { justify-content: space-between; padding: 0 2px; }
+}
+
 /* Landscape phones */
 @media (max-height: 500px) {
   #game-container {
@@ -1077,10 +1150,10 @@ canvas {
 
   #tower-stats-tooltip .ttp-place-btn { display: block; }
 
-  #ui-overlay {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
+  /* Label beside the value to keep the HUD short */
+  #ui-overlay { font-size: 16px; }
+  .hud-item { flex-direction: row; align-items: baseline; gap: 4px; }
+  #hud { padding: 4px 8px; }
 }
 
 /* Touch devices: larger tap targets */
@@ -1192,24 +1265,24 @@ canvas {
 
 <div id="game-container">
   <div id="canvas-wrapper">
+    <div id="hud">
+      <div id="ui-overlay">
+        <div id="hud-gold" class="hud-item"><span id="gold-value">100</span></div>
+        <div id="hud-wave" class="hud-item"><span id="wave-value">0</span></div>
+        <div id="hud-lives" class="hud-item"><span id="lives-value">20</span></div>
+        <div id="hud-score" class="hud-item"><span id="score-value">0</span></div>
+      </div>
+      <div id="hud-row2">
+        <div id="unlock-tracker" class="hidden"></div>
+        <div id="speed-controls">
+          <button class="speed-btn" id="speed-btn">1x</button>
+          <button class="speed-btn" id="pause-btn"></button>
+          <button class="speed-btn" id="mute-btn"></button>
+        </div>
+      </div>
+    </div>
+
     <canvas id="game-canvas"></canvas>
-
-    <div id="ui-overlay">
-      <div id="hud-gold" class="hud-item">$ <span id="gold-value">100</span></div>
-      <div id="hud-wave" class="hud-item">WAVE <span id="wave-value">0</span></div>
-      <div id="hud-lives" class="hud-item">&hearts; <span id="lives-value">20</span></div>
-      <div id="hud-score" class="hud-item">SCORE <span id="score-value">0</span></div>
-    </div>
-
-    <div id="unlock-tracker" class="hidden"></div>
-
-    <div id="speed-controls">
-      <button class="speed-btn active" data-speed="1">1x</button>
-      <button class="speed-btn" data-speed="2">2x</button>
-      <button class="speed-btn" data-speed="3">3x</button>
-      <button class="speed-btn" id="pause-btn">❚❚</button>
-      <button class="speed-btn" id="mute-btn" title="Toggle music">&#9835;</button>
-    </div>
 
     <div id="wave-controls">
       <div id="phase-label"></div>
@@ -1268,8 +1341,10 @@ canvas {
   </div>
 
   <div id="tower-panel" class="panel-hidden">
-    <h3>TOWERS</h3>
-    <div id="build-note"></div>
+    <div id="panel-head">
+      <h3>TOWERS</h3>
+      <div id="build-note"></div>
+    </div>
     <div id="tower-list"></div>
   </div>
 

@@ -12,8 +12,13 @@ const STRINGS = {
     'menu.scores': 'GLOBAL SCORES',
 
     // HUD
-    'hud.wave': 'WAVE',
-    'hud.score': 'SCORE',
+    'hud.gold': 'Gold',
+    'hud.lives': 'Lives',
+    'hud.wave': 'Wave',
+    'hud.score': 'Score',
+    'ctrl.speed': 'Speed',
+    'ctrl.pause': 'Pause',
+    'ctrl.sound': 'Sound',
     'map.start': 'START',
     'map.end': 'BASE',
 
@@ -47,6 +52,7 @@ const STRINGS = {
     'unlock.pts': 'pts',
     'phase.build': 'Build phase: place towers',
     'phase.wave': 'Wave {n} in progress',
+    'phase.needTower': 'Place a tower to start',
     'phase.buildAfter': 'Build after this wave',
     'place.road': 'Can\'t build on the road',
     'place.taken': 'Tile taken',
@@ -213,8 +219,13 @@ const STRINGS = {
     'menu.scores': 'CLASSIFICA GLOBALE',
 
     // HUD
-    'hud.wave': 'ONDATA',
-    'hud.score': 'PUNTI',
+    'hud.gold': 'Oro',
+    'hud.lives': 'Vite',
+    'hud.wave': 'Ondata',
+    'hud.score': 'Punti',
+    'ctrl.speed': 'Velocità',
+    'ctrl.pause': 'Pausa',
+    'ctrl.sound': 'Suono',
     'map.start': 'INIZIO',
     'map.end': 'BASE',
 
@@ -248,6 +259,7 @@ const STRINGS = {
     'unlock.pts': 'punti',
     'phase.build': 'Fase costruzione: piazza le torri',
     'phase.wave': 'Ondata {n} in corso',
+    'phase.needTower': 'Piazza una torre per iniziare',
     'phase.buildAfter': 'Costruisci dopo questa ondata',
     'place.road': 'Non si costruisce sulla strada',
     'place.taken': 'Casella occupata',

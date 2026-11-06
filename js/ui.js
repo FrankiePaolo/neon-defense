@@ -66,6 +66,7 @@ export class UIController {
 
     this._buildTowerPanel();
     this._bindButtons();
+    window.addEventListener('resize', () => this._fitSheet());
     this.applyLanguage();
   }
 
@@ -79,11 +80,16 @@ export class UIController {
     }
     document.getElementById('high-scores-btn').textContent = t('menu.scores');
 
-    // HUD
-    document.querySelector('#hud-gold').innerHTML = `${ICONS.coin}<span id="gold-value">${this.elements.goldValue.textContent}</span>`;
-    document.querySelector('#hud-wave').innerHTML = `${ICONS.wave}${t('hud.wave')} <span id="wave-value">${this.elements.waveValue.textContent}</span><span class="hud-total">/${CONFIG.MAX_WAVES}</span>`;
-    document.querySelector('#hud-lives').innerHTML = `${ICONS.heart}<span id="lives-value">${this.elements.livesValue.textContent}</span>`;
-    document.querySelector('#hud-score').innerHTML = `${t('hud.score')} <span id="score-value">${this.elements.scoreValue.textContent}</span>`;
+    // HUD: icon and value, with a word label under them
+    const hudItem = (id, icon, valueId, label, extra = '') => {
+      document.getElementById(id).innerHTML =
+        `<span class="hud-main">${ICONS[icon]}<span id="${valueId}">${document.getElementById(valueId).textContent}</span>${extra}</span>` +
+        `<span class="hud-label">${t(label)}</span>`;
+    };
+    hudItem('hud-gold', 'coin', 'gold-value', 'hud.gold');
+    hudItem('hud-wave', 'wave', 'wave-value', 'hud.wave', `<span class="hud-total">/ ${CONFIG.MAX_WAVES}</span>`);
+    hudItem('hud-lives', 'heart', 'lives-value', 'hud.lives');
+    hudItem('hud-score', 'star', 'score-value', 'hud.score');
     this.elements.goldValue = document.getElementById('gold-value');
     this.elements.waveValue = document.getElementById('wave-value');
     this.elements.livesValue = document.getElementById('lives-value');
@@ -91,6 +97,11 @@ export class UIController {
 
     // Buttons
     this.elements.cancelPlaceBtn.textContent = t('game.cancel');
+    this.updateSpeedButtons(this.game.speedMultiplier || 1);
+    const pauseBtn = document.getElementById('pause-btn');
+    pauseBtn.innerHTML = ICONS.pause;
+    pauseBtn.setAttribute('aria-label', t('ctrl.pause'));
+    document.getElementById('mute-btn').setAttribute('aria-label', t('ctrl.sound'));
 
     // Pause
     document.querySelector('#pause-overlay h2').textContent = t('game.paused');
@@ -290,10 +301,9 @@ export class UIController {
       this._shareScore();
     });
 
-    document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.game.setSpeed(parseInt(btn.dataset.speed));
-      });
+    // One button cycles 1x, 2x, 3x
+    document.getElementById('speed-btn').addEventListener('click', () => {
+      this.game.setSpeed((this.game.speedMultiplier || 1) % 3 + 1);
     });
 
     document.getElementById('pause-btn').addEventListener('click', () => {
@@ -319,10 +329,7 @@ export class UIController {
     });
 
     document.getElementById('mute-btn').addEventListener('click', () => {
-      const muted = this.game.audio.toggleMute();
-      const btn = document.getElementById('mute-btn');
-      btn.classList.toggle('active', !muted);
-      btn.style.opacity = muted ? '0.4' : '';
+      this.setMuteIcon(this.game.audio.toggleMute());
     });
 
     this.elements.cancelPlaceBtn.addEventListener('click', () => {
@@ -343,6 +350,7 @@ export class UIController {
     this.elements.scoreValue.textContent = this.game.scoreTracker.score;
     if (this.game.state === 'BETWEEN_WAVES') {
       this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
+      this._updatePhaseLabel();
     }
     this.updateUnlockTracker();
     this._updateTowerAffordability();
@@ -400,9 +408,11 @@ export class UIController {
           html += `<div class="upgrade-option up-level up-purchased" data-upgrade-path="">
             <span class="up-check">&#10003;</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
         } else if (available) {
+          const short = level.cost - game.economy.gold;
+          const needHtml = short > 0 ? `<span class="up-need">${t('panel.need').replace('{n}', short)}</span>` : '';
           html += `<div class="upgrade-option up-level ${canAfford ? 'up-available' : 'up-unaffordable'}"
             data-upgrade-path="${canAfford ? pathKey : ''}">
-            <span class="up-cost">${ICONS.coin}${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
+            <span class="up-cost">${ICONS.coin}${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}${needHtml}</span></div>`;
         } else {
           html += `<div class="upgrade-option up-level up-locked">
             <span class="up-cost">${ICONS.coin}${level.cost}</span><span class="up-info"><span class="up-desc">${desc}</span>${changesHtml}</span></div>`;
@@ -424,6 +434,7 @@ export class UIController {
     if (isMobile) {
       panel.style.left = '';
       panel.style.top = '';
+      this._fitSheet();
     } else {
       panel.style.left = Math.min(pos.x + 30, CONFIG.CANVAS_WIDTH - 320) + 'px';
       panel.style.top = Math.min(pos.y, CONFIG.CANVAS_HEIGHT - 200) + 'px';
@@ -458,6 +469,14 @@ export class UIController {
     this.elements.upgradePanel.style.display = 'none';
   }
 
+  // Phones: the upgrade sheet may grow up to the bottom edge of the board, never over it
+  _fitSheet() {
+    const panel = this.elements.upgradePanel;
+    if (panel.style.display !== 'block' || !window.matchMedia('(max-width: 768px)').matches) return;
+    const boardBottom = this.game.renderer.canvas.getBoundingClientRect().bottom;
+    panel.style.maxHeight = Math.max(160, window.innerHeight - boardBottom - 8) + 'px';
+  }
+
   showCancelButton() {
     this.elements.cancelPlaceBtn.classList.remove('hidden');
   }
@@ -472,7 +491,7 @@ export class UIController {
     const currentScore = this.game.scoreTracker ? this.game.scoreTracker.score : 0;
     const unlocked = progress.isTowerUnlocked(type, currentScore);
     const canAfford = unlocked && this.game.economy.canAfford(def.cost);
-    const color = unlocked ? def.color : '#555';
+    const color = unlocked ? def.color : '#8c8c96';
 
     let html = `<div class="ttp-title" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
     html += `<div class="ttp-desc">${t('tower.' + type + '.desc')}</div>`;
@@ -538,13 +557,8 @@ export class UIController {
       tooltip.style.left = Math.max(4, left) + 'px';
       tooltip.style.top = '40px';
     } else {
-      // Portrait: position above the tower panel
+      // Portrait: CSS docks it just above the tower panel
       tooltip.classList.add('visible');
-      const panelRect = this.elements.towerPanel.getBoundingClientRect();
-      const wrapperRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
-      const topPos = panelRect.top - wrapperRect.top - tooltip.offsetHeight - 8;
-      tooltip.style.left = '5%';
-      tooltip.style.top = Math.max(40, topPos) + 'px';
     }
 
     // Bind PLACE button
@@ -605,7 +619,7 @@ export class UIController {
     if (!label || !this._phase) return;
     label.textContent = this._phase === 'wave'
       ? t('phase.wave').replace('{n}', this.game.waveManager.currentWave)
-      : t('phase.build');
+      : this.game.towers.length === 0 ? t('phase.needTower') : t('phase.build');
   }
 
   flashLives() {
@@ -680,9 +694,15 @@ export class UIController {
   }
 
   updateSpeedButtons(speed) {
-    document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
-      btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
-    });
+    document.getElementById('speed-btn').textContent = `${t('ctrl.speed')} ${speed}x`;
+  }
+
+  // Speaker icon shows whether sound is on
+  setMuteIcon(muted) {
+    const btn = document.getElementById('mute-btn');
+    btn.innerHTML = muted ? ICONS.speakerOff : ICONS.speakerOn;
+    btn.setAttribute('aria-pressed', String(!muted));
+    btn.classList.toggle('active', !muted);
   }
 
   updateUnlockTracker() {

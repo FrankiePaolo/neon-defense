@@ -228,7 +228,8 @@ export class Tutorial {
   }
 
   // Dock the caption where it covers neither the board nor the step target:
-  // above the wave controls, else above the board, else over the top bar.
+  // above the wave controls, else above the board, else over the top bar,
+  // else over the tower panel.
   _placeCaption(avoid) {
     const wrapper = document.getElementById('canvas-wrapper').getBoundingClientRect();
     const board = this.game.renderer.canvas.getBoundingClientRect();
@@ -236,11 +237,17 @@ export class Tutorial {
     const speed = document.getElementById('speed-controls').getBoundingClientRect();
     const h = this.overlay.offsetHeight;
     const gap = 6;
-    const clear = (top) => [board, avoid].every(r => !r || top + h <= r.top || top >= r.bottom);
+    const clearOf = (rects) => (top) => rects.every(r => !r || top + h <= r.top || top >= r.bottom);
+    const clear = clearOf([board, avoid]);
 
-    const candidates = [controls.top - gap - h, board.top - gap - h, wrapper.top + 2];
+    const panel = document.getElementById('tower-panel').getBoundingClientRect();
+    const candidates = [controls.top - gap - h, board.top - gap - h, wrapper.top + 2, panel.top + gap];
+    // Last resort before the default: inside the bottom of a target taller than
+    // the caption (the upgrade sheet on a phone), so the board stays clear
+    const inside = avoid ? avoid.bottom - gap - h : -1;
     const top = candidates.find(c => c >= wrapper.top && c >= speed.bottom - 1 && clear(c))
       ?? candidates.find(c => c >= wrapper.top && clear(c))
+      ?? (avoid && inside >= avoid.top && clearOf([board])(inside) ? inside : null)
       ?? candidates[0];
     this.overlay.style.top = (top - wrapper.top) + 'px';
   }
