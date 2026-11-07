@@ -17,8 +17,10 @@ const LAYOUTS = {
   phoneShort: { width: 375, height: 667, deviceScaleFactor: 2, hasTouch: true, isMobile: true },
   landscape: { width: 844, height: 390, deviceScaleFactor: 3, hasTouch: true, isMobile: true, isLandscape: true },
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1 },
+  desktopShort: { width: 1280, height: 720, deviceScaleFactor: 1 },
 };
-const ALL = Object.keys(LAYOUTS);
+// desktopShort is only for the layout scenarios that name it
+const ALL = ['phone', 'phoneShort', 'landscape', 'desktop'];
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
 // ── Static server, with a fake leaderboard at /api/scores ──
@@ -511,6 +513,32 @@ scenario('Desktop panel over the wave controls', { layouts: ['desktop'] }, async
     p.style.top = (b.top - w.top - 20) + 'px';
   });
   await expectOpaqueOver(g, '#upgrade-panel', '#start-wave-btn');
+});
+
+scenario('Controls off the board on desktop', { layouts: ['desktop', 'desktopShort'] }, async (g) => {
+  await g.startGame();
+  const board = await g.rect('#game-canvas');
+  assert((await g.rect('#hud')).bottom <= board.top, 'HUD covers the board');
+  assert((await g.rect('#wave-controls')).top >= board.bottom, 'wave controls cover the board');
+  const start = await g.rect('#start-wave-btn');
+  const inside = await g.eval((r) => r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, start);
+  assert(inside, 'start button outside the viewport');
+  const ratio = await g.eval(() => window.game.renderer.width / window.game.renderer.height);
+  assert(Math.abs(board.width / board.height / ratio - 1) < 0.01, `board ${board.width}x${board.height} lost its ratio`);
+  const [a] = await g.buildable();
+  await g.placeAt('blaster', a.x, a.y);
+  await g.press('#start-wave-btn');
+  assert(await g.eval(() => window.game.state) === 'PLAYING', 'start button did not start the wave');
+  const after = await g.rect('#game-canvas');
+  assert(JSON.stringify(after) === JSON.stringify(board), `board moved when the wave started: ${JSON.stringify(board)} -> ${JSON.stringify(after)}`);
+});
+
+scenario('Landscape keeps the overlay', { layouts: ['landscape'] }, async (g) => {
+  await g.startGame();
+  const board = await g.rect('#game-canvas');
+  const controls = await g.rect('#wave-controls');
+  assert(controls.top > board.top && intersects(controls, { ...board, left: -Infinity, right: Infinity }), 'wave controls left the board column');
+  assert(board.height >= 300, `board shrunk to ${board.height}px`);
 });
 
 scenario('Placing in Italian on a phone', { layouts: ['phone', 'phoneShort'], langs: ['it'] }, async (g) => {

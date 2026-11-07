@@ -2,7 +2,7 @@
 
 A tower defense game built with vanilla HTML5 Canvas and JavaScript. No frameworks, no build step — just pure browser tech with a neon cyberpunk aesthetic.
 
-**[Play it live](https://neondefense.netlify.app)**
+**[Play it live](https://neon-def.netlify.app)**
 
 ## Gameplay
 
@@ -64,7 +64,7 @@ node scripts/check-paths.mjs
 
 ### Play test
 
-`scripts/play-test.mjs` drives the game in the Chrome already installed on your machine (no browser download) like a player: on a portrait phone (390x844 and 375x667), a landscape phone (844x390) and a desktop (1440x900), in English and Italian. It checks placing, cancelling, panels, layout, game flow and rendering, prints pass or fail per scenario and layout, and exits 1 on any failure or page error. Run it after any UI change:
+`scripts/play-test.mjs` drives the game in the Chrome already installed on your machine (no browser download) like a player: on a portrait phone (390x844 and 375x667), a landscape phone (844x390) and a desktop (1440x900, plus a 1280x720 laptop window for the desktop layout checks), in English and Italian. It checks placing, cancelling, panels, layout, game flow and rendering, prints pass or fail per scenario and layout, and exits 1 on any failure or page error. Run it after any UI change:
 
 ```bash
 npm install

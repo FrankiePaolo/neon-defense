@@ -1135,6 +1135,35 @@ canvas {
   #panel-head { justify-content: space-between; padding: 0 2px; }
 }
 
+/* Desktop: HUD, board and wave controls stack like the portrait phone, so
+   nothing floats over the board. The board shrinks by height, keeping its
+   ratio, on short windows; on tall ones it stays centred under the HUD. */
+@media (min-width: 769px) and (min-height: 501px) {
+  #canvas-wrapper { flex-direction: column; }
+
+  #hud {
+    position: relative;
+    align-self: stretch;
+    flex: 0 0 auto;
+  }
+
+  canvas {
+    flex: 0 1 auto;
+    min-height: 0;
+    margin-top: auto;
+  }
+
+  #wave-controls {
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    /* Height of the tallest state (phase line, preview, button), so hiding
+       the preview and the button during a wave never moves the board */
+    min-height: 115px;
+    margin-bottom: auto;
+  }
+}
+
 /* Tall portrait phones have room for the one-line tower descriptions */
 @media (max-width: 768px) and (min-height: 760px) {
   .tower-btn .tower-desc { display: block; }
