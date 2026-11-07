@@ -116,7 +116,7 @@ function helpers(page, layout) {
     // Buildable tiles, best first
     buildable: () => page.evaluate(() => {
       const g = window.game;
-      return g.renderer.buildableTiles(g.grid, 3.5).filter(t => g.grid.isPlaceable(t.x, t.y)).map(t => ({ x: t.x, y: t.y }));
+      return g.renderer.buildableTiles(g.grid).map(t => ({ x: t.x, y: t.y }));
     }),
     // A road tile the player can see (no panel over its centre)
     roadTile: () => page.evaluate(() => {

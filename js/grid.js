@@ -14,6 +14,7 @@ export class Grid {
     this.entry = null;
     this.exit = null;
     this.path = [];
+    this.nearRoad = new Set();
     this.towers = new Map();
   }
 
@@ -44,10 +45,12 @@ export class Grid {
         this.cells[this.entry.y][this.entry.x] = CELL_ENTRY;
         this.cells[this.exit.y][this.exit.x] = CELL_EXIT;
         this.path = path;
+        this._markNearRoad();
         return true;
       }
     }
     this._fallbackPath(minLength);
+    this._markNearRoad();
     return true;
   }
 
@@ -224,9 +227,24 @@ export class Grid {
     return conflicts;
   }
 
+  // Tiles touching the road (8 neighbours), the only ones a tower can go on
+  _markNearRoad() {
+    this.nearRoad = new Set();
+    for (const p of this.path) {
+      for (let y = p.y - 1; y <= p.y + 1; y++) {
+        for (let x = p.x - 1; x <= p.x + 1; x++) this.nearRoad.add(`${x},${y}`);
+      }
+    }
+  }
+
+  isRoad(gx, gy) {
+    return gx >= 0 && gx < this.cols && gy >= 0 && gy < this.rows && this.cells[gy][gx] !== CELL_EMPTY;
+  }
+
   isPlaceable(gx, gy) {
     if (gx < 0 || gx >= this.cols || gy < 0 || gy >= this.rows) return false;
     if (this.cells[gy][gx] !== CELL_EMPTY) return false;
+    if (!this.nearRoad.has(`${gx},${gy}`)) return false;
     if (this.towers.has(`${gx},${gy}`)) return false;
     return true;
   }

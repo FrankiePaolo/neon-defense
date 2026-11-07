@@ -40,12 +40,12 @@ START SHALL show an arrow pointing along the road, with no extra frame at the bo
 - **WHEN** the language is Italian
 - **THEN** the START and END labels use the Italian strings
 
-### Requirement: Buildable tiles are highlighted while placing
-While the player is placing or moving a tower, the board SHALL highlight every empty tile from which the tower's range reaches the road. Other empty tiles stay unhighlighted. Road tiles and occupied tiles SHALL look clearly unbuildable. On touch devices, a touch that lands on the road or a tower SHALL snap to the nearest free tile within one tile of the finger.
+### Requirement: Towers go next to the road
+A tower SHALL only be placed or moved onto an empty tile that touches the road, including diagonally. While the player is placing or moving a tower, the board SHALL highlight every such tile. Other empty tiles stay unhighlighted and refuse the tower with a short reason at the tile. Road tiles and occupied tiles SHALL look clearly unbuildable. On touch devices, a touch that lands on the road or a tower SHALL snap to the nearest free tile within one tile of the finger.
 
 #### Scenario: Highlight on tower selection
 - **WHEN** the player selects a tower to place
-- **THEN** empty tiles whose range covers at least one road cell are highlighted
+- **THEN** empty tiles next to the road are highlighted
 - **AND** the highlight is removed when placement ends or is cancelled
 
 #### Scenario: Carried tower hovers
@@ -55,6 +55,10 @@ While the player is placing or moving a tower, the board SHALL highlight every e
 - **AND** the highlight clears when the mouse leaves the board
 - **AND** a moving tower starts over its own tile, which keeps a faint frame until it lands
 - **AND** on touch, where there is no hover, a placed tower starts over the best tile for it (the one covering the most road)
+
+#### Scenario: Tile away from the road
+- **WHEN** the player is placing a tower and taps an empty tile that does not touch the road
+- **THEN** the tower is not placed and a short reason appears at the tile
 
 #### Scenario: Near miss on touch
 - **WHEN** the player is placing a tower on a touch device and the touch lands on the road edge next to a free tile

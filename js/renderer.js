@@ -294,18 +294,16 @@ export class Renderer {
     ctx.restore();
   }
 
-  // Empty tiles from which a tower of this range reaches the road
-  buildableTiles(grid, range) {
-    const key = `${range}|${[...grid.towers.keys()].join(";")}`;
+  // Empty tiles next to the road, where a tower can go
+  buildableTiles(grid) {
+    const key = [...grid.towers.keys()].join(";");
     if (this._buildable && this._buildable.path === grid.path && this._buildable.key === key) {
       return this._buildable.tiles;
     }
     const tiles = [];
-    const r2 = range * range;
     for (let y = 0; y < grid.rows; y++) {
       for (let x = 0; x < grid.cols; x++) {
-        if (!grid.isPlaceable(x, y)) continue;
-        if (grid.path.some(p => (p.x - x) ** 2 + (p.y - y) ** 2 <= r2)) tiles.push({ x, y });
+        if (grid.isPlaceable(x, y)) tiles.push({ x, y });
       }
     }
     this._buildable = { path: grid.path, key, tiles };
@@ -315,14 +313,13 @@ export class Renderer {
   _renderBuildableTiles(ctx, game) {
     const input = game.input;
     const color = input.movingTower ? input.movingTower.def.color : TOWER_DEFS[input.placingType].color;
-    const range = input.movingTower ? input.movingTower.currentStats.range : TOWER_DEFS[input.placingType].range;
     const ts = CONFIG.TILE_SIZE;
     const pulse = 0.14 + 0.05 * Math.sin(Date.now() / 300);
     ctx.save();
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
-    for (const tile of this.buildableTiles(game.grid, range)) {
+    for (const tile of this.buildableTiles(game.grid)) {
       ctx.globalAlpha = pulse;
       ctx.fillRect(tile.x * ts + 3, tile.y * ts + 3, ts - 6, ts - 6);
       ctx.globalAlpha = 0.35;

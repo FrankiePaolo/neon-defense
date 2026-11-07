@@ -127,7 +127,8 @@ export class InputHandler {
 
     let key;
     if (grid.getTowerAt(cell.x, cell.y)) key = 'place.taken';
-    else if (!grid.isPlaceable(cell.x, cell.y)) key = 'place.road';
+    else if (grid.isRoad(cell.x, cell.y)) key = 'place.road';
+    else if (!grid.isPlaceable(cell.x, cell.y)) key = 'place.far';
     else if (!game.economy.canAfford(cost)) key = 'place.gold';
     else return;
 

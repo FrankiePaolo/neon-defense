@@ -230,6 +230,8 @@ export class Game {
     if (this.state === 'PLAYING') {
       const dt = rawDt * this.speedMultiplier;
       this._update(dt);
+    } else {
+      this._updateFloatingTexts(rawDt);
     }
 
     if (this.waveBanner) {

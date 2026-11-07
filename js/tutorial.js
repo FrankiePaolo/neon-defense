@@ -280,7 +280,7 @@ export class Tutorial {
     const range = TOWER_DEFS[type].range;
     const start = grid.entry;
     let best = null;
-    for (const tile of this.game.renderer.buildableTiles(grid, range)) {
+    for (const tile of this.game.renderer.buildableTiles(grid)) {
       const covered = grid.path.filter(p => (p.x - tile.x) ** 2 + (p.y - tile.y) ** 2 <= range * range).length;
       const dist = Math.abs(tile.x - start.x) + Math.abs(tile.y - start.y);
       if (!best || covered > best.covered || (covered === best.covered && dist < best.dist)) {
