@@ -6,12 +6,16 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "balance": "node scripts/simulate-balance.mjs"
+    "balance": "node scripts/simulate-balance.mjs",
+    "play-test": "node scripts/play-test.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@netlify/neon": "^0.1.2"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.16.0"
   }
 }

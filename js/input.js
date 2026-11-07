@@ -30,8 +30,8 @@ export class InputHandler {
   _getTouchPos(touch) {
     const rect = this.canvas.getBoundingClientRect();
     return {
-      x: (touch.clientX - rect.left) * (this.canvas.width / rect.width),
-      y: (touch.clientY - rect.top) * (this.canvas.height / rect.height),
+      x: (touch.clientX - rect.left) * (CONFIG.CANVAS_WIDTH / rect.width),
+      y: (touch.clientY - rect.top) * (CONFIG.CANVAS_HEIGHT / rect.height),
     };
   }
 
@@ -79,8 +79,8 @@ export class InputHandler {
 
   _onMove(e) {
     const rect = this.canvas.getBoundingClientRect();
-    this.mouseX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-    this.mouseY = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+    this.mouseX = (e.clientX - rect.left) * (CONFIG.CANVAS_WIDTH / rect.width);
+    this.mouseY = (e.clientY - rect.top) * (CONFIG.CANVAS_HEIGHT / rect.height);
     this.hoveredCell = pixelToGrid(this.mouseX, this.mouseY);
   }
 
@@ -90,8 +90,7 @@ export class InputHandler {
 
     if (this.movingTower) {
       if (game.moveTower(this.movingTower, this.hoveredCell.x, this.hoveredCell.y)) {
-        this.movingTower = null;
-        game.ui.hideCancelButton();
+        this.clearCarry();
       } else {
         this._explainBadTile(this.hoveredCell, 0);
       }
@@ -99,11 +98,7 @@ export class InputHandler {
       if (game.placeTower(this.placingType, this.hoveredCell.x, this.hoveredCell.y)) {
         if (this.isTouchDevice) this.hoveredCell = game.tutorial.suggestTile(this.placingType);
         const def = TOWER_DEFS[this.placingType];
-        if (!game.economy.canAfford(def.cost)) {
-          this.placingType = null;
-          document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-          game.ui.hideCancelButton();
-        }
+        if (!game.economy.canAfford(def.cost)) this.clearCarry();
       } else {
         this._explainBadTile(this.hoveredCell, TOWER_DEFS[this.placingType].cost);
       }
@@ -144,25 +139,29 @@ export class InputHandler {
   }
 
   _onRightClick() {
-    this.placingType = null;
-    this.movingTower = null;
-    this.selectedTower = null;
-    this.game.ui.hideUpgradePanel();
-    this.game.ui.hideCancelButton();
+    this.clearCarry();
   }
 
   _onKey(e) {
+    // Typing a name is not a shortcut
+    const el = e.target;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
     const game = this.game;
+    // While paused, Space and Escape resume whatever was pending
+    if (game.state === 'PAUSED' && (e.key === ' ' || e.key === 'Escape')) {
+      e.preventDefault();
+      game.togglePause();
+      return;
+    }
     switch (e.key) {
       case ' ':
-        e.preventDefault();
         if (game.state === 'BETWEEN_WAVES') game.startNextWave();
         else if (game.state === 'PLAYING') game.togglePause();
-        else if (game.state === 'PAUSED') game.togglePause();
+        else break;
+        e.preventDefault();
         break;
       case 'Escape':
-        if (this.movingTower) { this.movingTower = null; game.ui.hideCancelButton(); }
-        else if (this.placingType) { this.placingType = null; game.ui.hideCancelButton(); }
+        if (this.movingTower || this.placingType) this.clearCarry();
         else if (this.selectedTower) { this.selectedTower = null; game.ui.hideUpgradePanel(); }
         else { game.togglePause(); }
         break;
@@ -179,22 +178,26 @@ export class InputHandler {
     }
   }
 
+  // The only way carry state changes, so the board and the UI always agree
+  setCarry({ placing = null, moving = null } = {}) {
+    this.placingType = placing;
+    this.movingTower = moving;
+    this.selectedTower = null;
+    this.game.ui.syncCarry(this);
+  }
+
+  clearCarry() {
+    this.setCarry();
+  }
+
   startPlacing(type) {
-    this.placingType = type;
+    this.setCarry({ placing: type });
     // Touch has no hover: start with the tower floating over the best tile
     if (this.isTouchDevice) this.hoveredCell = this.game.tutorial.suggestTile(type);
-    this.movingTower = null;
-    this.selectedTower = null;
-    this.game.ui.hideUpgradePanel();
-    this.game.ui.showCancelButton();
   }
 
   startMoving(tower) {
-    this.movingTower = tower;
+    this.setCarry({ moving: tower });
     this.hoveredCell = { x: tower.gx, y: tower.gy };
-    this.placingType = null;
-    this.selectedTower = null;
-    this.game.ui.hideUpgradePanel();
-    this.game.ui.showCancelButton();
   }
 }

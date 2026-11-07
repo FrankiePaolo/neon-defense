@@ -41,8 +41,12 @@ export class ScoreTracker {
   addWaveBonus(wave) { this.score += wave * 100; }
   addPerfectWaveBonus(wave) { this.score += wave * 200; }
 
-  hasName(name) {
-    return this.highScores.some(s => s.name.toLowerCase() === name.toLowerCase());
+  // A leaderboard name is taken unless it is the one last saved on this device
+  isNameTakenByOther(name) {
+    const lower = name.toLowerCase();
+    let own = '';
+    try { own = (localStorage.getItem('neon_td_player_name') || '').toLowerCase(); } catch {}
+    return lower !== own && this.highScores.some(s => s.name.toLowerCase() === lower);
   }
 
   save(name, wave) {

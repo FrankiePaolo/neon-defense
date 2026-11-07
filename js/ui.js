@@ -38,6 +38,14 @@ function formatStatChanges(stats) {
     .join(' · ');
 }
 
+// One definition of "phone layout", shared with the CSS phone rules in index.html.
+// IS_MOBILE (touch) only decides tap versus hover.
+const PHONE_LAYOUT = '(max-width: 768px), (max-height: 500px) and (pointer: coarse)';
+
+export function isPhoneLayout() {
+  return window.matchMedia(PHONE_LAYOUT).matches;
+}
+
 export class UIController {
   constructor(game) {
     this.game = game;
@@ -66,6 +74,8 @@ export class UIController {
 
     this._buildTowerPanel();
     this._bindButtons();
+    this._placeCancelButton();
+    window.matchMedia(PHONE_LAYOUT).addEventListener('change', () => this._placeCancelButton());
     window.addEventListener('resize', () => this._fitSheet());
     this.applyLanguage();
   }
@@ -111,7 +121,7 @@ export class UIController {
     document.getElementById('replay-tutorial-btn').textContent = t('game.replayTutorial');
 
     // Game over
-    document.querySelector('#game-over-screen h2').textContent = t('game.gameOver');
+    document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
     document.querySelector('#game-over-screen p:nth-of-type(1)').innerHTML = `${t('game.score')}: <span id="final-score">${this.elements.finalScore.textContent}</span>`;
     document.querySelector('#game-over-screen p:nth-of-type(2)').innerHTML = `${t('game.wave')}: <span id="final-wave">${this.elements.finalWave.textContent}</span>`;
     this.elements.finalScore = document.getElementById('final-score');
@@ -150,7 +160,8 @@ export class UIController {
     for (const [type, def] of Object.entries(TOWER_DEFS)) {
       const unlocked = progress.isTowerUnlocked(type, currentScore);
       const btn = document.createElement('div');
-      btn.className = 'tower-btn' + (unlocked ? '' : ' tower-locked');
+      btn.className = 'tower-btn' + (unlocked ? '' : ' tower-locked') +
+        (type === this.game.input.placingType ? ' selected' : '');
       btn.dataset.towerType = type;
       btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
       if (unlocked) {
@@ -173,27 +184,15 @@ export class UIController {
               return;
             }
             // Show stats preview (PLACE button in tooltip enters placement mode)
-            document.querySelectorAll('.tower-btn').forEach(b => {
-              b.classList.remove('selected');
-              b.classList.remove('previewing');
-            });
-            this.game.input.placingType = null;
-            this.hideCancelButton();
+            this.game.input.clearCarry();
             this._previewingType = type;
             btn.classList.add('previewing');
             this._showMobileTooltip(type);
           } else {
             // Desktop: immediate placement toggle
             if (!this.game.economy.canAfford(def.cost)) return;
-            const currentlySelected = btn.classList.contains('selected');
-            document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-            if (currentlySelected) {
-              this.game.input.placingType = null;
-              this.hideCancelButton();
-            } else {
-              btn.classList.add('selected');
-              this.game.input.startPlacing(type);
-            }
+            if (this.game.input.placingType === type) this.game.input.clearCarry();
+            else this.game.input.startPlacing(type);
           }
         });
       } else {
@@ -210,10 +209,7 @@ export class UIController {
             if (this._previewingType === type) {
               this._hideTooltip();
             } else {
-              document.querySelectorAll('.tower-btn').forEach(b => {
-                b.classList.remove('previewing');
-                b.classList.remove('selected');
-              });
+              this.game.input.clearCarry();
               this._previewingType = type;
               btn.classList.add('previewing');
               this._showMobileTooltip(type);
@@ -278,8 +274,9 @@ export class UIController {
     saveBtn.addEventListener('click', async () => {
       const name = nameInput.value.trim();
       if (!name) return;
-      if (this.game.scoreTracker.hasName(name)) {
+      if (this.game.scoreTracker.isNameTakenByOther(name)) {
         nameWarn.textContent = t('game.nameTaken');
+        nameWarn.style.display = '';
         nameWarn.style.visibility = 'visible';
         return;
       }
@@ -292,15 +289,11 @@ export class UIController {
         nameWarn.style.visibility = 'visible';
         return;
       }
-      this.elements.gameOverScreen.style.display = 'none';
-      this.elements.menuScreen.style.display = 'flex';
-      this.game.audio.playTrack('menu');
+      this.game.returnToMenu();
     });
 
     document.getElementById('play-again-btn').addEventListener('click', () => {
-      this.elements.gameOverScreen.style.display = 'none';
-      this.elements.menuScreen.style.display = 'flex';
-      this.game.audio.playTrack('menu');
+      this.game.returnToMenu();
     });
 
     document.getElementById('share-score-btn').addEventListener('click', () => {
@@ -328,10 +321,7 @@ export class UIController {
     });
 
     document.getElementById('restart-btn').addEventListener('click', () => {
-      this.game.togglePause();
-      this.hidePause();
-      this.elements.menuScreen.style.display = 'flex';
-      this.game.audio.playTrack('menu');
+      this.game.returnToMenu();
     });
 
     document.getElementById('mute-btn').addEventListener('click', () => {
@@ -339,13 +329,7 @@ export class UIController {
     });
 
     this.elements.cancelPlaceBtn.addEventListener('click', () => {
-      this.game.input.placingType = null;
-      this.game.input.movingTower = null;
-      this.game.input.selectedTower = null;
-      document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
-      this.hideUpgradePanel();
-      this._hideTooltip();
-      this.hideCancelButton();
+      this.game.input.clearCarry();
     });
   }
 
@@ -384,7 +368,8 @@ export class UIController {
     const game = this.game;
 
     const canModify = game.state === 'BETWEEN_WAVES';
-    let html = `<div class="up-title" style="color:${def.color}">${t('tower.' + type)}</div>`;
+    let html = `<button class="up-close" aria-label="${t('ctrl.close')}">&times;</button>`;
+    html += `<div class="up-title" style="color:${def.color}">${t('tower.' + type)}</div>`;
 
     // Current stats summary
     const s = tower.currentStats;
@@ -436,15 +421,18 @@ export class UIController {
     panel.innerHTML = html;
     panel.style.display = 'block';
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    if (isMobile) {
+    if (isPhoneLayout()) {
       panel.style.left = '';
       panel.style.top = '';
       this._fitSheet();
     } else {
-      panel.style.left = Math.min(pos.x + 30, CONFIG.CANVAS_WIDTH - 320) + 'px';
-      panel.style.top = Math.min(pos.y, CONFIG.CANVAS_HEIGHT - 200) + 'px';
+      this._placeBesideTower(panel, pos);
     }
+
+    panel.querySelector('.up-close').addEventListener('click', () => {
+      game.input.selectedTower = null;
+      this.hideUpgradePanel();
+    });
 
     // Bind upgrade clicks
     panel.querySelectorAll('.upgrade-option[data-upgrade-path]').forEach(el => {
@@ -464,31 +452,80 @@ export class UIController {
       });
     }
 
-    // Bind sell click
+    // Sell asks once: the first tap arms it, the second sells. Any re-render
+    // or closing the panel builds a new, unarmed button.
     const sellBtn = panel.querySelector('.sell-btn');
     if (sellBtn) {
-      sellBtn.addEventListener('click', () => { game.sellSelectedTower(); });
+      sellBtn.addEventListener('click', () => {
+        if (!sellBtn.dataset.armed) {
+          sellBtn.dataset.armed = 'true';
+          sellBtn.textContent = t('towers.sellConfirm').replace('{n}', tower.getSellValue());
+          return;
+        }
+        game.sellSelectedTower();
+      });
     }
+  }
+
+  // Desktop: beside the tower, on the side of the board with more room, clear
+  // of the range circle when it fits, between the HUD and the wave controls
+  _placeBesideTower(panel, pos) {
+    const wrapper = document.getElementById('canvas-wrapper').getBoundingClientRect();
+    const board = this.game.renderer.canvas.getBoundingClientRect();
+    const controls = document.getElementById('wave-controls').getBoundingClientRect();
+    const hud = document.getElementById('hud').getBoundingClientRect();
+    const k = board.width / CONFIG.CANVAS_WIDTH;
+    const reach = Math.max(CONFIG.TILE_SIZE / 2, this.game.input.selectedTower.currentStats.range * CONFIG.TILE_SIZE) * k;
+    const x = board.left - wrapper.left + pos.x * k;
+    const y = board.top - wrapper.top + pos.y * k;
+    const w = panel.offsetWidth, h = panel.offsetHeight, gap = 8;
+
+    const right = pos.x < CONFIG.CANVAS_WIDTH / 2;
+    let left = right ? x + reach + gap : x - reach - gap - w;
+    // No room clear of the range: at least clear of the tile
+    const tile = CONFIG.TILE_SIZE / 2 * k + gap;
+    if (left < 4 || left + w > wrapper.width - 4) left = right ? x + tile : x - tile - w;
+    left = Math.max(4, Math.min(left, wrapper.width - w - 4));
+
+    const bottom = controls.top - wrapper.top - gap;
+    const top = Math.max(hud.bottom - wrapper.top, Math.min(y - h / 2, bottom - h));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
   }
 
   hideUpgradePanel() {
     this.elements.upgradePanel.style.display = 'none';
   }
 
-  // Phones: the upgrade sheet may grow up to the bottom edge of the board, never over it
+  // Phones: CANCEL is a flex item of the wave controls, so it never covers
+  // START WAVE. Desktop: it sits at the bottom right of the board area.
+  _placeCancelButton() {
+    const btn = this.elements.cancelPlaceBtn;
+    const controls = document.getElementById('wave-controls');
+    if (isPhoneLayout()) controls.insertBefore(btn, this.elements.startWaveBtn);
+    else controls.after(btn);
+  }
+
+  // Portrait phones: the upgrade sheet may grow up to the bottom edge of the
+  // board, never over it. Landscape CSS gives it the full height instead.
   _fitSheet() {
     const panel = this.elements.upgradePanel;
-    if (panel.style.display !== 'block' || !window.matchMedia('(max-width: 768px)').matches) return;
+    if (panel.style.display !== 'block' || !isPhoneLayout()) return;
     const boardBottom = this.game.renderer.canvas.getBoundingClientRect().bottom;
     panel.style.maxHeight = Math.max(160, window.innerHeight - boardBottom - 8) + 'px';
   }
 
-  showCancelButton() {
-    this.elements.cancelPlaceBtn.classList.remove('hidden');
-  }
-
-  hideCancelButton() {
-    this.elements.cancelPlaceBtn.classList.add('hidden');
+  // The only code that shows carry state outside the board: tower button
+  // highlight, CANCEL, data-carry on the container, the card and the panel
+  syncCarry(input) {
+    const carrying = !!(input.placingType || input.movingTower);
+    document.querySelectorAll('.tower-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.towerType === input.placingType);
+    });
+    this.elements.cancelPlaceBtn.classList.toggle('hidden', !carrying);
+    document.getElementById('game-container').toggleAttribute('data-carry', carrying);
+    this._hideTooltip();
+    if (!input.selectedTower) this.hideUpgradePanel();
   }
 
   _buildStatsTooltipHTML(type, isMobile) {
@@ -552,10 +589,8 @@ export class UIController {
     tooltip.innerHTML = this._buildStatsTooltipHTML(type, true);
     tooltip.style.borderColor = TOWER_DEFS[type].color;
 
-    const isLandscape = window.matchMedia('(max-height: 500px)').matches;
-
-    if (isLandscape) {
-      // Landscape: position left of the panel
+    if (!isPhoneLayout()) {
+      // Touch screen with the desktop layout: position left of the panel
       tooltip.classList.add('visible');
       const panelRect = this.elements.towerPanel.getBoundingClientRect();
       const wrapperRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
@@ -563,7 +598,7 @@ export class UIController {
       tooltip.style.left = Math.max(4, left) + 'px';
       tooltip.style.top = '40px';
     } else {
-      // Portrait: CSS docks it just above the tower panel
+      // Phones: CSS docks it above the tower panel, or at the right edge in landscape
       tooltip.classList.add('visible');
     }
 
@@ -572,12 +607,7 @@ export class UIController {
     if (placeBtn && !placeBtn.disabled) {
       placeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const towerType = placeBtn.dataset.towerType;
-        this._hideTooltip();
-        document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('previewing'));
-        const targetBtn = this.elements.towerList.querySelector(`[data-tower-type="${towerType}"]`);
-        if (targetBtn) targetBtn.classList.add('selected');
-        this.game.input.startPlacing(towerType);
+        this.game.input.startPlacing(placeBtn.dataset.towerType);
       });
     }
   }
@@ -608,7 +638,6 @@ export class UIController {
 
   hideBetweenWaves() {
     this._hideTooltip();
-    this.hideCancelButton();
     this.setPhase('wave');
   }
 
@@ -652,7 +681,18 @@ export class UIController {
     document.getElementById('tower-panel').style.display = '';
   }
 
-  showGameOver(score, wave) {
+  showMenu() {
+    this.hidePause();
+    this.elements.gameOverScreen.style.display = 'none';
+    document.getElementById('wave-controls').classList.remove('visible');
+    delete document.getElementById('game-container').dataset.phase;
+    this._phase = null;
+    this.elements.menuScreen.style.display = 'flex';
+  }
+
+  showGameOver(score, wave, won) {
+    this._won = won;
+    document.querySelector('#game-over-screen h2').textContent = t(won ? 'game.victory' : 'game.gameOver');
     this.hideUnlockTracker();
     this._lastScore = score;
     this._lastWave = wave;

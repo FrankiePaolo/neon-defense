@@ -375,7 +375,7 @@ canvas {
 /* Upgrade Panel */
 #upgrade-panel {
   position: absolute;
-  background: rgba(10, 10, 15, 0.95);
+  background: #0a0a0f;
   border: 1px solid #333;
   padding: 12px;
   z-index: 20;
@@ -384,7 +384,15 @@ canvas {
   font-family: var(--font-ui);
 }
 
-#upgrade-panel .up-title { font-weight: bold; margin-bottom: 4px; font-size: 16px; }
+#upgrade-panel .up-title { font-weight: bold; margin-bottom: 4px; font-size: 16px; padding-right: 36px; }
+#upgrade-panel .up-close {
+  position: absolute; top: 2px; right: 2px;
+  width: 44px; height: 44px;
+  background: none; border: none;
+  color: var(--text-2); font-size: 26px; line-height: 1;
+  cursor: pointer;
+}
+#upgrade-panel .up-close:hover { color: var(--text-1); }
 #upgrade-panel .up-stats {
   display: flex; gap: 10px; flex-wrap: wrap;
   font-size: 13px; color: var(--text-2); padding: 4px 0 6px;
@@ -439,7 +447,7 @@ canvas {
 /* Tower Stats Tooltip */
 #tower-stats-tooltip {
   position: absolute;
-  background: rgba(10, 10, 15, 0.95);
+  background: #0a0a0f;
   border: 1px solid #333;
   padding: 10px 12px;
   z-index: 25;
@@ -947,6 +955,60 @@ canvas {
   .tower-btn .tower-desc { display: none; }
   .tower-btn .tower-pic { width: 28px; height: 28px; }
 
+  #start-wave-btn {
+    padding: 8px 18px;
+    font-size: 15px;
+  }
+
+  #wave-preview {
+    font-size: 14px;
+    padding: 4px 10px;
+  }
+
+  #menu-screen {
+    justify-content: flex-start;
+    padding-top: 80px;
+    padding-bottom: 40px;
+    overflow-y: auto;
+  }
+
+  #menu-screen h1 {
+    font-size: 36px;
+    letter-spacing: 6px;
+    margin-top: 40px;
+  }
+
+  #high-scores-list {
+    max-height: 55vh;
+  }
+
+  #difficulty-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .menu-btn {
+    padding: 14px 36px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  #game-over-screen h2 { font-size: 28px; }
+  #pause-overlay h2 { font-size: 28px; }
+
+  #lang-select {
+    gap: 8px;
+  }
+  .lang-btn {
+    font-size: 16px;
+    padding: 10px 18px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
+/* Phone layout, portrait or landscape. The same query is PHONE_LAYOUT in js/ui.js. */
+@media (max-width: 768px), (max-height: 500px) and (pointer: coarse) {
   /* Bottom sheet over the tower panel; JS caps its height at the space below the board */
   #upgrade-panel {
     position: fixed;
@@ -1017,56 +1079,10 @@ canvas {
     background: rgba(0, 255, 255, 0.25);
   }
 
-  #start-wave-btn {
-    padding: 8px 18px;
-    font-size: 15px;
-  }
-
-  #wave-preview {
-    font-size: 14px;
-    padding: 4px 10px;
-  }
-
-  #menu-screen {
-    justify-content: flex-start;
-    padding-top: 80px;
-    padding-bottom: 40px;
-    overflow-y: auto;
-  }
-
-  #menu-screen h1 {
-    font-size: 36px;
-    letter-spacing: 6px;
-    margin-top: 40px;
-  }
-
-  #high-scores-list {
-    max-height: 55vh;
-  }
-
-  #difficulty-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .menu-btn {
-    padding: 14px 36px;
-    font-size: 16px;
-    min-height: 48px;
-  }
-
-  #game-over-screen h2 { font-size: 28px; }
-  #pause-overlay h2 { font-size: 28px; }
-
-  #lang-select {
-    gap: 8px;
-  }
-  .lang-btn {
-    font-size: 16px;
-    padding: 10px 18px;
-    min-width: 48px;
-    min-height: 48px;
-  }
+  /* CANCEL is a flex item of the wave controls (js/ui.js moves it there), and
+     the wave preview makes room for it while a tower is carried */
+  #wave-controls #cancel-place-btn { position: static; }
+  #game-container[data-carry] #wave-preview { display: none; }
 }
 
 /* Portrait phones only (a small phone in landscape also matches max-width: 768px) */
@@ -1074,10 +1090,13 @@ canvas {
   /* HUD, board and wave controls stack top to bottom. The board is pinned
      under the HUD, so nothing below it can move it. */
   #canvas-wrapper {
+    flex: 0 0 auto;
     min-height: 0;
     flex-direction: column;
     justify-content: flex-start;
   }
+
+  #tower-panel { flex: 1 1 auto; min-height: 0; }
 
   #hud {
     position: relative;
@@ -1103,7 +1122,7 @@ canvas {
     position: static;
     transform: none;
     flex: 0 0 auto;
-    margin-top: auto;
+    min-height: 88px;
     padding: 6px 8px 8px;
     flex-direction: row;
     flex-wrap: wrap;
@@ -1114,6 +1133,11 @@ canvas {
   #phase-label { flex-basis: 100%; text-align: center; }
 
   #panel-head { justify-content: space-between; padding: 0 2px; }
+}
+
+/* Tall portrait phones have room for the one-line tower descriptions */
+@media (max-width: 768px) and (min-height: 760px) {
+  .tower-btn .tower-desc { display: block; }
 }
 
 /* Landscape phones */
@@ -1139,21 +1163,29 @@ canvas {
 
   .tower-btn .tower-desc { display: none; }
 
-  #tower-stats-tooltip {
-    min-width: 200px;
-    max-width: 260px;
-    width: auto;
-    left: auto !important;
-    top: auto;
-    pointer-events: auto;
-  }
-
-  #tower-stats-tooltip .ttp-place-btn { display: block; }
-
   /* Label beside the value to keep the HUD short */
   #ui-overlay { font-size: 16px; }
   .hud-item { flex-direction: row; align-items: baseline; gap: 4px; }
   #hud { padding: 4px 8px; }
+}
+
+/* Landscape phones: the sheet and the tower card dock to the right edge,
+   full height, over the tower panel column */
+@media (max-height: 500px) and (pointer: coarse) {
+  #upgrade-panel,
+  #tower-stats-tooltip {
+    position: fixed;
+    left: auto !important;
+    right: 0;
+    top: 0 !important;
+    bottom: 0;
+    width: 320px;
+    max-width: none;
+    max-height: none !important;
+    border: none;
+    border-left: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 12px 0 0 12px;
+  }
 }
 
 /* Touch devices: larger tap targets */
@@ -1316,6 +1348,11 @@ canvas {
       </div>
       <button class="menu-btn" id="high-scores-btn">GLOBAL SCORES</button>
       <div id="high-scores-list"></div>
+      <!-- Inside the menu, so the install banner never shows over the game -->
+      <div id="pwa-banner" class="hidden">
+        <span id="pwa-banner-text"></span>
+        <button id="pwa-banner-close">&times;</button>
+      </div>
     </div>
 
     <div id="pause-overlay">
@@ -1350,10 +1387,6 @@ canvas {
 
   <div id="share-toast" class="hidden">Link copied!</div>
 
-  <div id="pwa-banner" class="hidden">
-    <span id="pwa-banner-text"></span>
-    <button id="pwa-banner-close">&times;</button>
-  </div>
 </div>
 
 <script type="module" src="js/main.js"></script>

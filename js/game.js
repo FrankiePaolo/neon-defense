@@ -14,6 +14,7 @@ import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
 import { Tutorial } from './tutorial.js';
 import { AudioEngine } from './audio.js';
+import { t } from './i18n.js';
 
 export class Game {
   constructor() {
@@ -93,10 +94,7 @@ export class Game {
     this.speedMultiplier = 1;
     this.livesLostThisWave = 0;
     this.waveClearDelay = 0;
-    this.input.selectedTower = null;
-    this.input.placingType = null;
-    this.input.movingTower = null;
-    this.ui.hideUpgradePanel();
+    this.input.clearCarry();
     this.ui.dismissUnlockNotification();
     this.ui.refreshTowerPanel();
     this.ui.updateSpeedButtons(1);
@@ -112,13 +110,14 @@ export class Game {
     if (this.state !== 'BETWEEN_WAVES') return;
     if (this.towers.length === 0) return;
     if (!this.tutorial.allows('startWave')) return;
+    this.input.clearCarry();
     this.state = 'PLAYING';
     this.livesLostThisWave = 0;
     this.waveManager.startWave();
     const wave = this.waveManager.currentWave;
     const isBoss = wave % CONFIG.BOSS_INTERVAL === 0;
     this.waveBanner = {
-      text: isBoss ? `WAVE ${wave} — BOSS` : `WAVE ${wave}`,
+      text: t(isBoss ? 'banner.boss' : 'banner.wave').replace('{n}', wave),
       color: isBoss ? '#ff4444' : '#00ffff',
       timer: 2.0,
       duration: 2.0,
@@ -200,10 +199,19 @@ export class Game {
     this.ui.updateSpeedButtons(speed);
   }
 
+  // Leave the current game for the menu; the loop does not update in MENU
+  returnToMenu() {
+    this.state = 'MENU';
+    this.audio.stopMusic();
+    this.input.clearCarry();
+    this.ui.showMenu();
+  }
+
   togglePause() {
     if (this.state === 'PLAYING' || this.state === 'BETWEEN_WAVES') {
       this._prevState = this.state;
       this.state = 'PAUSED';
+      this.input.clearCarry();
       this.audio.stopMusic();
       this.ui.showPause();
     } else if (this.state === 'PAUSED') {
@@ -361,7 +369,7 @@ export class Game {
       this._checkUnlocks();
       this.floatingTexts.push({
         x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 20,
-        text: `${this.killStreak}x COMBO  +${bonus}g`,
+        text: `${t('banner.combo').replace('{n}', this.killStreak)}  +${bonus}g`,
         color: '#ff8800', life: 2.0, maxLife: 2.0, large: true,
       });
       this.triggerShake(4, 0.25);
@@ -415,7 +423,7 @@ export class Game {
     const wave = this.waveManager.currentWave;
     const perfect = this.livesLostThisWave === 0;
     this.waveBanner = {
-      text: perfect ? `WAVE ${wave} PERFECT!` : `WAVE ${wave} CLEARED`,
+      text: t(perfect ? 'banner.perfect' : 'banner.cleared').replace('{n}', wave),
       color: perfect ? '#00ff66' : '#00ccff',
       timer: 2.5,
       duration: 2.5,
@@ -429,19 +437,21 @@ export class Game {
 
   _onGameOver() {
     this.state = 'GAME_OVER';
+    this.input.clearCarry();
     this._processEndOfGame();
     this.audio.stopMusic();
     this.audio.playSfx('gameover');
-    this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
+    this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, false);
   }
 
   _onVictory() {
     this.scoreTracker.score += 5000;
     this.state = 'GAME_OVER';
+    this.input.clearCarry();
     this._processEndOfGame();
     this.audio.stopMusic();
     this.audio.playSfx('wave');
-    this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave);
+    this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, true);
   }
 
   _regenerateMap() {

@@ -71,8 +71,9 @@ In the portrait query, `#wave-controls` loses `margin-top: auto` and `#tower-pan
 ### 12. Banners through i18n
 `game.js` builds banner text with `t('banner.wave')`, `t('banner.boss')`, `t('banner.cleared')`, `t('banner.perfect')`, `t('banner.combo')` and `{n}` replacement. The boss banner uses a colon, not a dash.
 
-### 13. Install banner waits for the menu
-`ui.js` dispatches a `neon:menu` event on `window` whenever it shows the menu. The inline script shows the banner only if the menu is visible when its timer fires, otherwise on the next `neon:menu`. Dismissal is unchanged.
+### 13. Install banner lives inside the menu
+`#pwa-banner` moves inside `#menu-screen`. The inline script is unchanged: when its timer fires during a game the banner is shown but hidden with the menu, and it appears the next time the menu is shown. A banner already open when a game starts hides with the menu too. Dismissal is unchanged.
+*Alternative:* a `neon:menu` event the script waits for. Rejected: it needs extra code to hide a banner already open when a game starts.
 
 ### 14. Sell confirm in the panel
 `showUpgradePanel` renders Sell with a `data-armed` state kept in `UIController`. First click arms and relabels to `towers.sellConfirm` ("Sell for {n}?"); second click sells. Re-rendering the panel, closing it or clicking the board disarms.

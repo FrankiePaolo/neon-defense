@@ -9,13 +9,22 @@ export class Renderer {
     this.ctx = canvas.getContext('2d');
     this.width = CONFIG.CANVAS_WIDTH;
     this.height = CONFIG.CANVAS_HEIGHT;
-    canvas.width = this.width;
-    canvas.height = this.height;
+    // Draw at the screen's pixel density so the board stays sharp when scaled
+    // up; capped at 2 to bound fill cost on 3x phones. Drawing code keeps
+    // using logical pixels through the context transform.
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = this.width * this.dpr;
+    canvas.height = this.height * this.dpr;
+    // Never shown larger than the logical size (plus its 1px border); the
+    // max sizes keep the ratio
+    canvas.style.maxWidth = `min(100%, ${this.width + 2}px)`;
+    canvas.style.maxHeight = `min(100%, ${this.height + 2}px)`;
 
     this.staticCanvas = document.createElement('canvas');
-    this.staticCanvas.width = this.width;
-    this.staticCanvas.height = this.height;
+    this.staticCanvas.width = canvas.width;
+    this.staticCanvas.height = canvas.height;
     this.staticCtx = this.staticCanvas.getContext('2d');
+    this.staticCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.staticDirty = true;
   }
 
@@ -139,11 +148,12 @@ export class Renderer {
       shakeY = (Math.random() - 0.5) * 2 * intensity;
     }
 
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.save();
     ctx.translate(shakeX, shakeY);
 
     if (this.staticDirty) this.renderStatic(game.grid);
-    ctx.drawImage(this.staticCanvas, 0, 0);
+    ctx.drawImage(this.staticCanvas, 0, 0, this.width, this.height);
 
     this._renderRoadArrows(ctx, game.grid);
     this._baseFlash = game.baseFlash || 0;
@@ -507,7 +517,7 @@ export class Renderer {
     ctx.shadowBlur = 14 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = '#ff8800';
     ctx.textAlign = 'center';
-    ctx.fillText(`${game.killStreak}x COMBO`, CONFIG.CANVAS_WIDTH / 2, 70);
+    ctx.fillText(t('banner.combo').replace('{n}', game.killStreak), CONFIG.CANVAS_WIDTH / 2, 70);
     ctx.restore();
   }
 

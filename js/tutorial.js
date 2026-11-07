@@ -191,7 +191,7 @@ export class Tutorial {
   _tileRect(tile) {
     const canvas = this.game.renderer.canvas;
     const r = canvas.getBoundingClientRect();
-    const k = r.width / canvas.width;
+    const k = r.width / CONFIG.CANVAS_WIDTH;
     const ts = CONFIG.TILE_SIZE * k;
     return { left: r.left + tile.x * ts, top: r.top + tile.y * ts, width: ts, height: ts,
       right: r.left + (tile.x + 1) * ts, bottom: r.top + (tile.y + 1) * ts };
@@ -216,7 +216,7 @@ export class Tutorial {
     const x = pts[i].x + (pts[i + 1].x - pts[i].x) * f;
     const y = pts[i].y + (pts[i + 1].y - pts[i].y) * f;
     const r = canvas.getBoundingClientRect();
-    const k = r.width / canvas.width;
+    const k = r.width / CONFIG.CANVAS_WIDTH;
     return { left: r.left + x * k, top: r.top + y * k, width: 0, height: 0 };
   }
 

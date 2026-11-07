@@ -62,6 +62,21 @@ python3 -m http.server 8000
 node scripts/check-paths.mjs
 ```
 
+### Play test
+
+`scripts/play-test.mjs` drives the game in the Chrome already installed on your machine (no browser download) like a player: on a portrait phone (390x844 and 375x667), a landscape phone (844x390) and a desktop (1440x900), in English and Italian. It checks placing, cancelling, panels, layout, game flow and rendering, prints pass or fail per scenario and layout, and exits 1 on any failure or page error. Run it after any UI change:
+
+```bash
+npm install
+npm run play-test
+
+# Only the scenarios whose name contains a word
+npm run play-test -- cancel
+
+# Chrome somewhere else (exits 2 when Chrome is not found)
+CHROME_PATH="/path/to/chrome" npm run play-test
+```
+
 ### Balance simulator
 
 `scripts/simulate-balance.mjs` plays the game headless with the real wave, enemy, tower and combat code, on both grids and all three difficulties, with a naive player (only Blasters, no upgrades) and a sensible one (upgrades, mixes tower types). It prints lives lost, gold, score and buyable-over-needed damage per wave, damage per gold by tower, the wave each tower unlocks and the top score per wave, then checks the targets in the `wave-scaling`, `tower-balance` and `difficulty-levels` specs and exits 1 if any fails. Run it after any change to a balance number:

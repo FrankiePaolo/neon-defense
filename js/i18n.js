@@ -19,6 +19,7 @@ const STRINGS = {
     'ctrl.speed': 'Speed',
     'ctrl.pause': 'Pause',
     'ctrl.sound': 'Sound',
+    'ctrl.close': 'Close',
     'map.start': 'START',
     'map.end': 'BASE',
 
@@ -31,6 +32,7 @@ const STRINGS = {
     'game.resume': 'RESUME',
     'game.restart': 'RESTART',
     'game.gameOver': 'GAME OVER',
+    'game.victory': 'YOU WIN',
     'game.score': 'Score',
     'game.wave': 'Wave',
     'game.enterName': 'Enter name',
@@ -44,6 +46,7 @@ const STRINGS = {
     'towers.title': 'TOWERS',
     'towers.move': 'MOVE',
     'towers.sell': 'SELL',
+    'towers.sellConfirm': 'Sell for {n}?',
 
     // Unlock
     'unlock.single': 'NEW TOWER UNLOCKED',
@@ -63,6 +66,13 @@ const STRINGS = {
     'panel.reach': 'Reach {n} points',
     'panel.need': 'Need {n} more',
     'up.otherPath': 'You picked the other path',
+
+    // Banners drawn on the board
+    'banner.wave': 'WAVE {n}',
+    'banner.boss': 'WAVE {n}: BOSS',
+    'banner.cleared': 'WAVE {n} CLEARED',
+    'banner.perfect': 'WAVE {n} PERFECT!',
+    'banner.combo': '{n}x COMBO',
 
     // Scores
     'scores.loading': 'Loading...',
@@ -227,6 +237,7 @@ const STRINGS = {
     'ctrl.speed': 'Velocità',
     'ctrl.pause': 'Pausa',
     'ctrl.sound': 'Suono',
+    'ctrl.close': 'Chiudi',
     'map.start': 'INIZIO',
     'map.end': 'BASE',
 
@@ -239,6 +250,7 @@ const STRINGS = {
     'game.resume': 'RIPRENDI',
     'game.restart': 'RICOMINCIA',
     'game.gameOver': 'GAME OVER',
+    'game.victory': 'HAI VINTO',
     'game.score': 'Punteggio',
     'game.wave': 'Ondata',
     'game.enterName': 'Inserisci nome',
@@ -252,6 +264,7 @@ const STRINGS = {
     'towers.title': 'TORRI',
     'towers.move': 'SPOSTA',
     'towers.sell': 'VENDI',
+    'towers.sellConfirm': 'Vendi per {n}?',
 
     // Unlock
     'unlock.single': 'NUOVA TORRE SBLOCCATA',
@@ -271,6 +284,13 @@ const STRINGS = {
     'panel.reach': 'Fai {n} punti',
     'panel.need': 'Mancano {n}',
     'up.otherPath': 'Hai scelto l\'altro ramo',
+
+    // Banners drawn on the board
+    'banner.wave': 'ONDATA {n}',
+    'banner.boss': 'ONDATA {n}: BOSS',
+    'banner.cleared': 'ONDATA {n} COMPLETATA',
+    'banner.perfect': 'ONDATA {n} PERFETTA!',
+    'banner.combo': 'COMBO {n}x',
 
     // Scores
     'scores.loading': 'Caricamento...',
