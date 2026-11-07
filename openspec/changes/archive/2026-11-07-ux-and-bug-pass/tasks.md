@@ -35,6 +35,7 @@ Layouts: `phone` 390x844 ratio 3 touch, `phoneShort` 375x667, `landscape` 844x39
 - [x] 5.1 Render at the device pixel ratio capped at 2 in `js/renderer.js`, and convert pointer positions with `CONFIG.CANVAS_WIDTH` in `js/input.js` and `js/tutorial.js`. Verify with play test: "Phone at 3x pixel density" and "Desktop at 2x" (backing width, tap at a tile centre places there, tutorial pointer lands on the ghost tile).
 - [x] 5.2 Move the wave, boss, cleared, perfect and combo banners to `banner.*` i18n keys in EN and IT. Verify with play test: "Boss wave in Italian" by reading `game.waveBanner.text`.
 - [ ] 5.3 Measure frame time on a real phone at wave 10 at 3x with the ratio change and record the result in the task; lower the cap if any frame exceeds 33ms.
+  - Not measured: archived on 2026-11-07 without a real-phone measurement. The cap is unverified on a phone.
 
 ## 6. Integration
 

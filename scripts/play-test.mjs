@@ -814,6 +814,168 @@ scenario('Complete tutorial', { layouts: ['phone'], langs: ['en', 'it'], open: {
   assert(await g.eval(() => localStorage.getItem('neonDefenseTutorialDone')) === 'true', 'tutorial not saved as done');
 });
 
+// ── Cores and unlocks ──
+
+const ALL_UNLOCKED = '["frost","lightning","cannon","support","sniper"]';
+const wallet = (g) => g.eval(() => ({
+  cores: window.game.progressTracker.cores,
+  saved: localStorage.getItem('neon_td_cores'),
+  unlocked: [...window.game.progressTracker.unlocked],
+}));
+
+// Place a Blaster if the board is empty, start the next wave and clear it at once
+async function clearWave(g) {
+  await g.eval(() => {
+    const game = window.game;
+    if (game.towers.length === 0) {
+      const t = game.renderer.buildableTiles(game.grid)[0];
+      game.placeTower('blaster', t.x, t.y);
+    }
+    game.startNextWave();
+    game.waveManager.spawnQueue = [];
+    game.enemies = [];
+  });
+  await g.page.waitForFunction(() => window.game.state === 'BETWEEN_WAVES', { timeout: 5000 });
+}
+
+scenario('Fresh profile', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  const w = await wallet(g);
+  assert(w.cores === 0, `cores ${w.cores}`);
+  assert(w.unlocked.includes('blaster') && !w.unlocked.includes('frost'), `unlocked ${w.unlocked}`);
+});
+
+scenario('Seeded profile', { layouts: ['desktop'], open: { storage: { neon_td_cores: '12', neon_td_unlocked: '["frost"]' } } }, async (g) => {
+  await g.startGame();
+  await g.eval(() => window.game.returnToMenu());
+  await g.startGame();
+  const w = await wallet(g);
+  assert(w.cores === 12, `cores ${w.cores}`);
+  assert(w.unlocked.includes('frost'), `unlocked ${w.unlocked}`);
+});
+
+scenario('Clearing wave 1 pays a core', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  assert((await wallet(g)).saved === '1', `after wave 1: ${(await wallet(g)).saved}`);
+  await clearWave(g);
+  assert((await wallet(g)).saved === '3', `after wave 2: ${(await wallet(g)).saved}`);
+});
+
+scenario('Game over keeps cores', { layouts: ['desktop'], open: { storage: { neon_td_cores: '15' } } }, async (g) => {
+  await g.startGame();
+  await g.eval(() => { const t = window.game.renderer.buildableTiles(window.game.grid)[0]; window.game.placeTower('blaster', t.x, t.y); });
+  await g.eval(() => { window.game.startNextWave(); window.game.lives = 0; });
+  await g.page.waitForFunction(() => window.game.state === 'GAME_OVER', { timeout: 3000 });
+  await g.press('#play-again-btn');
+  await g.startGame();
+  const w = await wallet(g);
+  assert(w.cores === 15 && w.saved === '15', `cores ${w.cores}, saved ${w.saved}`);
+});
+
+async function expectLightningUnlocked(g) {
+  const w = await wallet(g);
+  assert(w.unlocked.includes('lightning'), 'Lightning still locked');
+  assert(w.cores === 1 && w.saved === '1', `cores ${w.cores}, saved ${w.saved}`);
+  const banner = await g.eval(() => document.getElementById('unlock-notification')?.textContent || '');
+  assert(banner.includes('Lightning'), `banner: ${banner}`);
+  await g.setGold(1000);
+  await g.pick('lightning');
+  await expectPlacing(g, 'lightning');
+}
+
+const SIX_CORES = { storage: { neon_td_cores: '6', neon_td_unlocked: '["frost"]' } };
+
+scenario('Unlock from the sheet', { layouts: ['phone'], open: SIX_CORES }, async (g) => {
+  await g.startGame();
+  await g.press('.tower-btn[data-tower-type="lightning"]');
+  const label = await g.eval(() => document.querySelector('#tower-stats-tooltip.visible .ttp-place-btn').textContent);
+  assert(label === 'Unlock for 5 cores', `button: ${label}`);
+  await g.press('#tower-stats-tooltip.visible .ttp-place-btn');
+  await expectLightningUnlocked(g);
+});
+
+scenario('Unlock on click', { layouts: ['desktop'], open: SIX_CORES }, async (g) => {
+  await g.startGame();
+  const label = await g.eval(() => document.querySelector('.tower-btn[data-tower-type="lightning"] .tower-unlock-req').textContent);
+  assert(label === 'Unlock for 5 cores', `button: ${label}`);
+  await g.press('.tower-btn[data-tower-type="lightning"]');
+  await expectLightningUnlocked(g);
+});
+
+scenario('Cannot afford', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '3', neon_td_unlocked: '["frost"]' } } }, async (g) => {
+  await g.startGame();
+  await g.press('.tower-btn[data-tower-type="lightning"]');
+  if (g.touch) {
+    const disabled = await g.eval(() => document.querySelector('#tower-stats-tooltip.visible .ttp-place-btn').disabled);
+    assert(disabled, 'unlock control enabled');
+  }
+  const w = await wallet(g);
+  assert(w.cores === 3 && !w.unlocked.includes('lightning'), `cores ${w.cores}, unlocked ${w.unlocked}`);
+});
+
+const tracker = (g) => g.eval(() => ({
+  label: document.querySelector('#unlock-tracker .unlock-label')?.textContent.trim(),
+  fill: document.querySelector('#unlock-tracker .unlock-bar-fill')?.style.width,
+  balance: document.getElementById('cores-value')?.textContent,
+}));
+
+scenario('Tracker toward Cannon', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '15', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
+  await g.startGame();
+  const tr = await tracker(g);
+  assert(tr.label === 'Next tower: Cannon, 5 cores to go', `label: ${tr.label}`);
+  assert(tr.fill === '75%', `bar: ${tr.fill}`);
+  assert(tr.balance === '15', `balance: ${tr.balance}`);
+});
+
+scenario('Tracker affordable', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '25', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
+  await g.startGame();
+  const tr = await tracker(g);
+  assert(tr.label === 'Cannon can be unlocked', `label: ${tr.label}`);
+  assert(tr.fill === '100%', `bar: ${tr.fill}`);
+});
+
+scenario('Tracker with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
+  await g.startGame();
+  const tr = await tracker(g);
+  assert(tr.label === undefined && tr.fill === undefined, `still shows ${JSON.stringify(tr)}`);
+  assert(tr.balance === '40', `balance: ${tr.balance}`);
+});
+
+scenario('Tracker on a phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  const size = await g.eval(() => parseFloat(getComputedStyle(document.querySelector('#unlock-tracker .unlock-label')).fontSize));
+  assert(size >= 12, `label is ${size}px`);
+  const label = await g.rect('#unlock-tracker .unlock-label');
+  const controls = await g.rect('#speed-controls');
+  assert(label.width > 0 && !intersects(label, controls), 'label overlaps the controls');
+});
+
+scenario('End screen after wave 2', { layouts: ['desktop'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  await clearWave(g);
+  await g.eval(() => { window.game.startNextWave(); window.game.lives = 0; });
+  await g.page.waitForFunction(() => window.game.state === 'GAME_OVER', { timeout: 3000 });
+  const earned = await g.eval(() => document.getElementById('cores-earned').textContent);
+  const expected = g.lang === 'it' ? '+3 core in questa partita' : '+3 cores this run';
+  assert(earned === expected, `earned: ${earned}`);
+  assert(await g.visible('#next-unlock-hint'), 'next-unlock line hidden');
+  const hint = await g.eval(() => document.getElementById('next-unlock-hint').textContent);
+  const frost = g.lang === 'it' ? 'Gelo' : 'Frost';
+  assert(hint.includes(frost), `hint: ${hint}`);
+});
+
+scenario('End screen with everything unlocked', { layouts: ['desktop'], langs: ['en', 'it'], open: { storage: { neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  await g.eval(() => { window.game.startNextWave(); window.game.lives = 0; });
+  await g.page.waitForFunction(() => window.game.state === 'GAME_OVER', { timeout: 3000 });
+  const earned = await g.eval(() => document.getElementById('cores-earned').textContent);
+  assert(earned.startsWith('+1 core'), `earned: ${earned}`);
+  assert(!(await g.visible('#next-unlock-hint')), 'next-unlock line shown');
+});
+
 // ── Runner ──
 
 async function main() {

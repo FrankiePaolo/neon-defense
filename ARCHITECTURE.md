@@ -21,12 +21,12 @@
 │   STATE / RULES                                                      │
 │   economy.js: Economy (gold, lives)                                  │
 │               ScoreTracker (scores, pending queue)                   │
-│               ProgressTracker                                        │
+│               ProgressTracker (cores, unlocked towers)               │
 │   config.js: CONFIG, TOWER_DEFS, ENEMY_DEFS (shared data)            │
 │   utils.js:  math and shape helpers                                  │
 │                                                                      │
 │   localStorage: scores, pending scores, player name, language,       │
-│                 tutorial-done flag                                   │
+│                 tutorial-done flag, cores, unlocked towers           │
 │   sw.js: cache-first for static assets, network-first for /api/      │
 │          (last GET /api/scores is cached, so the board works offline)│
 └───────────────────────────────┬──────────────────────────────────────┘

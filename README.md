@@ -29,6 +29,7 @@ Each tower has two upgrade paths with 3 tiers — choose one path to specialize.
 
 - 3 difficulty levels: Easy, Normal, Hard (long, medium, short path)
 - Dual upgrade paths per tower
+- Cores: clearing a wave pays cores, saved on the device, that unlock towers for every future run
 - Tower synergies via Support buffs
 - Percentage-based armor system
 - Interest-based economy with kill streak bonuses
@@ -79,7 +80,7 @@ CHROME_PATH="/path/to/chrome" npm run play-test
 
 ### Balance simulator
 
-`scripts/simulate-balance.mjs` plays the game headless with the real wave, enemy, tower and combat code, on both grids and all three difficulties, with a naive player (only Blasters, no upgrades) and a sensible one (upgrades, mixes tower types). It prints lives lost, gold, score and buyable-over-needed damage per wave, damage per gold by tower, the wave each tower unlocks and the top score per wave, then checks the targets in the `wave-scaling`, `tower-balance` and `difficulty-levels` specs and exits 1 if any fails. Run it after any change to a balance number:
+`scripts/simulate-balance.mjs` plays the game headless with the real wave, enemy, tower and combat code, on both grids and all three difficulties, with a naive player (only Blasters, no upgrades) and a sensible one (spends cores on Frost, Lightning, Cannon, Support and Sniper in that order as soon as it can, upgrades, mixes tower types). It prints lives lost, gold, score and buyable-over-needed damage per wave, damage per gold by tower, the wave each tower unlocks and the top score per wave, then checks the targets in the `wave-scaling`, `tower-balance` and `difficulty-levels` specs and exits 1 if any fails. Run it after any change to a balance number:
 
 ```bash
 # All grids, difficulties and players, then the checks

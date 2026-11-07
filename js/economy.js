@@ -120,51 +120,53 @@ export class ScoreTracker {
   }
 }
 
+// Cores and unlocked towers, saved on the device across runs
 export class ProgressTracker {
   constructor() {
-    this.bestScore = 0;
+    this.cores = 0;
+    this.unlocked = new Set(['blaster']);
+    try {
+      this.cores = Math.max(0, parseInt(localStorage.getItem('neon_td_cores'), 10) || 0);
+      const saved = JSON.parse(localStorage.getItem('neon_td_unlocked')) || [];
+      for (const type of saved) if (TOWER_DEFS[type]) this.unlocked.add(type);
+    } catch {}
   }
 
-  reset() {
-    this.bestScore = 0;
+  earn(n) {
+    this.cores += n;
+    this._save();
   }
 
-  updateBestScore(score) {
-    const previousBest = this.bestScore;
-    if (score > this.bestScore) {
-      this.bestScore = score;
-    }
-    return previousBest;
-  }
+  isTowerUnlocked(type) { return this.unlocked.has(type); }
 
-  isTowerUnlocked(type, currentScore = 0) {
+  canUnlock(type) {
     const def = TOWER_DEFS[type];
-    const effective = Math.max(this.bestScore, currentScore);
-    return def && effective >= (def.unlockScore || 0);
+    return !!def && !this.unlocked.has(type) && this.cores >= def.unlockCost;
   }
 
-  getNewlyUnlockedTowers(previousBest, currentScore) {
-    const unlocked = [];
-    for (const [type, def] of Object.entries(TOWER_DEFS)) {
-      const threshold = def.unlockScore || 0;
-      if (threshold > previousBest && threshold <= currentScore) {
-        unlocked.push({ type, def });
-      }
-    }
-    return unlocked;
+  unlock(type) {
+    if (!this.canUnlock(type)) return false;
+    this.cores -= TOWER_DEFS[type].unlockCost;
+    this.unlocked.add(type);
+    this._save();
+    return true;
   }
 
-  getNextUnlock(currentScore = 0) {
-    const effective = Math.max(this.bestScore, currentScore);
-    let nearest = null;
+  // Cheapest locked tower as { type, cost, toGo }, or null when all are unlocked
+  getNextUnlock() {
+    let next = null;
     for (const [type, def] of Object.entries(TOWER_DEFS)) {
-      const threshold = def.unlockScore || 0;
-      if (threshold > effective) {
-        if (!nearest || threshold < nearest.score) {
-          nearest = { type, name: def.name, score: threshold };
-        }
-      }
+      if (this.unlocked.has(type)) continue;
+      if (!next || def.unlockCost < next.cost) next = { type, cost: def.unlockCost };
     }
-    return nearest;
+    if (next) next.toGo = Math.max(0, next.cost - this.cores);
+    return next;
+  }
+
+  _save() {
+    try {
+      localStorage.setItem('neon_td_cores', String(this.cores));
+      localStorage.setItem('neon_td_unlocked', JSON.stringify([...this.unlocked].filter(t => t !== 'blaster')));
+    } catch {}
   }
 }

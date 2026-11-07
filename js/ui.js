@@ -1,7 +1,7 @@
 import { TOWER_DEFS, ENEMY_DEFS, IS_MOBILE } from './config.js';
 import { gridToPixel } from './utils.js';
 import { CONFIG } from './config.js';
-import { t, getLang, setLang } from './i18n.js';
+import { t, getLang, setLang, cores } from './i18n.js';
 import { ICONS } from './icons.js';
 import { towerSprite, enemySprite, spriteImg } from './sprites.js';
 
@@ -130,6 +130,8 @@ export class UIController {
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
     document.getElementById('play-again-btn').textContent = t('game.playAgain');
+    if (this._won !== undefined) this._fillCoreProgress();
+    this._trackerKey = null;
 
     // Tower panel title and the mid-wave note
     document.querySelector('#tower-panel h3').textContent = t('towers.title');
@@ -156,11 +158,11 @@ export class UIController {
     const list = this.elements.towerList;
     list.innerHTML = '';
     const progress = this.game.progressTracker;
-    const currentScore = this.game.scoreTracker ? this.game.scoreTracker.score : 0;
     for (const [type, def] of Object.entries(TOWER_DEFS)) {
-      const unlocked = progress.isTowerUnlocked(type, currentScore);
+      const unlocked = progress.isTowerUnlocked(type);
       const btn = document.createElement('div');
       btn.className = 'tower-btn' + (unlocked ? '' : ' tower-locked') +
+        (progress.canUnlock(type) ? ' tower-can-unlock' : '') +
         (type === this.game.input.placingType ? ' selected' : '');
       btn.dataset.towerType = type;
       btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
@@ -200,7 +202,7 @@ export class UIController {
           <span class="tower-pic-wrap">${spriteImg(towerSprite(type), 'tower-pic')}${ICONS.lock}</span>
           <span class="tower-text">
             <span class="tower-name locked-name">${t('tower.' + type)}</span>
-            <span class="tower-unlock-req">${t('panel.reach').replace('{n}', def.unlockScore.toLocaleString())}</span>
+            <span class="tower-unlock-req">${t('unlock.price').replace('{n}', cores(def.unlockCost))}</span>
             <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
           </span>
         `;
@@ -215,6 +217,8 @@ export class UIController {
               this._showMobileTooltip(type);
             }
           });
+        } else {
+          btn.addEventListener('click', () => this._unlockTower(type));
         }
       }
 
@@ -233,8 +237,16 @@ export class UIController {
   }
 
   refreshTowerPanel() {
-    this._lastTrackerScore = -1;
+    this._trackerKey = null;
     this._buildTowerPanel();
+  }
+
+  // Spend cores on a locked tower, then show it as a new tower
+  _unlockTower(type) {
+    if (!this.game.progressTracker.unlock(type)) return;
+    this.showUnlockNotifications([{ type, def: TOWER_DEFS[type] }]);
+    this.refreshTowerPanel();
+    this.updateUnlockTracker();
   }
 
   _bindButtons() {
@@ -531,8 +543,7 @@ export class UIController {
   _buildStatsTooltipHTML(type, isMobile) {
     const def = TOWER_DEFS[type];
     const progress = this.game.progressTracker;
-    const currentScore = this.game.scoreTracker ? this.game.scoreTracker.score : 0;
-    const unlocked = progress.isTowerUnlocked(type, currentScore);
+    const unlocked = progress.isTowerUnlocked(type);
     const canAfford = unlocked && this.game.economy.canAfford(def.cost);
     const color = unlocked ? def.color : '#8c8c96';
 
@@ -550,15 +561,15 @@ export class UIController {
     }
 
     if (!unlocked) {
-      html += `<div class="ttp-locked-hint">${ICONS.lock}${t('panel.reach').replace('{n}', def.unlockScore.toLocaleString())}</div>`;
+      html += `<div class="ttp-locked-hint">${ICONS.lock}${t('unlock.price').replace('{n}', cores(def.unlockCost))}</div>`;
     }
 
-    if (isMobile) {
-      const disabled = !unlocked || !canAfford;
-      const label = !unlocked ? t('stats.locked')
-        : canAfford ? `${t('stats.place')} (${def.cost})`
+    if (isMobile && !unlocked) {
+      html += `<button class="ttp-place-btn" ${progress.canUnlock(type) ? '' : 'disabled'} data-tower-type="${type}" data-action="unlock">${ICONS.core}${t('unlock.price').replace('{n}', cores(def.unlockCost))}</button>`;
+    } else if (isMobile) {
+      const label = canAfford ? `${t('stats.place')} (${def.cost})`
         : t('panel.need').replace('{n}', def.cost - this.game.economy.gold);
-      html += `<button class="ttp-place-btn" ${disabled ? 'disabled' : ''} data-tower-type="${type}">${label}</button>`;
+      html += `<button class="ttp-place-btn" ${canAfford ? '' : 'disabled'} data-tower-type="${type}">${label}</button>`;
     }
 
     return html;
@@ -607,7 +618,8 @@ export class UIController {
     if (placeBtn && !placeBtn.disabled) {
       placeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.game.input.startPlacing(placeBtn.dataset.towerType);
+        if (placeBtn.dataset.action === 'unlock') this._unlockTower(placeBtn.dataset.towerType);
+        else this.game.input.startPlacing(placeBtn.dataset.towerType);
       });
     }
   }
@@ -665,6 +677,10 @@ export class UIController {
     this._restartAnimation(document.getElementById('hud-gold'), 'hud-pulse');
   }
 
+  pulseCores() {
+    this._restartAnimation(document.querySelector('#unlock-tracker .unlock-cores'), 'hud-pulse');
+  }
+
   _restartAnimation(el, className) {
     if (!el) return;
     el.classList.remove(className);
@@ -699,16 +715,7 @@ export class UIController {
     this.elements.finalScore.textContent = score;
     this.elements.finalWave.textContent = wave;
 
-    const nextUnlockEl = document.getElementById('next-unlock-hint');
-    const next = this.game.progressTracker.getNextUnlock(score);
-    if (next && nextUnlockEl) {
-      const remaining = next.score - Math.max(this.game.progressTracker.bestScore, score);
-      const towerName = t('tower.' + next.type);
-      nextUnlockEl.innerHTML = `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span style="color:#ffd700">${remaining.toLocaleString()}</span> ${t('unlock.pts')}`;
-      nextUnlockEl.style.display = 'block';
-    } else if (nextUnlockEl) {
-      nextUnlockEl.style.display = 'none';
-    }
+    this._fillCoreProgress();
 
     // Challenge result
     const resultEl = document.getElementById('challenge-result');
@@ -739,6 +746,21 @@ export class UIController {
     this.elements.gameOverScreen.style.display = 'flex';
   }
 
+  // End screen: cores earned this run and the cheapest locked tower
+  _fillCoreProgress() {
+    document.getElementById('cores-earned').innerHTML =
+      `${ICONS.core}${t('unlock.earned').replace('{n}', cores(this.game.coresThisRun || 0))}`;
+    const nextUnlockEl = document.getElementById('next-unlock-hint');
+    const next = this.game.progressTracker.getNextUnlock();
+    if (next) {
+      const towerName = t('tower.' + next.type);
+      nextUnlockEl.innerHTML = `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span class="core-amount">${cores(next.toGo)}</span>`;
+      nextUnlockEl.style.display = 'block';
+    } else {
+      nextUnlockEl.style.display = 'none';
+    }
+  }
+
   updateSpeedButtons(speed) {
     document.getElementById('speed-btn').textContent = `${t('ctrl.speed')} ${speed}x`;
   }
@@ -751,39 +773,30 @@ export class UIController {
     btn.classList.toggle('active', !muted);
   }
 
+  // The wallet row: core balance, then the cheapest locked tower and a bar
   updateUnlockTracker() {
     const el = document.getElementById('unlock-tracker');
     if (!el) return;
-    const score = this.game.scoreTracker.score;
-    if (score === this._lastTrackerScore) return;
-    this._lastTrackerScore = score;
+    const progress = this.game.progressTracker;
+    const key = `${progress.cores}:${progress.unlocked.size}`;
+    if (key === this._trackerKey) return;
+    this._trackerKey = key;
 
-    const best = this.game.progressTracker.bestScore;
-    const effective = Math.max(score, best);
-    const next = this.game.progressTracker.getNextUnlock(effective);
-
-    if (!next) {
-      el.classList.add('hidden');
-      return;
+    let html = `<span class="unlock-cores" title="${t('hud.cores')}">${ICONS.core}<span id="cores-value">${progress.cores}</span></span>`;
+    const next = progress.getNextUnlock();
+    if (next) {
+      const color = TOWER_DEFS[next.type].color;
+      const name = `<span style="color:${color}">${t('tower.' + next.type)}</span>`;
+      const label = next.toGo === 0 ? t('unlock.canUnlock').replace('{name}', name)
+        : `${t('unlock.tracker').replace('{name}', name)}, ${t('unlock.toGo').replace('{n}', cores(next.toGo))}`;
+      const fill = Math.round(Math.min(progress.cores / next.cost, 1) * 100);
+      html += `
+        <span class="unlock-next">
+          <span class="unlock-label">${label}</span>
+          <span class="unlock-bar-bg"><span class="unlock-bar-fill" style="width:${fill}%; background:${color}; color:${color}"></span></span>
+        </span>`;
     }
-
-    const allThresholds = Object.values(TOWER_DEFS)
-      .map(d => d.unlockScore || 0)
-      .sort((a, b) => a - b);
-    const prevThreshold = allThresholds.filter(th => th <= effective).pop() || 0;
-    const range = next.score - prevThreshold;
-    const progress = Math.min((effective - prevThreshold) / range, 1);
-    const color = TOWER_DEFS[next.type].color;
-    const towerName = t('tower.' + next.type);
-
-    const toGo = next.score - effective;
-    el.innerHTML = `
-      <div class="unlock-label">${t('unlock.tracker').replace('{name}', `<span style="color:${color}">${towerName}</span>`)}</div>
-      <div class="unlock-togo">${t('unlock.toGo').replace('{n}', toGo.toLocaleString())}</div>
-      <div class="unlock-bar-bg">
-        <div class="unlock-bar-fill" style="width:${Math.round(progress * 100)}%; background:${color}; color:${color}"></div>
-      </div>
-    `;
+    el.innerHTML = html;
     el.classList.remove('hidden');
   }
 

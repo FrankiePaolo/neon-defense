@@ -33,7 +33,7 @@ const { SpatialHash } = await import('../js/pathfinding.js');
 const { Enemy } = await import('../js/enemy.js');
 const { Tower } = await import('../js/tower.js');
 const { Projectile } = await import('../js/projectile.js');
-const { WaveManager, ENEMY_UNLOCK, WAVE, waveBonusGold } = await import('../js/waves.js');
+const { WaveManager, ENEMY_UNLOCK, WAVE, waveBonusGold, waveCores } = await import('../js/waves.js');
 const { resolveHit, updateSynergies } = await import('../js/combat.js');
 const { maxPlausibleScore } = await import('../netlify/functions/scores.mjs');
 const { gridToPixel, distance } = await import('../js/utils.js');
@@ -186,6 +186,8 @@ class Run {
     this.lives = CONFIG.BASE_LIVES;
     this.killStreak = 0;
     this.killStreakTimer = 0;
+    this.cores = 0;
+    this.unlocked = new Set(['blaster']);
     this.unlockWave = { blaster: 1 };
     this.rows = [];
     this.value = {};       // stress-test damage and gold, per tower type and per 'type path' at level 3
@@ -194,13 +196,17 @@ class Run {
 
   earn(n) { this.gold += n; this.totalEarned += n; }
 
-  isUnlocked(type) { return this.score >= (TOWER_DEFS[type].unlockScore || 0); }
+  isUnlocked(type) { return this.unlocked.has(type); }
 
-  checkUnlocks() {
-    for (const type of Object.keys(TOWER_DEFS)) {
-      if (!(type in this.unlockWave) && this.isUnlocked(type)) {
-        this.unlockWave[type] = this.waveManager.currentWave + 1;
-      }
+  // Unlocks the towers in UNLOCK_TARGETS order while the cores cover the next one
+  spendCores() {
+    for (const type of Object.keys(UNLOCK_TARGETS)) {
+      if (this.unlocked.has(type)) continue;
+      const cost = TOWER_DEFS[type].unlockCost;
+      if (this.cores < cost) return;
+      this.cores -= cost;
+      this.unlocked.add(type);
+      this.unlockWave[type] = this.waveManager.currentWave + 1;
     }
   }
 
@@ -236,10 +242,11 @@ class Run {
     while (this.tryBuy('blaster')) { /* keep buying */ }
   }
 
-  // Buys the cheapest type it owns the fewest of, places Frost and Support
+  // Spends cores on the next unlock, buys the cheapest type it owns the fewest of, places Frost and Support
   // first on the first turn it can afford them after they unlock, upgrades
   // its oldest tower when that costs less than a new tower
   actSensible() {
+    this.spendCores();
     for (let guard = 0; guard < 100; guard++) {
       const owned = (type) => this.towers.filter(t => t.type === type).length;
       const unlocked = Object.keys(TOWER_DEFS).filter(t => this.isUnlocked(t));
@@ -349,7 +356,7 @@ class Run {
     if (this.lives > 0) {
       this.score += wave * 100;
       if (livesLost === 0) this.score += wave * 200;
-      this.checkUnlocks();
+      this.cores += waveCores(wave);
       this.earn(Math.min(Math.floor(this.gold * CONFIG.INTEREST_RATE), CONFIG.INTEREST_CAP));
       this.earn(waveBonusGold(wave));
       for (const t of this.towers) {
@@ -369,7 +376,6 @@ class Run {
   onKilled(enemy, wave) {
     this.earn(enemy.reward);
     this.score += Math.floor(enemy.maxHp * (1 + wave * 0.1));
-    this.checkUnlocks();
     this.killStreak++;
     this.killStreakTimer = 1.5;
     if (enemy.splitCount > 0 && enemy.splitType) {
@@ -391,7 +397,6 @@ class Run {
       const bonus = Math.min(this.killStreak * 2, 15);
       this.earn(bonus);
       this.score += bonus;
-      this.checkUnlocks();
       this.killStreak = 0;
     } else if (this.killStreakTimer <= 0) {
       this.killStreak = 0;
@@ -800,6 +805,13 @@ function towerChecks(runs) {
   naive.gold = 95;
   naive.act();
   check('naive player with 95 gold places one Blaster', naive.towers.length === 1 && naive.towers[0].type === 'blaster');
+
+  // Sensible player with 6 cores and Frost unlocks Lightning before buying
+  const sensible = new Run({ gridName: 'mobile', difficulty: 'normal', player: 'sensible' });
+  sensible.cores = 6;
+  sensible.unlocked.add('frost');
+  sensible.act();
+  check('sensible player with 6 cores unlocks Lightning', sensible.isUnlocked('lightning') && sensible.cores === 1);
 }
 
 function difficultyChecks(runs) {

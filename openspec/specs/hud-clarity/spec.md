@@ -25,11 +25,11 @@ Each tower button in the panel SHALL show a small picture of the tower that matc
 - **THEN** the tower on the board looks like the picture on the Blaster button
 
 ### Requirement: Locked towers explain how to unlock
-A locked tower button SHALL show a lock icon and a plain sentence with the points needed, for example "Reach 500 points". It SHALL NOT show a bare score label.
+A locked tower button SHALL show a lock icon and a plain sentence with the core price, for example "Unlock for 5 cores". It SHALL NOT show a score or a bare label.
 
 #### Scenario: Locked tower at first launch
 - **WHEN** a first-time player opens the tower panel
-- **THEN** every tower except Blaster shows a lock and "Reach N points" in the current language
+- **THEN** every tower except Blaster shows a lock and "Unlock for N cores" in the current language
 
 ### Requirement: Unaffordable towers are visibly unavailable
 An unlocked tower the player cannot afford SHALL appear dimmed and SHALL show how much gold is missing. It SHALL update as gold changes.
@@ -40,11 +40,19 @@ An unlocked tower the player cannot afford SHALL appear dimmed and SHALL show ho
 - **AND** the button returns to normal as soon as gold reaches 90
 
 ### Requirement: Next-unlock progress is labelled
-The next-unlock progress SHALL sit on its own row below the resource counters, with a text label naming the tower and the points left, for example "Next tower: Frost, 120 points to go", and a bar as wide as that row allows. It SHALL be hidden when every tower is unlocked.
+The next-unlock row SHALL sit on its own row below the resource counters and show a core icon with the balance, a text label naming the cheapest locked tower and the cores left, for example "Next tower: Frost, 1 core to go", and a bar as wide as that row allows showing balance over price. When the balance covers the price the label SHALL say the tower can be unlocked. The row SHALL show only the balance when every tower is unlocked.
 
 #### Scenario: Progress toward Frost
-- **WHEN** the best score is 380 and Frost unlocks at 500
-- **THEN** the row reads "Next tower: Frost, 120 points to go" and the bar is 76 percent full
+- **WHEN** the balance is 0 cores and the cheapest locked tower is Frost at 1
+- **THEN** the row reads "Next tower: Frost, 1 core to go" and the bar is empty
+
+#### Scenario: Progress toward Cannon
+- **WHEN** the balance is 15 cores and the cheapest locked tower is Cannon at 20
+- **THEN** the row reads "Next tower: Cannon, 5 cores to go" and the bar is 75 percent full
+
+#### Scenario: Affordable
+- **WHEN** the balance is 25 cores and the cheapest locked tower is Cannon at 20
+- **THEN** the row reads "Cannon can be unlocked" and the bar is full
 
 #### Scenario: Readable on a phone
 - **WHEN** the game runs on a 390px wide portrait screen
@@ -153,3 +161,49 @@ On a portrait phone, the upgrade panel SHALL open as a sheet anchored to the bot
 #### Scenario: Previewing a tower on a phone
 - **WHEN** the player taps the Blaster button on a 390x844 portrait screen
 - **THEN** the Blaster details appear just above the tower panel, with the PLACE button visible, and every tower button stays visible
+
+### Requirement: Panels are opaque
+The upgrade panel, the tower details and the phone bottom sheet SHALL have an opaque background. Text and controls under them SHALL NOT show through.
+
+#### Scenario: Sheet over the wave controls
+- **WHEN** the upgrade sheet is open on a 390x844 portrait screen
+- **THEN** the phase label, the wave preview and the start button are not visible through the sheet
+
+### Requirement: Cancel and start controls never overlap
+On a portrait phone, the cancel control SHALL have its own place in the controls row and SHALL NOT overlap the start button or the wave preview, in any language.
+
+#### Scenario: Placing in Italian on a phone
+- **WHEN** the player is placing a tower on a 390x844 screen in Italian
+- **THEN** the rectangles of ANNULLA and INIZIA ONDATA do not intersect and both labels are fully readable
+
+### Requirement: Desktop upgrade panel sits beside its tower
+On desktop, the upgrade panel SHALL open next to the selected tower, on the side with more room, and SHALL NOT cover the tower, its tile or the wave controls.
+
+#### Scenario: Tower near the top-left corner
+- **WHEN** the player selects a tower in the top-left area of the board on a 1440x900 screen
+- **THEN** the panel opens to the right of the tower and the tower and its range circle stay visible
+
+### Requirement: Landscape phones use the bottom sheet
+On a touch device in landscape, the upgrade panel and the tower details SHALL open as a sheet that stays inside the viewport and scrolls internally. The page SHALL NOT become scrollable.
+
+#### Scenario: Upgrading in landscape
+- **WHEN** the player taps a placed tower on an 844x390 screen
+- **THEN** the sheet is fully inside the viewport, the document does not scroll, and the board is still visible
+
+### Requirement: The sheet can be closed
+The phone sheet SHALL show a close control. Closing it, or tapping the board outside the selected tower, SHALL hide the sheet and make the start button reachable again.
+
+#### Scenario: Close and start
+- **WHEN** the player taps the close control on the upgrade sheet
+- **THEN** the sheet hides and the start button can be tapped
+
+### Requirement: Portrait layout uses the space below the board
+On a portrait phone, the wave controls SHALL sit directly under the board, and the tower panel SHALL take the remaining height. When the panel is tall enough, tower buttons SHALL show their one-line description. The board SHALL NOT move when the phase changes.
+
+#### Scenario: Tall phone
+- **WHEN** the game is shown on a 390x844 screen between waves
+- **THEN** the phase label starts within 16px of the board's bottom edge, the tower buttons show their descriptions, and nothing is cut off
+
+#### Scenario: Short phone
+- **WHEN** the game is shown on a 375x667 screen
+- **THEN** every tower button is fully visible without scrolling the page, with descriptions hidden if they do not fit

@@ -16,6 +16,7 @@ const STRINGS = {
     'hud.lives': 'Lives',
     'hud.wave': 'Wave',
     'hud.score': 'Score',
+    'hud.cores': 'Cores',
     'ctrl.speed': 'Speed',
     'ctrl.pause': 'Pause',
     'ctrl.sound': 'Sound',
@@ -53,7 +54,11 @@ const STRINGS = {
     'unlock.plural': 'NEW TOWERS UNLOCKED',
     'unlock.next': 'Next unlock',
     'unlock.in': 'in',
-    'unlock.pts': 'pts',
+    'unlock.price': 'Unlock for {n}',
+    'unlock.canUnlock': '{name} can be unlocked',
+    'unlock.earned': '+{n} this run',
+    'unit.core': 'core',
+    'unit.cores': 'cores',
     'phase.build': 'Build phase: place towers',
     'phase.wave': 'Wave {n} in progress',
     'phase.needTower': 'Place a tower to start',
@@ -63,8 +68,7 @@ const STRINGS = {
     'place.taken': 'Tile taken',
     'place.gold': 'Not enough gold',
     'unlock.tracker': 'Next tower: {name}',
-    'unlock.toGo': '{n} points to go',
-    'panel.reach': 'Reach {n} points',
+    'unlock.toGo': '{n} to go',
     'panel.need': 'Need {n} more',
     'up.otherPath': 'You picked the other path',
 
@@ -188,7 +192,6 @@ const STRINGS = {
     'stats.rateAmp': 'Speed boost',
     'stats.targeting': 'Aims at',
     'stats.place': 'PLACE',
-    'stats.locked': 'LOCKED',
     'targeting.first': 'First in line',
     'targeting.closest': 'Closest',
     'targeting.strongest': 'Toughest',
@@ -235,6 +238,7 @@ const STRINGS = {
     'hud.lives': 'Vite',
     'hud.wave': 'Ondata',
     'hud.score': 'Punti',
+    'hud.cores': 'Core',
     'ctrl.speed': 'Velocità',
     'ctrl.pause': 'Pausa',
     'ctrl.sound': 'Suono',
@@ -272,7 +276,11 @@ const STRINGS = {
     'unlock.plural': 'NUOVE TORRI SBLOCCATE',
     'unlock.next': 'Prossimo sblocco',
     'unlock.in': 'tra',
-    'unlock.pts': 'punti',
+    'unlock.price': 'Sblocca per {n}',
+    'unlock.canUnlock': 'Puoi sbloccare {name}',
+    'unlock.earned': '+{n} in questa partita',
+    'unit.core': 'core',
+    'unit.cores': 'core',
     'phase.build': 'Fase costruzione: piazza le torri',
     'phase.wave': 'Ondata {n} in corso',
     'phase.needTower': 'Piazza una torre per iniziare',
@@ -282,8 +290,7 @@ const STRINGS = {
     'place.taken': 'Casella occupata',
     'place.gold': 'Oro insufficiente',
     'unlock.tracker': 'Prossima torre: {name}',
-    'unlock.toGo': 'mancano {n} punti',
-    'panel.reach': 'Fai {n} punti',
+    'unlock.toGo': 'ancora {n}',
     'panel.need': 'Mancano {n}',
     'up.otherPath': 'Hai scelto l\'altro ramo',
 
@@ -407,7 +414,6 @@ const STRINGS = {
     'stats.rateAmp': 'Bonus velocità',
     'stats.targeting': 'Mira a',
     'stats.place': 'PIAZZA',
-    'stats.locked': 'BLOCCATA',
     'targeting.first': 'Il primo in fila',
     'targeting.closest': 'Il più vicino',
     'targeting.strongest': 'Il più resistente',
@@ -442,6 +448,11 @@ let currentLang = localStorage.getItem('neon_td_lang') || 'en';
 
 export function t(key) {
   return (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS.en[key] || key;
+}
+
+// "1 core", "5 cores"; the Italian word is invariant
+export function cores(n) {
+  return `${n.toLocaleString()} ${t(n === 1 ? 'unit.core' : 'unit.cores')}`;
 }
 
 export function getLang() { return currentLang; }

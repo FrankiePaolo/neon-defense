@@ -14,11 +14,15 @@ The simulator SHALL run the game's own wave generation, enemy movement and effec
 - **THEN** it prints, per wave, lives lost, gold at wave end, towers owned, score, and buyable DPS over needed DPS, and ends with the wave reached
 
 ### Requirement: Two scripted players
-The simulator SHALL provide a naive player (buys a Blaster whenever it can afford one, never upgrades, places on the best free tile by road coverage) and a sensible player (buys the cheapest tower type it owns the fewest of among unlocked ones, upgrades its oldest tower when an upgrade costs less than a new tower, keeps a Frost and a Support near the busiest bend). Both SHALL act only between waves.
+The simulator SHALL provide a naive player (buys a Blaster whenever it can afford one, never upgrades, places on the best free tile by road coverage) and a sensible player (starts from a fresh profile, spends cores on the towers in the order Frost, Lightning, Cannon, Support, Sniper as soon as it can afford each, buys the cheapest tower type it owns the fewest of among unlocked ones, upgrades its oldest tower when an upgrade costs less than a new tower, keeps a Frost and a Support near the busiest bend). Both SHALL act only between waves.
 
 #### Scenario: Naive player behaviour
 - **WHEN** the naive player has 95 gold between waves and a free tile
 - **THEN** it places one Blaster and nothing else
+
+#### Scenario: Sensible player spends cores in order
+- **WHEN** the sensible player has 6 cores, Frost unlocked and Lightning priced at 5
+- **THEN** it unlocks Lightning before buying any tower that turn
 
 ### Requirement: The simulator reports tower value
 The simulator SHALL report, for each tower type, total damage dealt per gold invested, counting splash and chain hits, plus the extra damage other towers dealt to enemies slowed by Frost and the extra damage from Support auras.

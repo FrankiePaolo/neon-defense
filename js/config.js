@@ -16,7 +16,7 @@ export const CONFIG = {
   SELL_REFUND_RATE: 0.6,
   SYNERGY_RANGE: 3,
   // Minimum path length in tiles per difficulty, same on every grid
-  DIFFICULTY: { easy: 44, normal: 32, hard: 22 },
+  DIFFICULTY: { easy: 46, normal: 32, hard: 21 },
   // Enemy HP multiplier per difficulty, on top of the wave curve
   DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1 },
 };
@@ -38,7 +38,7 @@ export const TOWER_DEFS = {
     shape: 'diamond', range: 3.5, damage: 10, fireRate: 1.5,
     projectileSpeed: 400, targeting: 'first',
     description: 'Balanced all-rounder',
-    unlockScore: 0,
+    unlockCost: 0,
     upgrades: {
       pathA: {
         name: 'Rapid Fire',
@@ -59,12 +59,12 @@ export const TOWER_DEFS = {
     }
   },
   frost: {
-    name: 'Frost', cost: 120, color: '#88ccff', glowColor: '#4488ff',
-    shape: 'hexagon', range: 3.0, damage: 6, fireRate: 1.0,
+    name: 'Frost', cost: 130, color: '#88ccff', glowColor: '#4488ff',
+    shape: 'hexagon', range: 3.0, damage: 5, fireRate: 1.0,
     projectileSpeed: 300, targeting: 'first',
     slowAmount: 0.2, slowDuration: 1.2,
     description: 'Slows enemies',
-    unlockScore: 450,
+    unlockCost: 1,
     upgrades: {
       pathA: {
         name: 'Deep Freeze',
@@ -90,7 +90,7 @@ export const TOWER_DEFS = {
     chainCount: 3, chainRange: 2.0, chainDecay: 0.7,
     targeting: 'closest',
     description: 'Chain arcs between enemies',
-    unlockScore: 1700,
+    unlockCost: 5,
     upgrades: {
       pathA: {
         name: 'Storm',
@@ -116,7 +116,7 @@ export const TOWER_DEFS = {
     splashRadius: 1.5, splashDecay: 0.5, projectileSpeed: 250,
     targeting: 'strongest',
     description: 'AoE splash damage',
-    unlockScore: 8500,
+    unlockCost: 20,
     upgrades: {
       pathA: {
         name: 'Bombardment',
@@ -141,7 +141,7 @@ export const TOWER_DEFS = {
     shape: 'octagon', range: 6.0, damage: 100, fireRate: 0.3,
     projectileSpeed: 800, targeting: 'strongest',
     description: 'Extreme range, high damage',
-    unlockScore: 40000,
+    unlockCost: 25,
     upgrades: {
       pathA: {
         name: 'Marksman',
@@ -166,7 +166,7 @@ export const TOWER_DEFS = {
     shape: 'circle', range: 2.5, damage: 0, fireRate: 0,
     damageAmp: 0.08, buffRange: 2.5,
     description: 'Buffs nearby towers',
-    unlockScore: 20000,
+    unlockCost: 15,
     upgrades: {
       pathA: {
         name: 'Command',

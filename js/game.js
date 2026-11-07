@@ -6,7 +6,7 @@ import { ParticleSystem } from './particles.js';
 import { Enemy } from './enemy.js';
 import { Projectile } from './projectile.js';
 import { Tower } from './tower.js';
-import { WaveManager, waveBonusGold } from './waves.js';
+import { WaveManager, waveBonusGold, waveCores } from './waves.js';
 import { resolveHit, updateSynergies } from './combat.js';
 import { Economy, ScoreTracker, ProgressTracker } from './economy.js';
 import { Renderer } from './renderer.js';
@@ -14,7 +14,7 @@ import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
 import { Tutorial } from './tutorial.js';
 import { AudioEngine } from './audio.js';
-import { t } from './i18n.js';
+import { t, cores } from './i18n.js';
 
 export class Game {
   constructor() {
@@ -86,7 +86,7 @@ export class Game {
     this.particles.clear();
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
-    this.progressTracker.reset();
+    this.coresThisRun = 0;
     this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1);
     this.lives = CONFIG.BASE_LIVES;
     this.baseFlash = 0;
@@ -132,7 +132,7 @@ export class Game {
     if (!this.tutorial.allows('place')) return false;
     const def = TOWER_DEFS[type];
     if (!def) return false;
-    if (!this.progressTracker.isTowerUnlocked(type, this.scoreTracker.score)) return false;
+    if (!this.progressTracker.isTowerUnlocked(type)) return false;
     if (!this.grid.isPlaceable(gx, gy)) return false;
     if (!this.economy.canAfford(def.cost)) return false;
 
@@ -320,7 +320,6 @@ export class Game {
   _onEnemyKilled(enemy) {
     this.economy.earn(enemy.reward);
     this.scoreTracker.addKill(enemy, this.waveManager.currentWave);
-    this._checkUnlocks();
     this.particles.emit(enemy.x, enemy.y, enemy.color, 'death');
 
     // Floating gold text
@@ -368,7 +367,6 @@ export class Game {
       const bonus = Math.min(this.killStreak * 2, 15);
       this.economy.earn(bonus);
       this.scoreTracker.score += bonus;
-      this._checkUnlocks();
       this.floatingTexts.push({
         x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 20,
         text: `${t('banner.combo').replace('{n}', this.killStreak)}  +${bonus}g`,
@@ -407,7 +405,6 @@ export class Game {
     if (this.livesLostThisWave === 0) {
       this.scoreTracker.addPerfectWaveBonus(this.waveManager.currentWave);
     }
-    this._checkUnlocks();
     this.economy.applyInterest();
     this.economy.earn(waveBonusGold(this.waveManager.currentWave));
 
@@ -416,6 +413,16 @@ export class Game {
         this.economy.earn(tower.currentStats.goldPerWave);
       }
     }
+
+    const earned = waveCores(this.waveManager.currentWave);
+    this.progressTracker.earn(earned);
+    this.coresThisRun += earned;
+    this.floatingTexts.push({
+      x: CONFIG.CANVAS_WIDTH / 2, y: 60,
+      text: `+${cores(earned)}`, color: '#c77dff',
+      life: 1.5, maxLife: 1.5, large: true,
+    });
+    this.ui.pulseCores();
 
     if (this.waveManager.currentWave >= CONFIG.MAX_WAVES) {
       this._onVictory();
@@ -440,7 +447,6 @@ export class Game {
   _onGameOver() {
     this.state = 'GAME_OVER';
     this.input.clearCarry();
-    this._processEndOfGame();
     this.audio.stopMusic();
     this.audio.playSfx('gameover');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, false);
@@ -450,7 +456,6 @@ export class Game {
     this.scoreTracker.score += 5000;
     this.state = 'GAME_OVER';
     this.input.clearCarry();
-    this._processEndOfGame();
     this.audio.stopMusic();
     this.audio.playSfx('wave');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, true);
@@ -465,20 +470,5 @@ export class Game {
     const minLength = Math.min(20 + wave * 3, 120);
     this.grid.generate(minLength);
     this.renderer.markDirty();
-  }
-
-  _checkUnlocks() {
-    const score = this.scoreTracker.score;
-    const previousBest = this.progressTracker.bestScore;
-    const newUnlocks = this.progressTracker.getNewlyUnlockedTowers(previousBest, score);
-    if (newUnlocks.length > 0) {
-      this.progressTracker.updateBestScore(score);
-      this.ui.showUnlockNotifications(newUnlocks);
-      this.ui.refreshTowerPanel();
-    }
-  }
-
-  _processEndOfGame() {
-    this.progressTracker.updateBestScore(this.scoreTracker.score);
   }
 }

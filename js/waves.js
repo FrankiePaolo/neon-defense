@@ -37,6 +37,11 @@ export function waveBonusGold(wave) {
   return WAVE.BONUS_BASE + wave * WAVE.BONUS_PER_WAVE;
 }
 
+// Cores paid for clearing a wave: the wave number, doubled on a boss wave
+export function waveCores(wave) {
+  return wave % CONFIG.BOSS_INTERVAL === 0 ? 2 * wave : wave;
+}
+
 export function waveScaling(waveNum) {
   return {
     count: Math.floor(WAVE.COUNT_BASE + waveNum * WAVE.COUNT_PER_WAVE),
