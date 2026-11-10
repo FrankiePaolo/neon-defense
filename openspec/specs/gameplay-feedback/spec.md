@@ -86,3 +86,6 @@ The Sell action SHALL ask for a second tap: the first tap turns the control into
 #### Scenario: Confirmed sell
 - **WHEN** the player taps Sell and then taps "Sell for N?"
 - **THEN** the tower is removed, N gold is added and the panel closes
+
+### Requirement: Victory uses the success colour
+The victory heading SHALL be green and the defeat heading SHALL remain red.

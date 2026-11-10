@@ -355,7 +355,14 @@ canvas {
   color: #ff8800;
 }
 
-.tower-btn.tower-can-unlock { cursor: pointer; }
+.tower-btn.tower-can-unlock { cursor: pointer; border-color: #c77dff; }
+.tower-btn.tower-locked.tower-can-unlock .tower-pic { filter: none; }
+.tower-btn.tower-can-unlock .tower-pic-wrap .icon { color: #c77dff; }
+.up-pic, .unlock-pic { width: 40px; height: 40px; vertical-align: middle; }
+.tower-unlocked-pulse { animation: unlock-card-pulse 0.7s ease-out; }
+@keyframes unlock-card-pulse { 50% { box-shadow: 0 0 18px var(--tower-color); } }
+@media (prefers-reduced-motion: reduce) { .tower-unlocked-pulse { animation: none; } }
+#game-over-screen h2.victory { color: #00ff66; text-shadow: 0 0 20px rgba(0,255,102,0.5); }
 .tower-btn.tower-can-unlock .tower-unlock-req { color: #c77dff; }
 
 #unlock-notification {

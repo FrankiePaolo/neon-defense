@@ -199,7 +199,7 @@ export class UIController {
         });
       } else {
         btn.innerHTML = `
-          <span class="tower-pic-wrap">${spriteImg(towerSprite(type), 'tower-pic')}${ICONS.lock}</span>
+          <span class="tower-pic-wrap">${spriteImg(towerSprite(type), 'tower-pic')}${progress.canUnlock(type) ? ICONS.unlock : ICONS.lock}</span>
           <span class="tower-text">
             <span class="tower-name locked-name">${t('tower.' + type)}</span>
             <span class="tower-unlock-req">${t('unlock.price').replace('{n}', cores(def.unlockCost))}</span>
@@ -246,6 +246,7 @@ export class UIController {
     if (!this.game.progressTracker.unlock(type)) return;
     this.showUnlockNotifications([{ type, def: TOWER_DEFS[type] }]);
     this.refreshTowerPanel();
+    document.querySelector(`.tower-btn[data-tower-type="${type}"]`)?.classList.add('tower-unlocked-pulse');
     this.updateUnlockTracker();
   }
 
@@ -381,7 +382,7 @@ export class UIController {
 
     const canModify = game.state === 'BETWEEN_WAVES';
     let html = `<button class="up-close" aria-label="${t('ctrl.close')}">&times;</button>`;
-    html += `<div class="up-title" style="color:${def.color}">${t('tower.' + type)}</div>`;
+    html += `<div class="up-title" style="color:${def.color}">${spriteImg(towerSprite(type, tower.upgradesB ? 'B' : 'A', Math.max(tower.upgradesA, tower.upgradesB)), 'up-pic')}${t('tower.' + type)}</div>`;
 
     // Current stats summary
     const s = tower.currentStats;
@@ -709,6 +710,7 @@ export class UIController {
   showGameOver(score, wave, won) {
     this._won = won;
     document.querySelector('#game-over-screen h2').textContent = t(won ? 'game.victory' : 'game.gameOver');
+    document.querySelector('#game-over-screen h2').classList.toggle('victory', won);
     this.hideUnlockTracker();
     this._lastScore = score;
     this._lastWave = wave;
@@ -754,7 +756,7 @@ export class UIController {
     const next = this.game.progressTracker.getNextUnlock();
     if (next) {
       const towerName = t('tower.' + next.type);
-      nextUnlockEl.innerHTML = `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span class="core-amount">${cores(next.toGo)}</span>`;
+      nextUnlockEl.innerHTML = `${spriteImg(towerSprite(next.type), 'unlock-pic')} ${next.toGo === 0 ? t('unlock.canUnlock').replace('{name}', towerName) : `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span class="core-amount">${cores(next.toGo)}</span>`}`;
       nextUnlockEl.style.display = 'block';
     } else {
       nextUnlockEl.style.display = 'none';
@@ -822,7 +824,7 @@ export class UIController {
     const names = newUnlocks.map(u => `<span style="color:${u.def.color}">${t('tower.' + u.type)}</span>`).join(', ');
     container.innerHTML = `
       <div class="unlock-title" style="color:${color}; text-shadow:0 0 15px ${color}99">${newUnlocks.length > 1 ? t('unlock.plural') : t('unlock.single')}</div>
-      <div class="unlock-names">${names}</div>
+      <div class="unlock-names">${newUnlocks.map(u => spriteImg(towerSprite(u.type), 'unlock-pic')).join('')} ${names}</div>
     `;
     document.getElementById('canvas-wrapper').appendChild(container);
     setTimeout(() => container.classList.add('unlock-visible'), 50);

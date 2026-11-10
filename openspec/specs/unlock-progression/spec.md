@@ -59,3 +59,10 @@ The game-over and victory screen SHALL show the cores earned in that run and, wh
 #### Scenario: Everything unlocked
 - **WHEN** a run ends with every tower unlocked
 - **THEN** the screen shows the cores earned and no next-unlock line
+
+### Requirement: Unlock readiness is visible
+An affordable locked tower SHALL show its full-colour picture, an open lock and a purple border. Its localized cost SHALL remain visible. A purchase SHALL show the tower picture in the unlock notification. The next unlock hint SHALL show its picture and say when it is ready.
+
+#### Scenario: A tower becomes affordable
+- **WHEN** the player has enough cores for a locked tower
+- **THEN** the tower card shows its ready state and its cost

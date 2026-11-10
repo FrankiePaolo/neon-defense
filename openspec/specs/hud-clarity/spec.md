@@ -207,3 +207,10 @@ On a portrait phone, the wave controls SHALL sit directly under the board, and t
 #### Scenario: Short phone
 - **WHEN** the game is shown on a 375x667 screen
 - **THEN** every tower button is fully visible without scrolling the page, with descriptions hidden if they do not fit
+
+### Requirement: Upgrade artwork reflects the selected tower
+The upgrade panel SHALL show a picture of the selected tower at its current upgrade path and tier.
+
+#### Scenario: Buying an upgrade
+- **WHEN** the selected tower is upgraded
+- **THEN** its panel picture updates to the purchased path and tier

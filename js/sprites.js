@@ -16,13 +16,17 @@ function draw(key, size, renderFn) {
   return url;
 }
 
-export function towerSprite(type) {
-  return draw('tower:' + type, 40, (ctx, c) => {
+export function towerSprite(type, branch = 'A', tier = 0) {
+  return draw(`tower:${type}:${branch}:${tier}`, 96, (ctx, c) => {
     const tower = new Tower(type, 0, 0);
     tower.x = c;
     tower.y = c;
     tower.angle = -Math.PI / 4;
-    tower.render(ctx, false, false);
+    ctx.translate(c, c);
+    ctx.scale(1.8, 1.8);
+    ctx.translate(-c, -c);
+    for (let i = 0; i < tier; i++) tower.upgrade(branch);
+    tower.render(ctx, false, false, true);
   });
 }
 

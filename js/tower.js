@@ -164,7 +164,7 @@ export class Tower {
 
   // ── Main render ──
 
-  render(ctx, isSelected, isHovered) {
+  render(ctx, isSelected, isHovered, compact = false) {
     const upgrades = this.upgradesA + this.upgradesB;
     const size = CONFIG.TILE_SIZE * 0.35 + upgrades;
     const color = this.def.color;
@@ -201,7 +201,7 @@ export class Tower {
       case 'lightning':  this._renderLightning(ctx, size, t, pulse, hasTarget, tier); break;
       case 'cannon':    this._renderCannon(ctx, size, t, pulse, hasTarget, tier); break;
       case 'sniper':    this._renderSniper(ctx, size, t, pulse, hasTarget, tier); break;
-      case 'support':   this._renderSupport(ctx, size, t, pulse, tier); break;
+      case 'support':   this._renderSupport(ctx, size, t, pulse, tier, compact); break;
     }
 
     // Upgrade pips
@@ -277,6 +277,12 @@ export class Tower {
         this._barrel(c, size, { width: 1.5, offset: -3 });
         this._barrel(c, size, { width: 1.5, offset: 3 });
       }
+
+      // A dark inset separates the core from the bright housing.
+      c.globalAlpha = 0.85;
+      c.fillStyle = '#14313a';
+      this._circle(c, 0, 0, size * 0.46);
+      c.fill();
 
       // Core
       const coreSize = size * (0.25 + tier * 0.06);
@@ -452,6 +458,12 @@ export class Tower {
       this._glow(c, pulse, hasTarget);
       this._body(c, 'triangle', size);
       this._outline(c, 'triangle', size, 0.4);
+
+      // Dark inset keeps the bolt readable on yellow.
+      c.fillStyle = '#393313';
+      c.globalAlpha = 0.9;
+      this._circle(c, 0, 0, size * 0.48);
+      c.fill();
 
       // Inner bolt symbol
       c.globalAlpha = 0.7 * pulse;
@@ -739,6 +751,13 @@ export class Tower {
       }
     });
 
+    // Dark scope face keeps the reticle visible against the tower body.
+    ctx.save();
+    ctx.fillStyle = '#10251c';
+    this._circle(ctx, this.x, this.y, size * 0.6);
+    ctx.fill();
+    ctx.restore();
+
     // Scope crosshair
     const cr = size * 0.55;
     const color = this.def.color;
@@ -820,7 +839,7 @@ export class Tower {
     ctx.restore();
   }
 
-  _renderSupport(ctx, size, t, pulse, tier) {
+  _renderSupport(ctx, size, t, pulse, tier, compact) {
     const pathA = this.upgradesA > 0; // Command — bright blue aura, star symbol, buff-focused
     const pathB = this.upgradesB > 0; // Economy — gold tint, coin symbol, gold-focused
 
@@ -829,6 +848,7 @@ export class Tower {
     const auraR = this.currentStats.buffRange * CONFIG.TILE_SIZE;
 
     // Dashed aura ring
+    if (!compact) {
     ctx.save();
     ctx.strokeStyle = glow;
     ctx.lineWidth = pathA ? 1 + tier * 0.3 : 1;
@@ -866,6 +886,8 @@ export class Tower {
       ctx.restore();
     }
 
+    }
+
     // Body — glowing orb
     ctx.save();
     ctx.shadowBlur = (15 + tier * 5) * SB * pulse;
@@ -882,6 +904,12 @@ export class Tower {
     ctx.globalAlpha = 0.4;
     this._circle(ctx, this.x, this.y, size);
     ctx.stroke();
+
+    // Dark centre gives each support symbol contrast.
+    ctx.fillStyle = '#202034';
+    ctx.globalAlpha = 0.9;
+    this._circle(ctx, this.x, this.y, size * 0.6);
+    ctx.fill();
 
     // Inner symbol
     ctx.globalAlpha = 0.6 * pulse;
