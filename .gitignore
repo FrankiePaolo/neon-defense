@@ -1,5 +1,6 @@
 .DS_Store
 .claude/
 openspec/
+ADDICTIVENESS-REVIEW.md
 node_modules/
 scripts/seed-scores.mjs
