@@ -976,6 +976,37 @@ scenario('End screen with everything unlocked', { layouts: ['desktop'], langs: [
   assert(!(await g.visible('#next-unlock-hint')), 'next-unlock line shown');
 });
 
+scenario('Visual unlock states refresh after spending', { layouts: ['phone', 'desktop'], langs: ['en', 'it'], open: { storage: { neon_td_cores: '5' } } }, async (g) => {
+  await g.startGame();
+  const state = () => g.eval(() => Object.fromEntries(['frost', 'lightning'].map(type => {
+    const card = document.querySelector(`.tower-btn[data-tower-type="${type}"]`);
+    return [type, { ready: card.classList.contains('tower-can-unlock'), locked: card.classList.contains('tower-locked') }];
+  })));
+  let before = await state();
+  assert(before.frost.ready && before.lightning.ready, `initial states: ${JSON.stringify(before)}`);
+  if (g.touch) {
+    await g.press('.tower-btn[data-tower-type="frost"]');
+    await g.press('#tower-stats-tooltip.visible .ttp-place-btn');
+  } else await g.press('.tower-btn[data-tower-type="frost"]');
+  const after = await state();
+  assert(!after.frost.locked && !after.lightning.ready && after.lightning.locked, `after purchase: ${JSON.stringify(after)}`);
+  assert(await g.visible('#unlock-notification .unlock-pic'), 'reward picture missing');
+});
+
+scenario('Visual upgrade picture follows tier and path', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  const tile = (await g.buildable())[0];
+  await g.placeAt('blaster', tile.x, tile.y);
+  await g.eval(() => { const game = window.game; game.economy.gold = 1000; game.input.selectedTower = game.towers[0]; game.ui.showUpgradePanel(game.towers[0]); });
+  const picture = () => g.eval(() => document.querySelector('#upgrade-panel .up-pic').src);
+  const base = await picture();
+  await g.eval(() => window.game.upgradeTower(window.game.towers[0], 'B'));
+  const tier1 = await picture();
+  await g.eval(() => window.game.upgradeTower(window.game.towers[0], 'B'));
+  const tier2 = await picture();
+  assert(base !== tier1 && tier1 !== tier2, 'picture did not update with the upgrade');
+});
+
 // ── Runner ──
 
 async function main() {

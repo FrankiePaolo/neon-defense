@@ -198,7 +198,7 @@ export class Tower {
     switch (this.type) {
       case 'blaster':   this._renderBlaster(ctx, size, t, pulse, hasTarget, tier); break;
       case 'frost':     this._renderFrost(ctx, size, t, pulse, hasTarget, tier); break;
-      case 'lightning':  this._renderLightning(ctx, size, t, pulse, hasTarget, tier); break;
+      case 'lightning':  this._renderLightning(ctx, size, t, pulse, hasTarget, tier, compact); break;
       case 'cannon':    this._renderCannon(ctx, size, t, pulse, hasTarget, tier); break;
       case 'sniper':    this._renderSniper(ctx, size, t, pulse, hasTarget, tier); break;
       case 'support':   this._renderSupport(ctx, size, t, pulse, tier, compact); break;
@@ -235,10 +235,10 @@ export class Tower {
       this._barrelStyle(c, hasTarget);
       if (pathA) {
         // Rapid Fire: many thin barrels fanning out
-        this._barrel(c, size, { width: 1, offset: -4 });
+        this._barrel(c, size, { width: 1.8, offset: -5 });
         this._barrel(c, size, { width: 1, offset: -1.5 });
         this._barrel(c, size, { width: 1, offset: 1.5 });
-        this._barrel(c, size, { width: 1, offset: 4 });
+        this._barrel(c, size, { width: 1.8, offset: 5 });
         if (tier >= 2) {
           this._barrel(c, size, { width: 0.8, offset: -6.5 });
           this._barrel(c, size, { width: 0.8, offset: 6.5 });
@@ -274,8 +274,8 @@ export class Tower {
         }
       } else {
         // Base: twin barrels
-        this._barrel(c, size, { width: 1.5, offset: -3 });
-        this._barrel(c, size, { width: 1.5, offset: 3 });
+        this._barrel(c, size, { width: 2, offset: -4 });
+        this._barrel(c, size, { width: 2, offset: 4 });
       }
 
       // A dark inset separates the core from the bright housing.
@@ -332,6 +332,12 @@ export class Tower {
       this._body(c, 'hexagon', size);
       this._outline(c, 'hexagon', size, 0.5);
 
+      // A dark centre preserves the crystal pattern at small sizes.
+      c.fillStyle = '#375877';
+      c.globalAlpha = 0.8;
+      drawShape(c, 'hexagon', 0, 0, size * 0.52);
+      c.fill();
+
       // Inner crystalline ring
       c.strokeStyle = '#fff';
       c.globalAlpha = 0.2;
@@ -340,7 +346,7 @@ export class Tower {
 
       if (pathA) {
         // Deep Freeze: snowflake pattern
-        if (tier >= 2) {
+        if (tier >= 1) {
           c.strokeStyle = '#cceeFF';
           c.lineWidth = 0.8;
           c.globalAlpha = 0.5 * pulse;
@@ -366,8 +372,8 @@ export class Tower {
         }
       } else if (pathB) {
         // Frostbite: inner cracked/shattered pattern
-        if (tier >= 2) {
-          c.strokeStyle = '#88aadd';
+        if (tier >= 1) {
+          c.strokeStyle = '#cceeFF';
           c.lineWidth = 1;
           c.globalAlpha = 0.4 * pulse;
           // Crack lines
@@ -450,7 +456,7 @@ export class Tower {
     }
   }
 
-  _renderLightning(ctx, size, t, pulse, hasTarget, tier) {
+  _renderLightning(ctx, size, t, pulse, hasTarget, tier, compact) {
     const pathA = this.upgradesA > 0; // Storm — many spreading arcs, chain-focused
     const pathB = this.upgradesB > 0; // Overload — thick intense bolts, damage-focused
 
@@ -505,6 +511,9 @@ export class Tower {
         this._barrel(c, size, { width: 2, length: size + 4 });
       }
     });
+
+    // Thumbnail artwork is stable and excludes transient arcs.
+    if (compact) return;
 
     // Crackling arcs
     if (pathA) {
@@ -698,7 +707,7 @@ export class Tower {
         c.strokeRect(0, -3.5, bLen, 7);
         c.globalAlpha = hasTarget ? 0.8 : 0.4;
         c.fillStyle = '#fff';
-        c.fillRect(bLen - 2, -5, 2, 10);
+        c.fillRect(bLen - 3, -6, 3, 12);
       }
     });
   }

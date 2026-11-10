@@ -23,7 +23,8 @@ export function towerSprite(type, branch = 'A', tier = 0) {
     tower.y = c;
     tower.angle = -Math.PI / 4;
     ctx.translate(c, c);
-    ctx.scale(1.8, 1.8);
+    const scale = type === 'sniper' && branch === 'A' && tier > 0 ? 1.1 : 1.5;
+    ctx.scale(scale, scale);
     ctx.translate(-c, -c);
     for (let i = 0; i < tier; i++) tower.upgrade(branch);
     tower.render(ctx, false, false, true);
