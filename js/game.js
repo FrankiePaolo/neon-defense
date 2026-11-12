@@ -186,11 +186,14 @@ export class Game {
     if (!tower) return;
     const cost = tower.getUpgradeCost(path);
     if (cost === null || !this.economy.canAfford(cost)) return;
+    const level = tower.def.upgrades[path === 'A' ? 'pathA' : 'pathB'].levels[path === 'A' ? tower.upgradesA : tower.upgradesB];
     this.economy.spend(cost);
     tower.upgrade(path);
+    tower.upgradePulseUntil = Date.now() + 600;
+    this.audio.playSfx('upgrade');
     this.ui.updateHUD();
     if (this.input.selectedTower === tower) {
-      this.ui.showUpgradePanel(tower);
+      this.ui.showUpgradePanel(tower, level.stats);
     }
   }
 

@@ -355,8 +355,16 @@ export class UIController {
       this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
       this._updatePhaseLabel();
     }
+    this.updateWaveProgress();
     this.updateUnlockTracker();
     this._updateTowerAffordability();
+  }
+
+  updateWaveProgress() {
+    const remaining = this.game.enemies.filter(enemy => enemy.active && !enemy.reachedEnd).length;
+    const text = t('wave.progress', { spawning: this.game.waveManager.spawnQueue.length, remaining });
+    const progress = document.getElementById('wave-progress');
+    if (progress.textContent !== text) progress.textContent = text;
   }
 
   _updateTowerAffordability() {
@@ -373,7 +381,7 @@ export class UIController {
     });
   }
 
-  showUpgradePanel(tower) {
+  showUpgradePanel(tower, upgradedStats = null) {
     const panel = this.elements.upgradePanel;
     const def = tower.def;
     const type = tower.type;
@@ -392,6 +400,10 @@ export class UIController {
     }
     html += `</div>`;
 
+    if (upgradedStats) {
+      html += `<div class="up-feedback" role="status">${t('upgrade.done')}: ${formatStatChanges(upgradedStats)}</div>`;
+    }
+
     for (const [pathKey, pathLabel] of [['A', 'pathA'], ['B', 'pathB']]) {
       const upgradePath = def.upgrades[pathLabel];
       const otherPicked = (pathKey === 'A' ? tower.upgradesB : tower.upgradesA) > 0;
@@ -403,7 +415,12 @@ export class UIController {
         const purchased = i < currentLevel;
         const available = i === currentLevel && tower.getUpgradeCost(pathKey) !== null;
         const canAfford = available && canModify && game.economy.canAfford(level.cost);
-        const desc = t('up.' + type + '.' + pathKey + '.' + i);
+        const desc = t('up.' + type + '.' + pathKey + '.' + i, {
+          ...level.stats,
+          damageAmpPercent: Math.round((level.stats.damageAmp || 0) * 100),
+          fireRateAmpPercent: Math.round((level.stats.fireRateAmp || 0) * 100),
+          chainDecayPercent: Math.round((level.stats.chainDecay || 0) * 100),
+        });
 
         const changes = formatStatChanges(level.stats);
         const changesHtml = changes ? `<span class="up-changes">${changes}</span>` : '';
@@ -660,6 +677,7 @@ export class UIController {
     this._phase = phase;
     document.getElementById('game-container').dataset.phase = phase;
     this._updatePhaseLabel();
+    this.updateWaveProgress();
   }
 
   _updatePhaseLabel() {

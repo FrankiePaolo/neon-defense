@@ -230,6 +230,7 @@ export class AudioEngine {
     const t = this.ctx.currentTime;
     switch (name) {
       case 'place':  this._sfxTone(440, t, 0.05); this._sfxTone(660, t + 0.05, 0.05); this._sfxTone(880, t + 0.1, 0.08); break;
+      case 'upgrade': [660, 880, 1320].forEach((f, i) => this._sfxTone(f, t + i * 0.06, 0.12, 'triangle')); break;
       case 'sell':   this._sfxTone(880, t, 0.05); this._sfxTone(660, t + 0.05, 0.05); this._sfxTone(440, t + 0.1, 0.08); break;
       case 'death':  this._sfxTone(300, t, 0.06); this._sfxTone(450, t + 0.03, 0.06); break;
       case 'wave':   [523, 659, 784, 1047].forEach((f, i) => this._sfxTone(f, t + i * 0.07, 0.1)); break;

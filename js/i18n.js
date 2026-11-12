@@ -13,6 +13,8 @@ const STRINGS = {
 
     // HUD
     'hud.gold': 'Gold',
+    'upgrade.done': 'Upgraded',
+    'wave.progress': 'To spawn: {spawning} · On board: {remaining}',
     'hud.lives': 'Lives',
     'hud.wave': 'Wave',
     'hud.score': 'Score',
@@ -137,8 +139,8 @@ const STRINGS = {
     'up.blaster.A.0': 'Shoots faster',
     'up.blaster.A.1': 'Shoots even faster, more damage',
     'up.blaster.A.2': 'Fastest shots, more damage',
-    'up.blaster.B.0': 'Over double damage',
-    'up.blaster.B.1': 'Over 5x damage',
+    'up.blaster.B.0': 'Higher damage',
+    'up.blaster.B.1': 'Even higher damage',
     'up.blaster.B.2': 'Huge damage, longer range',
 
     'up.frost.A.0': 'Slows enemies more',
@@ -148,9 +150,9 @@ const STRINGS = {
     'up.frost.B.1': 'Even more damage, faster',
     'up.frost.B.2': 'Most damage, fastest',
 
-    'up.lightning.A.0': 'Jumps to 4 enemies',
-    'up.lightning.A.1': 'Jumps to 6 enemies, stays stronger',
-    'up.lightning.A.2': 'Jumps to 8 enemies, farther',
+    'up.lightning.A.0': 'Jumps to {chainCount} additional enemies',
+    'up.lightning.A.1': '{chainCount} extra jumps, retains {chainDecayPercent}% damage per jump',
+    'up.lightning.A.2': '{chainCount} extra jumps, longer reach',
     'up.lightning.B.0': 'More damage',
     'up.lightning.B.1': 'Much more damage',
     'up.lightning.B.2': 'Huge damage, shoots faster',
@@ -169,12 +171,12 @@ const STRINGS = {
     'up.sniper.B.1': 'Much more damage',
     'up.sniper.B.2': 'Massive damage',
 
-    'up.support.A.0': 'Nearby towers: +14% damage',
-    'up.support.A.1': '+21% damage, wider area',
-    'up.support.A.2': '+28% damage, +6% fire rate',
-    'up.support.B.0': '+30 gold every wave',
-    'up.support.B.1': '+60 gold every wave',
-    'up.support.B.2': '+100 gold every wave',
+    'up.support.A.0': 'Nearby towers: +{damageAmpPercent}% damage',
+    'up.support.A.1': '+{damageAmpPercent}% damage, wider area',
+    'up.support.A.2': '+{damageAmpPercent}% damage, +{fireRateAmpPercent}% fire rate',
+    'up.support.B.0': '+{goldPerWave} gold every wave',
+    'up.support.B.1': '+{goldPerWave} gold every wave',
+    'up.support.B.2': '+{goldPerWave} gold every wave',
 
     // Stats tooltip
     'stats.dmg': 'Damage',
@@ -235,6 +237,8 @@ const STRINGS = {
 
     // HUD
     'hud.gold': 'Oro',
+    'upgrade.done': 'Potenziata',
+    'wave.progress': 'In arrivo: {spawning} · In campo: {remaining}',
     'hud.lives': 'Vite',
     'hud.wave': 'Ondata',
     'hud.score': 'Punti',
@@ -359,8 +363,8 @@ const STRINGS = {
     'up.blaster.A.0': 'Spara più veloce',
     'up.blaster.A.1': 'Spara ancora più veloce, più danno',
     'up.blaster.A.2': 'Raffica massima, più danno',
-    'up.blaster.B.0': 'Più del doppio del danno',
-    'up.blaster.B.1': 'Oltre 5 volte il danno',
+    'up.blaster.B.0': 'Danno maggiore',
+    'up.blaster.B.1': 'Danno ancora maggiore',
     'up.blaster.B.2': 'Danno enorme, più gittata',
 
     'up.frost.A.0': 'Rallenta di più',
@@ -370,9 +374,9 @@ const STRINGS = {
     'up.frost.B.1': 'Ancora più danno, più veloce',
     'up.frost.B.2': 'Danno massimo, velocità massima',
 
-    'up.lightning.A.0': 'Salta su 4 nemici',
-    'up.lightning.A.1': 'Salta su 6 nemici, resta più forte',
-    'up.lightning.A.2': 'Salta su 8 nemici, più lontano',
+    'up.lightning.A.0': 'Salta su altri {chainCount} nemici',
+    'up.lightning.A.1': '{chainCount} salti extra, mantiene il {chainDecayPercent}% del danno a ogni salto',
+    'up.lightning.A.2': '{chainCount} salti extra, più lontano',
     'up.lightning.B.0': 'Più danno',
     'up.lightning.B.1': 'Molto più danno',
     'up.lightning.B.2': 'Danno enorme, spara più veloce',
@@ -391,12 +395,12 @@ const STRINGS = {
     'up.sniper.B.1': 'Molto più danno',
     'up.sniper.B.2': 'Danno enorme',
 
-    'up.support.A.0': 'Torri vicine: +14% danno',
-    'up.support.A.1': '+21% danno, area più ampia',
-    'up.support.A.2': '+28% danno, +6% velocità di tiro',
-    'up.support.B.0': '+30 oro a ogni ondata',
-    'up.support.B.1': '+60 oro a ogni ondata',
-    'up.support.B.2': '+100 oro a ogni ondata',
+    'up.support.A.0': 'Torri vicine: +{damageAmpPercent}% danno',
+    'up.support.A.1': '+{damageAmpPercent}% danno, area più ampia',
+    'up.support.A.2': '+{damageAmpPercent}% danno, +{fireRateAmpPercent}% velocità di tiro',
+    'up.support.B.0': '+{goldPerWave} oro a ogni ondata',
+    'up.support.B.1': '+{goldPerWave} oro a ogni ondata',
+    'up.support.B.2': '+{goldPerWave} oro a ogni ondata',
 
     // Stats tooltip
     'stats.dmg': 'Danno',
@@ -446,8 +450,9 @@ const STRINGS = {
 
 let currentLang = localStorage.getItem('neon_td_lang') || 'en';
 
-export function t(key) {
-  return (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS.en[key] || key;
+export function t(key, values = {}) {
+  const text = (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS.en[key] || key;
+  return text.replace(/\{(\w+)\}/g, (placeholder, name) => values[name] ?? placeholder);
 }
 
 // "1 core", "5 cores"; the Italian word is invariant

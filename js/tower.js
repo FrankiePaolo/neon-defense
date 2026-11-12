@@ -18,6 +18,7 @@ export class Tower {
     this.upgradesA = 0;
     this.upgradesB = 0;
     this.totalInvested = this.def.cost;
+    this.upgradePulseUntil = 0;
 
     this.currentStats = this._computeStats();
     this.cooldown = 0;
@@ -181,6 +182,17 @@ export class Tower {
       ctx.stroke();
       ctx.fillStyle = COLORS.TOWER_RANGE;
       ctx.fill();
+      ctx.restore();
+    }
+
+    const upgradePulse = (this.upgradePulseUntil - Date.now()) / 600;
+    if (upgradePulse > 0) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = upgradePulse * 0.8;
+      ctx.lineWidth = 2;
+      this._circle(ctx, this.x, this.y, size + 4 + (1 - upgradePulse) * 20);
+      ctx.stroke();
       ctx.restore();
     }
 

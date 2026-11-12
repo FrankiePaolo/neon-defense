@@ -1007,6 +1007,110 @@ scenario('Visual upgrade picture follows tier and path', { layouts: ['phone', 'd
   assert(base !== tier1 && tier1 !== tier2, 'picture did not update with the upgrade');
 });
 
+scenario('Upgrade descriptions follow balance data', { layouts: ['phone', 'desktop'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  const result = await g.eval(async () => {
+    const { Tower } = await import('/js/tower.js');
+    const tower = new Tower('support', 0, 0);
+    tower.def = structuredClone(tower.def);
+    tower.def.upgrades.pathA.levels[2].stats.damageAmp = 0.33;
+    tower.def.upgrades.pathA.levels[2].stats.fireRateAmp = 0.09;
+    tower.def.upgrades.pathB.levels[0].stats.goldPerWave = 37;
+    window.game.input.selectedTower = tower;
+    window.game.ui.showUpgradePanel(tower);
+    const descriptions = [...document.querySelectorAll('.up-desc')].map(el => el.textContent);
+    const { TOWER_DEFS } = await import('/js/config.js');
+    for (const type of Object.keys(TOWER_DEFS)) {
+      const selected = new Tower(type, 0, 0);
+      window.game.input.selectedTower = selected;
+      window.game.ui.showUpgradePanel(selected);
+      if (document.querySelector('#upgrade-panel').textContent.includes('{')) return null;
+    }
+    return descriptions;
+  });
+  assert(result, 'unresolved description placeholders');
+  assert(result[2].includes('33%') && result[2].includes('9%'), `bonus description: ${result[2]}`);
+  assert(result[3].includes('37'), `income description: ${result[3]}`);
+});
+
+scenario('Polish: successful upgrades give feedback, rejected upgrades do not', { layouts: ['phone', 'desktop', 'landscape'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  const tile = (await g.buildable())[0];
+  await g.placeAt('blaster', tile.x, tile.y);
+  const result = await g.eval(() => {
+    const game = window.game, tower = game.towers[0];
+    game.input.selectedTower = tower;
+    game.economy.gold = 1000;
+    const sounds = [];
+    const play = game.audio.playSfx.bind(game.audio);
+    game.audio.playSfx = name => { sounds.push(name); play(name); };
+    game.upgradeTower(tower, 'B');
+    const message = document.querySelector('.up-feedback').textContent;
+    const pulsing = tower.upgradePulseUntil > Date.now();
+    const until = tower.upgradePulseUntil;
+    game.economy.gold = 0;
+    game.upgradeTower(tower, 'B');
+    game.upgradeTower(tower, 'A');
+    return { message, pulsing, unchanged: until === tower.upgradePulseUntil, sounds };
+  });
+  assert(result.message.includes('25'), `missing upgraded damage: ${result.message}`);
+  assert(result.pulsing && result.unchanged, 'upgrade pulse missing or replayed for rejected purchase');
+  assert(result.sounds.join(',') === 'upgrade', `unexpected sounds: ${result.sounds}`);
+  assert(await g.visible('.up-feedback'), 'upgrade confirmation hidden');
+  assert(await noPageScroll(g), 'upgrade confirmation causes page scrolling');
+  await sleep(650);
+  assert(await g.eval(() => window.game.towers[0].upgradePulseUntil <= Date.now()), 'pulse did not expire');
+});
+
+scenario('Polish: wave progress follows spawns, splitters, leaks and completion', { langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  assert(!(await g.visible('#wave-progress')), 'progress visible before wave');
+  await startWave(g);
+  const results = await g.eval(async () => {
+    const { t } = await import('/js/i18n.js');
+    const game = window.game;
+    const checks = [];
+    const check = () => {
+      game.ui.updateHUD();
+      const spawning = game.waveManager.spawnQueue.length;
+      const remaining = game.enemies.filter(e => e.active && !e.reachedEnd).length;
+      checks.push(document.getElementById('wave-progress').textContent === t('wave.progress', { spawning, remaining }));
+    };
+    game.enemies = [];
+    game.waveManager.spawnTimer = 0;
+    game._update(0);
+    check();
+    game._spawnEnemy({ type: 'splitter', waveMult: { hp: 1, speed: 1, reward: 1 } });
+    game.enemies.at(-1).active = false;
+    game._update(0);
+    check();
+    const children = game.enemies.filter(e => e.type === 'basic').length;
+    game.enemies[0].reachedEnd = true;
+    game._update(0);
+    check();
+    game.waveManager.spawnQueue = [];
+    game._update(0);
+    check();
+    game.togglePause();
+    return { checks, children };
+  });
+  assert(results.checks.every(Boolean), 'wave progress differs from actual enemies');
+  assert(results.children >= 2, 'splitter children missing');
+  assert(await g.visible('#wave-progress'), 'progress hidden during wave or pause');
+  assert(await noPageScroll(g), 'wave progress causes page scrolling');
+  const progress = await g.rect('#wave-progress');
+  assert(progress.left >= 0 && progress.right <= await g.eval(() => innerWidth), 'progress clipped');
+  await g.eval(() => {
+    const game = window.game;
+    game.togglePause();
+    game.enemies = [];
+    game._update(0);
+  });
+  assert((await g.page.$eval('#wave-progress', e => e.textContent)).includes('0'), 'empty wave not reflected');
+  await g.eval(() => window.game._update(1));
+  assert(!(await g.visible('#wave-progress')), 'progress still visible between waves');
+});
+
 // ── Runner ──
 
 async function main() {

@@ -43,17 +43,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Rapid Fire',
         levels: [
-          { cost: 100, stats: { fireRate: 3.8 }, desc: '+67% fire rate' },
-          { cost: 130, stats: { fireRate: 4.6, damage: 17 }, desc: '+133% fire rate' },
-          { cost: 160, stats: { fireRate: 6.0, damage: 27 }, desc: 'Overclocked' },
+          { cost: 100, stats: { fireRate: 3.8 } },
+          { cost: 130, stats: { fireRate: 4.6, damage: 17 } },
+          { cost: 160, stats: { fireRate: 6.0, damage: 27 } },
         ]
       },
       pathB: {
         name: 'Heavy Rounds',
         levels: [
-          { cost: 100, stats: { damage: 25 }, desc: '+100% damage' },
-          { cost: 130, stats: { damage: 53 }, desc: '+280% damage' },
-          { cost: 160, stats: { damage: 107, range: 4.0 }, desc: 'Armor-piercing' },
+          { cost: 100, stats: { damage: 25 } },
+          { cost: 130, stats: { damage: 53 } },
+          { cost: 160, stats: { damage: 107, range: 4.0 } },
         ]
       }
     }
@@ -69,17 +69,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Deep Freeze',
         levels: [
-          { cost: 110, stats: { slowAmount: 0.3, slowDuration: 1.8, fireRate: 1.3 }, desc: '45% slow' },
-          { cost: 140, stats: { slowAmount: 0.4, slowDuration: 2.2, fireRate: 1.6 }, desc: '55% slow' },
-          { cost: 170, stats: { slowAmount: 0.55, slowDuration: 2.5, range: 3.5, fireRate: 2.2 }, desc: 'AoE freeze pulse' },
+          { cost: 110, stats: { slowAmount: 0.3, slowDuration: 1.8, fireRate: 1.3 } },
+          { cost: 140, stats: { slowAmount: 0.4, slowDuration: 2.2, fireRate: 1.6 } },
+          { cost: 170, stats: { slowAmount: 0.55, slowDuration: 2.5, range: 3.5, fireRate: 2.2 } },
         ]
       },
       pathB: {
         name: 'Frostbite',
         levels: [
-          { cost: 110, stats: { damage: 14, fireRate: 1.2 }, desc: 'Frostbite damage' },
-          { cost: 140, stats: { damage: 30, fireRate: 1.4 }, desc: '+20% vuln (brittle)' },
-          { cost: 170, stats: { damage: 66, fireRate: 1.6 }, desc: '+30% vuln (shatter)' },
+          { cost: 110, stats: { damage: 14, fireRate: 1.2 } },
+          { cost: 140, stats: { damage: 30, fireRate: 1.4 } },
+          { cost: 170, stats: { damage: 66, fireRate: 1.6 } },
         ]
       }
     }
@@ -95,17 +95,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Storm',
         levels: [
-          { cost: 130, stats: { chainCount: 4, chainRange: 2.2, damage: 36 }, desc: '4 chain targets' },
-          { cost: 160, stats: { chainCount: 6, chainDecay: 0.75, damage: 56 }, desc: '6 chains, less decay' },
-          { cost: 200, stats: { chainCount: 8, chainRange: 2.5, damage: 80 }, desc: 'Storm strike AoE' },
+          { cost: 130, stats: { chainCount: 4, chainRange: 2.2, damage: 36 } },
+          { cost: 160, stats: { chainCount: 6, chainDecay: 0.75, damage: 56 } },
+          { cost: 200, stats: { chainCount: 8, chainRange: 2.5, damage: 80 } },
         ]
       },
       pathB: {
         name: 'Overload',
         levels: [
-          { cost: 130, stats: { damage: 40 }, desc: 'High voltage' },
-          { cost: 160, stats: { damage: 72 }, desc: '15% stun chance' },
-          { cost: 200, stats: { damage: 98, fireRate: 1.0 }, desc: '30% stun' },
+          { cost: 130, stats: { damage: 40 } },
+          { cost: 160, stats: { damage: 72 } },
+          { cost: 200, stats: { damage: 98, fireRate: 1.0 } },
         ]
       }
     }
@@ -121,17 +121,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Bombardment',
         levels: [
-          { cost: 140, stats: { splashRadius: 2.0, damage: 46 }, desc: 'Wider explosions' },
-          { cost: 175, stats: { splashRadius: 2.3, damage: 56, fireRate: 0.6 }, desc: 'Carpet bomb' },
-          { cost: 215, stats: { splashRadius: 2.6, damage: 72 }, desc: 'Napalm rounds' },
+          { cost: 140, stats: { splashRadius: 2.0, damage: 46 } },
+          { cost: 175, stats: { splashRadius: 2.3, damage: 56, fireRate: 0.6 } },
+          { cost: 215, stats: { splashRadius: 2.6, damage: 72 } },
         ]
       },
       pathB: {
         name: 'Demolisher',
         levels: [
-          { cost: 140, stats: { damage: 50 }, desc: 'HE shells' },
-          { cost: 175, stats: { damage: 85 }, desc: 'Shreds 30% armor' },
-          { cost: 215, stats: { damage: 140 }, desc: 'Critical strikes' },
+          { cost: 140, stats: { damage: 50 } },
+          { cost: 175, stats: { damage: 85 } },
+          { cost: 215, stats: { damage: 140 } },
         ]
       }
     }
@@ -146,17 +146,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Marksman',
         levels: [
-          { cost: 165, stats: { range: 7.5, damage: 165 }, desc: 'Extended range' },
-          { cost: 200, stats: { range: 9.0, damage: 290 }, desc: 'Eagle eye' },
-          { cost: 250, stats: { range: 12.0, damage: 640 }, desc: 'Full-map range' },
+          { cost: 165, stats: { range: 7.5, damage: 165 } },
+          { cost: 200, stats: { range: 9.0, damage: 290 } },
+          { cost: 250, stats: { range: 12.0, damage: 640 } },
         ]
       },
       pathB: {
         name: 'Assassin',
         levels: [
-          { cost: 165, stats: { damage: 175 }, desc: 'Hollow-point' },
-          { cost: 200, stats: { damage: 350 }, desc: 'Execute < 30% HP' },
-          { cost: 250, stats: { damage: 720 }, desc: 'Death mark' },
+          { cost: 165, stats: { damage: 175 } },
+          { cost: 200, stats: { damage: 350 } },
+          { cost: 250, stats: { damage: 720 } },
         ]
       }
     }
@@ -171,17 +171,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Command',
         levels: [
-          { cost: 150, stats: { damageAmp: 0.14 }, desc: '+20% damage amp' },
-          { cost: 185, stats: { damageAmp: 0.21, buffRange: 3.0 }, desc: 'Wider aura' },
-          { cost: 225, stats: { damageAmp: 0.28, fireRateAmp: 0.06 }, desc: '+40% dmg +15% rate' },
+          { cost: 150, stats: { damageAmp: 0.14 } },
+          { cost: 185, stats: { damageAmp: 0.21, buffRange: 3.0 } },
+          { cost: 225, stats: { damageAmp: 0.28, fireRateAmp: 0.06 } },
         ]
       },
       pathB: {
         name: 'Economy',
         levels: [
-          { cost: 150, stats: { goldPerWave: 30 }, desc: '+20 gold/wave' },
-          { cost: 185, stats: { goldPerWave: 60 }, desc: '+45 gold/wave' },
-          { cost: 225, stats: { goldPerWave: 100 }, desc: '+80g +10% sell' },
+          { cost: 150, stats: { goldPerWave: 30 } },
+          { cost: 185, stats: { goldPerWave: 60 } },
+          { cost: 225, stats: { goldPerWave: 100 } },
         ]
       }
     }
