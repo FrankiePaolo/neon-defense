@@ -59,6 +59,7 @@ export class WaveManager {
     this.spawnQueue = [];
     this.spawnTimer = 0;
     this.waveActive = false;
+    this.nextWaveQueue = null;
   }
 
   generateWave(waveNum) {
@@ -104,8 +105,9 @@ export class WaveManager {
   }
 
   startWave() {
+    this.spawnQueue = this.getNextWaveQueue();
+    this.nextWaveQueue = null;
     this.currentWave++;
-    this.spawnQueue = this.generateWave(this.currentWave);
     this.spawnTimer = 0.5;
     this.waveActive = true;
   }
@@ -126,9 +128,15 @@ export class WaveManager {
     return this.waveActive && this.spawnQueue.length === 0;
   }
 
+  getNextWaveQueue() {
+    if (this.nextWaveQueue === null) {
+      this.nextWaveQueue = this.generateWave(this.currentWave + 1);
+    }
+    return this.nextWaveQueue;
+  }
+
   getPreview() {
-    const nextWave = this.currentWave + 1;
-    const queue = this.generateWave(nextWave);
+    const queue = this.getNextWaveQueue();
     const counts = {};
     for (const e of queue) {
       counts[e.type] = (counts[e.type] || 0) + 1;
