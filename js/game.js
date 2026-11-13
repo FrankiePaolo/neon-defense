@@ -203,7 +203,7 @@ export class Game {
 
   setSpeed(speed) {
     this.speedMultiplier = speed;
-    this.ui.updateSpeedButtons(speed);
+    this.ui.updateSpeedButtons(speed, true);
   }
 
   // Leave the current game for the menu; the loop does not update in MENU

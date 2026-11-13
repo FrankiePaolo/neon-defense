@@ -145,14 +145,13 @@ export class UIController {
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
-    document.querySelector('#game-over-screen p:nth-of-type(1)').innerHTML = `${t('game.score')}: <span id="final-score">${this.elements.finalScore.textContent}</span>`;
-    document.querySelector('#game-over-screen p:nth-of-type(2)').innerHTML = `${t('game.wave')}: <span id="final-wave">${this.elements.finalWave.textContent}</span>`;
-    this.elements.finalScore = document.getElementById('final-score');
-    this.elements.finalWave = document.getElementById('final-wave');
+    document.getElementById('final-score-label').textContent = t('game.score');
+    document.getElementById('final-wave-label').textContent = t('game.wave');
     document.getElementById('player-name').placeholder = t('game.enterName');
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
     document.getElementById('play-again-btn').textContent = t('game.playAgain');
+    document.getElementById('end-menu-btn').textContent = t('game.mainMenu');
     if (this._won !== undefined) this._fillCoreProgress();
     this._trackerKey = null;
 
@@ -338,7 +337,13 @@ export class UIController {
       this.game.returnToMenu();
     });
 
+    // A fresh run on the same difficulty, as RESTART on the pause screen
     document.getElementById('play-again-btn').addEventListener('click', () => {
+      this.elements.gameOverScreen.style.display = 'none';
+      this.game.startNewGame(this.game.difficulty);
+    });
+
+    document.getElementById('end-menu-btn').addEventListener('click', () => {
       this.game.returnToMenu();
     });
 
@@ -838,8 +843,12 @@ export class UIController {
     }
   }
 
-  updateSpeedButtons(speed) {
-    document.getElementById('speed-btn').textContent = `${t('ctrl.speed')} ${speed}x`;
+  // The multiplier takes the speed's colour; pop plays it when the player changes speed
+  updateSpeedButtons(speed, pop = false) {
+    const btn = document.getElementById('speed-btn');
+    btn.dataset.speed = speed;
+    btn.innerHTML = `${t('ctrl.speed')} <span class="speed-x">${speed}x</span>`;
+    if (pop) this._restartAnimation(btn.querySelector('.speed-x'), 'speed-pop');
   }
 
   // Speaker icon shows whether sound is on

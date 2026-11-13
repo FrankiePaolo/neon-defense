@@ -194,7 +194,7 @@ scenario('Next game after rotating', { layouts: ['landscape'] }, async (g) => {
   await g.startGame();
   assert(await shape(g) === '12x9', `landscape board ${await shape(g)}`);
   await loseGame(g);
-  await g.press('#play-again-btn');
+  await g.press('#end-menu-btn');
   await g.page.setViewport({ ...LAYOUTS.landscape, width: 390, height: 844, isLandscape: false });
   await g.startGame();
   assert(await shape(g) === '9x12', `portrait board ${await shape(g)}`);
@@ -458,7 +458,7 @@ scenario('Last wave cleared', { layouts: PLACE_LAYOUTS, langs: ['en', 'it'] }, a
   assert(await heading() === want, `heading reads "${await heading()}"`);
   await g.eval(() => window.game.ui.applyLanguage());
   assert(await heading() === want, 'heading lost after applyLanguage');
-  assert(await g.visible('#save-score-btn') && await g.visible('#share-score-btn') && await g.visible('#play-again-btn'), 'end actions missing');
+  assert(await g.visible('#save-score-btn') && await g.visible('#share-score-btn') && await g.visible('#play-again-btn') && await g.visible('#end-menu-btn'), 'end actions missing');
 });
 
 scenario('Defeat still says game over', { layouts: ['desktop'] }, async (g) => {
@@ -466,6 +466,34 @@ scenario('Defeat still says game over', { layouts: ['desktop'] }, async (g) => {
   await loseGame(g);
   const h = await g.eval(() => document.querySelector('#game-over-screen h2').textContent);
   assert(h === 'GAME OVER', `heading reads "${h}"`);
+});
+
+scenario('Play again after a defeat', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame('hard');
+  await loseGame(g);
+  await g.press('#play-again-btn');
+  assert(!(await g.visible('#game-over-screen')), 'end screen still shown');
+  assert(!(await g.visible('#menu-screen')), 'menu shown');
+  const run = await g.eval(() => ({
+    state: window.game.state,
+    difficulty: window.game.difficulty,
+    wave: window.game.waveManager.currentWave,
+    towers: window.game.towers.length,
+    music: window.game.audio.currentTrack,
+    wallet: document.querySelector('#unlock-tracker .unlock-cores')?.checkVisibility({ visibilityProperty: true }),
+  }));
+  assert(run.state === 'BETWEEN_WAVES' && run.difficulty === 'hard', `run: ${JSON.stringify(run)}`);
+  assert(run.wave === 0 && run.towers === 0, `new game not fresh: ${JSON.stringify(run)}`);
+  assert(run.music === 'gameplay' && run.wallet, `run: ${JSON.stringify(run)}`);
+});
+
+scenario('End screen fits a landscape phone', { layouts: ['landscape'] }, async (g) => {
+  await g.startGame();
+  await loseGame(g);
+  await g.eval(() => document.getElementById('end-menu-btn').scrollIntoView());
+  const r = await g.rect('#end-menu-btn');
+  const h = await g.eval(() => innerHeight);
+  assert(r.height >= 44 && r.bottom <= h, `main menu button at ${JSON.stringify(r)}, viewport ${h}`);
 });
 
 async function seedLeaderboard(g, entries) {
@@ -564,7 +592,7 @@ scenario('Board opens on last difficulty', { layouts: ['phone'] }, async (g) => 
   await g.press('#high-scores-btn');
   await g.startGame('hard');
   await loseGame(g);
-  await g.press('#play-again-btn');
+  await g.press('#end-menu-btn');
   await g.press('#high-scores-btn');
   assert(await activeBoard(g) === 'hard', `after a Hard game opens ${await activeBoard(g)}`);
 });
@@ -1376,7 +1404,7 @@ scenario('Game over keeps cores', { layouts: ['desktop'], open: { storage: { neo
   await g.eval(() => { const t = window.game.renderer.buildableTiles(window.game.grid)[0]; window.game.placeTower('blaster', t.x, t.y); });
   await g.eval(() => { window.game.startNextWave(); window.game.lives = 0; });
   await g.page.waitForFunction(() => window.game.state === 'GAME_OVER', { timeout: 3000 });
-  await g.press('#play-again-btn');
+  await g.press('#end-menu-btn');
   await g.startGame();
   const w = await wallet(g);
   assert(w.cores === 15 && w.saved === '15', `cores ${w.cores}, saved ${w.saved}`);
@@ -1451,6 +1479,19 @@ scenario('Wallet with everything unlocked', { layouts: ['desktop'], open: { stor
   await g.startGame();
   const tr = await tracker(g);
   assert(tr.balance === '40' && tr.price === undefined, `wallet row: ${JSON.stringify(tr)}`);
+});
+
+scenario('Speed button colours the multiplier', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  const read = () => g.eval(() => {
+    const x = document.querySelector('#speed-btn .speed-x');
+    return { text: x.textContent, color: getComputedStyle(x).color, speed: window.game.speedMultiplier };
+  });
+  const seen = [await read()];
+  for (let i = 0; i < 3; i++) { await g.press('#speed-btn'); seen.push(await read()); }
+  assert(seen.map(s => s.text).join() === '1x,2x,3x,1x', `cycle ${seen.map(s => s.text)}`);
+  assert(seen.every(s => s.text === `${s.speed}x`), `text and speed differ: ${JSON.stringify(seen)}`);
+  assert(new Set(seen.slice(0, 3).map(s => s.color)).size === 3, `colours ${seen.map(s => s.color)}`);
 });
 
 scenario('Wallet on a phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {

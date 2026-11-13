@@ -148,13 +148,10 @@ canvas {
 }
 
 /* Unlock Tracker */
-/* As wide as one counter column and centred in it, so it lines up under Gold */
 #unlock-tracker {
-  flex: 0 0 25%;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   font-size: 13px;
   line-height: 1.25;
   pointer-events: none;
@@ -162,8 +159,16 @@ canvas {
 
 #unlock-tracker.hidden { display: flex !important; visibility: hidden; }
 
-/* Core balance: the persistent unlock currency */
-#unlock-tracker .unlock-cores { color: #c77dff; font-size: 1.3em; }
+/* Core balance: the persistent unlock currency, as one line of text on the
+   controls row, with no box so it does not read as a button */
+#unlock-tracker .unlock-cores {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  padding-left: 4px;
+  color: #c77dff;
+  font-size: 1.3em;
+}
 #unlock-tracker .unlock-cores.hud-pulse { animation: hud-pulse 0.35s ease-out; }
 
 /* Speed, pause and sound */
@@ -193,6 +198,19 @@ canvas {
 }
 
 .speed-btn .icon { width: 20px; height: 20px; margin: 0; }
+
+/* The multiplier warms up with the speed, and the border follows it */
+.speed-x { display: inline-block; margin-left: 0.25em; }
+#speed-btn[data-speed="2"] { border-color: rgba(255, 215, 0, 0.6); }
+#speed-btn[data-speed="2"] .speed-x { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.6); }
+#speed-btn[data-speed="3"] { border-color: rgba(255, 136, 0, 0.7); }
+#speed-btn[data-speed="3"] .speed-x { color: #ff8800; text-shadow: 0 0 8px rgba(255, 136, 0, 0.7); }
+
+@keyframes speed-pop {
+  40% { transform: scale(1.4); }
+}
+.speed-x.speed-pop { animation: speed-pop 0.3s ease-out; }
+@media (prefers-reduced-motion: reduce) { .speed-x.speed-pop { animation: none; } }
 .speed-btn:hover { border-color: #888; }
 .speed-btn.active {
   color: #00ffff;
@@ -272,11 +290,11 @@ canvas {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 55%;
-  height: 55%;
+  width: 42%;
+  height: 42%;
   margin: 0;
   transform: translate(-50%, -50%);
-  color: #ff8800;
+  color: #999;
   filter: drop-shadow(0 0 2px #000);
 }
 
@@ -336,7 +354,7 @@ canvas {
 .tower-btn .tower-unlock-req {
   font-family: var(--font-ui);
   font-size: 12px;
-  color: #ff8800;
+  color: var(--text-2);
 }
 
 .tower-btn.tower-can-unlock { cursor: pointer; border-color: #c77dff; }
@@ -842,41 +860,137 @@ canvas {
 #pause-overlay #restart-btn { --accent: 255, 136, 0; }
 #pause-overlay #main-menu-btn { --accent: 255, 85, 85; }
 
-/* Game Over */
+/* Game Over and victory: the result as two big numbers, the cores, saving,
+   then one column of actions styled like the pause screen. Play again is the
+   only filled button. The spacers centre the column and give way to
+   scrolling on short screens, as on the menu. */
 #game-over-screen {
   position: absolute;
   inset: 0;
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.9);
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(10, 10, 10, 0.92);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: 100;
-  gap: 12px;
 }
+
+#game-over-screen::before,
+#game-over-screen::after { content: ''; flex: 1 0 0; }
 
 #game-over-screen h2 {
   font-family: var(--font-brand);
   color: #ff4444;
   font-size: 36px;
+  text-align: center;
   letter-spacing: 6px;
+  margin-right: -6px;
   text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
 }
 
-#game-over-screen p { color: #aaa; font-size: 14px; }
+#final-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin: 20px 0 16px;
+}
+
+.final-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+#final-score,
+#final-wave {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+#final-score { color: #fff; }
+#final-wave { color: #00ffff; }
+.final-label { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+
+#game-over-screen p { color: var(--text-2); font-size: 14px; text-align: center; }
+#game-over-screen #cores-earned { color: #c77dff; font-size: 16px; font-weight: 600; }
+#game-over-screen #next-unlock-hint { margin-top: 6px; }
+#game-over-screen #challenge-result { font-size: 16px; font-weight: bold; margin-top: 8px; }
+
+/* Name and save on one row */
+#save-row {
+  display: flex;
+  width: min(320px, 100%);
+  margin-top: 20px;
+}
 
 #player-name {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
   background: #111;
-  border: 1px solid #333;
+  border: 1px solid #444;
+  border-right: none;
   color: #fff;
-  padding: 8px 16px;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
+  padding: 0 12px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   text-align: center;
   outline: none;
 }
 
 #player-name:focus { border-color: #00ffff; }
+
+#game-over-screen .menu-btn {
+  width: min(320px, 100%);
+  min-height: 48px;
+  margin: 10px 0 0;
+  padding: 10px 16px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: rgb(var(--accent));
+  border-color: rgba(var(--accent), 0.6);
+  background: rgba(var(--accent), 0.05);
+}
+
+@media (hover: hover) {
+  #game-over-screen .menu-btn:hover { background: rgba(var(--accent), 0.15); }
+}
+#game-over-screen .menu-btn.touching { background: rgba(var(--accent), 0.15); }
+
+#game-over-screen #save-score-btn {
+  width: auto;
+  margin: 0;
+  padding: 0 16px;
+  font-size: 14px;
+  border-color: #00ffff;
+}
+
+#game-over-screen #name-taken-warn { color: #ff6666; font-size: 12px; margin-top: 4px; }
+
+#game-over-screen #play-again-btn {
+  min-height: 60px;
+  margin-top: 12px;
+  font-size: 22px;
+  color: #0a0a0a;
+  border-color: #00ffff;
+  background: #00ffff;
+  box-shadow: 0 0 18px rgba(0, 255, 255, 0.45);
+}
+
+@media (hover: hover) {
+  #game-over-screen #play-again-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
+}
+#game-over-screen #play-again-btn.touching { background: #66ffff; }
+
+#game-over-screen #share-score-btn { --accent: 0, 255, 102; }
+#game-over-screen #end-menu-btn { --accent: 170, 170, 170; }
 
 .menu-btn:disabled {
   opacity: 0.3;
@@ -1153,7 +1267,7 @@ canvas {
   .tower-btn .tower-unlock-req { display: none; }
   .tower-btn .tower-cost,
   .tower-btn .tower-short-price { font-size: 13px; font-weight: 600; white-space: nowrap; }
-  .tower-btn .tower-short-price { display: inline-flex; align-items: center; color: #ff8800; }
+  .tower-btn .tower-short-price { display: inline-flex; align-items: center; color: var(--text-2); }
   .tower-btn.tower-can-unlock .tower-short-price { color: #c77dff; }
   .tower-btn.tower-unaffordable .tower-cost { color: #ff8866; }
 
@@ -1334,7 +1448,6 @@ canvas {
   }
 
   #hud-row2 { flex-direction: column; align-items: stretch; }
-  #unlock-tracker { flex: none; width: 50%; }
   /* Speed, pause and sound on one row of the rail */
   #speed-controls .speed-btn { flex: 1 1 auto; padding: 0 4px; font-size: 13px; }
 
@@ -1596,16 +1709,21 @@ canvas {
 
     <div id="game-over-screen">
       <h2>GAME OVER</h2>
-      <p>Score: <span id="final-score">0</span></p>
-      <p>Wave: <span id="final-wave">0</span></p>
-      <p id="cores-earned" style="color: #c77dff;"></p>
-      <p id="next-unlock-hint" style="display:none; font-size: 13px; color: #aaa;"></p>
-      <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off">
-      <p id="name-taken-warn" style="visibility:hidden; color:#ff6666; font-size:12px; margin:4px 0 0;">&nbsp;</p>
-      <p id="challenge-result" style="display:none; font-size: 16px; font-weight: bold; margin: 6px 0;"></p>
-      <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
-      <button class="menu-btn" id="share-score-btn" style="background: rgba(0,255,102,0.12); border-color: #00ff66; color: #00ff66;">CHALLENGE A FRIEND</button>
+      <div id="final-stats">
+        <div class="final-stat"><span id="final-score">0</span><span class="final-label" id="final-score-label">Score</span></div>
+        <div class="final-stat"><span id="final-wave">0</span><span class="final-label" id="final-wave-label">Wave</span></div>
+      </div>
+      <p id="cores-earned"></p>
+      <p id="next-unlock-hint" style="display:none;"></p>
+      <p id="challenge-result" style="display:none;"></p>
+      <div id="save-row">
+        <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off">
+        <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
+      </div>
+      <p id="name-taken-warn" style="visibility:hidden;">&nbsp;</p>
       <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>
+      <button class="menu-btn" id="share-score-btn">CHALLENGE A FRIEND</button>
+      <button class="menu-btn" id="end-menu-btn">MAIN MENU</button>
     </div>
   </div>
 
