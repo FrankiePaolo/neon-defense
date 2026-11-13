@@ -63,6 +63,10 @@ python3 -m http.server 8000
 node scripts/check-paths.mjs
 ```
 
+### Checks
+
+`npm test` runs every check, fastest first: the type check, the balance simulator, then the play-test. Run it before you commit. Netlify runs the type check and the balance simulator before each deploy and keeps the live version when either fails; the play-test needs Chrome, which Netlify's build does not have.
+
 ### Play test
 
 `scripts/play-test.mjs` drives the game in the Chrome already installed on your machine (no browser download) like a player: on a portrait phone (390x844 and 375x667), a landscape phone (844x390) and a desktop (1440x900, plus a 1280x720 laptop window for the desktop layout checks), in English and Italian. It checks placing, cancelling, panels, layout, game flow and rendering, prints pass or fail per scenario and layout, and exits 1 on any failure or page error. Run it after any UI change:

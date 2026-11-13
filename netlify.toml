@@ -1,3 +1,6 @@
 [build]
+  # A failing check stops the deploy and keeps the live version. The play-test
+  # is left out: Netlify's build image has no Chrome.
+  command = "npm run typecheck && npm run balance"
   publish = "."
   functions = "netlify/functions"
