@@ -346,6 +346,7 @@ export class UIController {
     // A fresh run on the same difficulty, as RESTART on the pause screen
     document.getElementById('play-again-btn').addEventListener('click', () => {
       this.elements.gameOverScreen.style.display = 'none';
+      this.elements.towerPanel.style.display = '';
       this.game.startNewGame(this.game.difficulty);
     });
 
@@ -850,6 +851,7 @@ export class UIController {
     document.getElementById('share-score-btn').textContent = t('share.button');
 
     this.elements.gameOverScreen.style.display = 'flex';
+    this.elements.towerPanel.style.display = 'none';
   }
 
   // End screen: cores earned this run and the next locked tower, both gone
