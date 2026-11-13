@@ -7,24 +7,28 @@ export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.width = CONFIG.CANVAS_WIDTH;
-    this.height = CONFIG.CANVAS_HEIGHT;
-    // Draw at the screen's pixel density so the board stays sharp when scaled
-    // up; capped at 2 to bound fill cost on 3x phones. Drawing code keeps
-    // using logical pixels through the context transform.
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = this.width * this.dpr;
-    canvas.height = this.height * this.dpr;
-    // Never shown larger than the logical size (plus its 1px border); the
-    // max sizes keep the ratio
-    canvas.style.maxWidth = `min(100%, ${this.width + 2}px)`;
-    canvas.style.maxHeight = `min(100%, ${this.height + 2}px)`;
-
     this.staticCanvas = document.createElement('canvas');
-    this.staticCanvas.width = canvas.width;
-    this.staticCanvas.height = canvas.height;
     this.staticCtx = this.staticCanvas.getContext('2d');
-    this.staticCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.resize(1);
+  }
+
+  // Draw at the size the board is shown (`scale` CSS pixels per logical
+  // pixel) times the screen's pixel density, capped at 2 to bound fill cost
+  // on 3x phones, and the backing store at 3x the logical width. Drawing code
+  // keeps using logical pixels through the context transform. Resizing clears
+  // the canvas, so it only happens when the backing size or the board changes.
+  resize(scale) {
+    const width = CONFIG.CANVAS_WIDTH, height = CONFIG.CANVAS_HEIGHT;
+    const backing = Math.min(Math.round(width * scale * Math.min(window.devicePixelRatio || 1, 2)), width * 3);
+    if (backing === this.canvas.width && width === this.width && height === this.height) return;
+    this.width = width;
+    this.height = height;
+    this.k = backing / width;
+    for (const c of [this.canvas, this.staticCanvas]) {
+      c.width = backing;
+      c.height = Math.round(height * this.k);
+    }
+    this.staticCtx.setTransform(this.k, 0, 0, this.k, 0, 0);
     this.staticDirty = true;
   }
 
@@ -79,15 +83,18 @@ export class Renderer {
     this.staticDirty = false;
   }
 
-  // Tile centres of the path, extended to the left and right board edges
-  // (START is always in the first column, END in the last).
+  // Tile centres of the path, extended half a tile out through the board
+  // edge START and END sit on: left and right on a wide board, top and
+  // bottom on a tall one. (The first and last steps are often sideways to
+  // that edge, so their direction would leave a gap.)
   _roadPoints(grid) {
     const path = grid.path;
     if (!path || path.length < 2) return [];
     const pts = path.map(p => gridToPixel(p.x, p.y));
     const half = CONFIG.TILE_SIZE / 2;
-    const first = pts[0], last = pts[pts.length - 1];
-    return [{ x: first.x - half, y: first.y }, ...pts, { x: last.x + half, y: last.y }];
+    const tall = grid.rows > grid.cols;
+    const out = (p, sign) => tall ? { x: p.x, y: p.y + sign * half } : { x: p.x + sign * half, y: p.y };
+    return [out(pts[0], -1), ...pts, out(pts[pts.length - 1], 1)];
   }
 
   // Chevrons that flow along the road toward END
@@ -148,7 +155,7 @@ export class Renderer {
       shakeY = (Math.random() - 0.5) * 2 * intensity;
     }
 
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.setTransform(this.k, 0, 0, this.k, 0, 0);
     ctx.save();
     ctx.translate(shakeX, shakeY);
 

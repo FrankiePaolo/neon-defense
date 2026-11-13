@@ -1,4 +1,4 @@
-import { CONFIG, TOWER_DEFS, IS_MOBILE } from './config.js';
+import { CONFIG, TOWER_DEFS, IS_MOBILE, chooseGridShape } from './config.js';
 import { gridToPixel } from './utils.js';
 import { Grid } from './grid.js';
 import { SpatialHash } from './pathfinding.js';
@@ -71,7 +71,11 @@ export class Game {
 
   startNewGame(difficulty = 'normal') {
     this.difficulty = difficulty;
+    // The board shape follows how the device is held now; the grid and the
+    // board size pick it up from CONFIG
+    chooseGridShape();
     this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal);
+    this.ui.fitBoard();
     this.renderer.markDirty();
     this.towers = [];
     this.enemies = [];

@@ -18,7 +18,10 @@ export class Grid {
     this.towers = new Map();
   }
 
-  init() {
+  // Size defaults to CONFIG, so a new game picks up the board shape it chose
+  init(cols = CONFIG.GRID_COLS, rows = CONFIG.GRID_ROWS) {
+    this.cols = cols;
+    this.rows = rows;
     this.cells = [];
     for (let y = 0; y < this.rows; y++) {
       this.cells[y] = [];
@@ -29,9 +32,21 @@ export class Grid {
     this.towers.clear();
   }
 
+  // A board taller than wide is the wide board generated with cols and rows
+  // swapped, then turned: the road runs top to bottom with the same lengths
   generate(minLength = 25) {
+    this.init();
+    const tall = this.rows > this.cols;
+    if (tall) this.init(this.rows, this.cols);
+    this._generateWide(minLength);
+    if (tall) this._transpose();
+    this._markNearRoad();
+    return true;
+  }
+
+  _generateWide(minLength) {
     for (let attempt = 0; attempt < 400; attempt++) {
-      this.init();
+      this.init(this.cols, this.rows);
       const entryY = randInt(2, this.rows - 3);
       const exitY = randInt(2, this.rows - 3);
       this.entry = { x: 0, y: entryY };
@@ -45,13 +60,23 @@ export class Grid {
         this.cells[this.entry.y][this.entry.x] = CELL_ENTRY;
         this.cells[this.exit.y][this.exit.x] = CELL_EXIT;
         this.path = path;
-        this._markNearRoad();
-        return true;
+        return;
       }
     }
     this._fallbackPath(minLength);
-    this._markNearRoad();
-    return true;
+  }
+
+  // Swap x and y in the cells, the path and both ends
+  _transpose() {
+    const swap = (p) => ({ x: p.y, y: p.x });
+    const cells = this.cells;
+    this.init(this.rows, this.cols);
+    for (let y = 0; y < this.rows; y++) {
+      for (let x = 0; x < this.cols; x++) this.cells[y][x] = cells[x][y];
+    }
+    this.path = this.path.map(swap);
+    this.entry = swap(this.entry);
+    this.exit = swap(this.exit);
   }
 
   _randomWalk(minLength = 25) {
@@ -185,7 +210,7 @@ export class Grid {
   }
 
   _fallbackPath(minLength = 25) {
-    this.init();
+    this.init(this.cols, this.rows);
 
     // Serpentine of vertical runs on even columns, one empty column between
     // runs, so the path never touches itself. Run height is sized to reach

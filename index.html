@@ -34,30 +34,48 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 100dvh after 100vh, so browsers that know dvh size the game to the
+   visible viewport; the safe-area padding keeps everything off the notch,
+   the home indicator and the side cut-outs */
 #game-container {
   display: flex;
   width: 100vw;
-  height: 100dvh;
   height: 100vh;
-  padding-top: env(safe-area-inset-top, 0px);
+  height: 100dvh;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   background: #0a0a0a;
 }
 
 #canvas-wrapper {
   position: relative;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
 
+/* The space the board may fill. fitBoard (js/ui.js) sizes the canvas inside
+   it; the slot itself never depends on the canvas size. */
+#board-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* The outline is drawn inside the canvas, so the board keeps its full size */
 canvas {
   display: block;
+  flex-shrink: 0;
   cursor: crosshair;
-  max-width: 100%;
-  max-height: 100%;
   touch-action: none;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  outline: 1px solid rgba(255, 255, 255, 0.15);
+  outline-offset: -1px;
 }
 
 /* HUD: row 1 has the counters, row 2 the next-unlock progress and the controls */
@@ -307,6 +325,9 @@ canvas {
 
 .tower-btn .tower-need:empty { display: none; }
 
+/* Lock price as core icon and number: the compact phone tray only */
+.tower-btn .tower-short-price { display: none; }
+
 .tower-btn:hover {
   box-shadow: 0 0 12px var(--tower-color, #333);
   background: rgba(30, 30, 50, 0.8);
@@ -507,6 +528,7 @@ canvas {
 #tower-stats-tooltip .ttp-stat-val { font-weight: bold; }
 #tower-stats-tooltip .ttp-targeting { font-size: 12px; color: var(--text-3); margin-top: 4px; }
 #tower-stats-tooltip .ttp-locked-hint { font-size: 12px; color: #ff8800; margin-top: 6px; }
+#tower-stats-tooltip .ttp-need { font-size: 13px; color: #ff8866; margin-top: 6px; }
 #tower-stats-tooltip .ttp-place-btn { display: none; }
 
 .tower-btn.previewing {
@@ -956,8 +978,8 @@ canvas {
     border-left: none;
     border-top: 1px solid #1a1a2e;
     flex-direction: column;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-    gap: 5px;
+    padding: 6px 10px 8px;
+    gap: 4px;
     overflow-y: visible;
   }
 
@@ -968,23 +990,9 @@ canvas {
 
   #tower-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 6px;
   }
-
-  .tower-btn {
-    min-width: 0;
-    min-height: 58px;
-    padding: 6px;
-    gap: 5px;
-  }
-
-  .tower-btn .tower-name { font-size: 13px; }
-  .tower-btn .tower-cost { font-size: 13px; }
-  .tower-btn .tower-unlock-req { font-size: 12px; }
-  .tower-btn .tower-need { font-size: 12px; }
-  .tower-btn .tower-desc { display: none; }
-  .tower-btn .tower-pic { width: 28px; height: 28px; }
 
   #start-wave-btn {
     padding: 8px 18px;
@@ -1040,7 +1048,8 @@ canvas {
 
 /* Phone layout, portrait or landscape. The same query is PHONE_LAYOUT in js/ui.js. */
 @media (max-width: 768px), (max-height: 500px) and (pointer: coarse) {
-  /* Bottom sheet over the tower panel; JS caps its height at the space below the board */
+  /* Sheet on the screen edge away from the selected tower: bottom, or top
+     with .sheet-top. JS caps its size at the near edge of the tower's tile. */
   #upgrade-panel {
     position: fixed;
     min-width: unset;
@@ -1048,7 +1057,6 @@ canvas {
     right: 0;
     bottom: 0;
     top: auto !important;
-    max-height: 45vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
@@ -1058,6 +1066,39 @@ canvas {
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7);
     z-index: 30;
   }
+
+  #upgrade-panel.sheet-top {
+    top: 0 !important;
+    bottom: auto;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  }
+  #upgrade-panel.sheet-top .up-close { top: calc(2px + env(safe-area-inset-top, 0px)); }
+
+  /* Compact tray: picture over price. Name, description, unlock sentence
+     and "Need N more" are in the tower card; the name is the aria-label. */
+  .tower-btn {
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 2px;
+    gap: 3px;
+  }
+  .tower-btn .tower-pic { width: 32px; height: 32px; }
+  .tower-btn .tower-text { align-items: center; }
+  .tower-btn .tower-name,
+  .tower-btn .tower-desc,
+  .tower-btn .tower-need,
+  .tower-btn .tower-unlock-req { display: none; }
+  .tower-btn .tower-cost,
+  .tower-btn .tower-short-price { font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .tower-btn .tower-short-price { display: inline-flex; align-items: center; color: #ff8800; }
+  .tower-btn.tower-can-unlock .tower-short-price { color: #c77dff; }
+  .tower-btn.tower-unaffordable .tower-cost { color: #ff8866; }
 
   #upgrade-panel .up-title { font-size: 18px; margin-bottom: 6px; }
   #upgrade-panel .up-stats { font-size: 13px; gap: 12px; }
@@ -1118,16 +1159,13 @@ canvas {
 
 /* Portrait phones only (a small phone in landscape also matches max-width: 768px) */
 @media (max-width: 768px) and (min-height: 501px) {
-  /* HUD, board and wave controls stack top to bottom. The board is pinned
-     under the HUD, so nothing below it can move it. */
-  #canvas-wrapper {
-    flex: 0 0 auto;
-    min-height: 0;
-    flex-direction: column;
-    justify-content: flex-start;
-  }
+  /* HUD, board, wave controls, free space, tray. The board is pinned under
+     the HUD and the wave controls follow its bottom edge (--board-bottom,
+     set by fitBoard) in a strip the slot reserves, so height the board
+     cannot use goes between them and the tray, and nothing moves the board. */
+  #canvas-wrapper { flex: 1 1 0; }
 
-  #tower-panel { flex: 1 1 auto; min-height: 0; }
+  #tower-panel { flex: 0 0 auto; }
 
   #hud {
     position: relative;
@@ -1137,7 +1175,7 @@ canvas {
     gap: 4px;
   }
 
-  canvas { flex: 0 0 auto; }
+  #board-slot { margin-bottom: 60px; }
 
   /* Docked just above the tower panel, below the board */
   #tower-stats-tooltip {
@@ -1148,89 +1186,157 @@ canvas {
     bottom: 6px;
   }
 
-  /* In the flow at the bottom of the board column: phase line, then preview and button side by side */
+  /* One row under the board: phase line over the preview on the left,
+     CANCEL and START WAVE on the right */
   #wave-controls {
-    position: static;
+    top: var(--board-bottom, auto);
+    bottom: auto;
+    left: 0;
+    right: 0;
     transform: none;
-    flex: 0 0 auto;
-    min-height: 88px;
-    padding: 6px 8px 8px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px 8px;
+    height: 60px;
+    padding: 4px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto;
+    align-content: center;
+    align-items: center;
+    gap: 2px 8px;
   }
 
-  #phase-label { flex-basis: 100%; text-align: center; }
+  #phase-label { grid-column: 1; grid-row: 1; white-space: normal; line-height: 1.2; }
+  #wave-progress,
+  #wave-preview { grid-column: 1; grid-row: 2; justify-self: start; text-align: left; }
+  #wave-preview { padding: 2px 8px; }
+  #wave-controls #cancel-place-btn { grid-column: 2; grid-row: 1 / 3; }
+  #start-wave-btn { grid-column: 3; grid-row: 1 / 3; }
 
-  #panel-head { justify-content: space-between; padding: 0 2px; }
+  /* Fixed height, so the mid-wave note never changes the tray's height */
+  #panel-head { justify-content: space-between; flex-wrap: nowrap; height: 20px; padding: 0 2px; }
+
+  /* Height a full-width board cannot use (tall screens) goes to the tray:
+     taller buttons, bigger pictures. 262px is the HUD, the wave controls and
+     the tray at its base size; 133.34vw is the 9x12 board at full width. */
+  #tower-panel {
+    --tray-extra: clamp(0px, calc(100dvh - 133.34vw - 262px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)), 60px);
+  }
+  #tower-list .tower-btn { min-height: calc(60px + var(--tray-extra)); }
+  .tower-btn .tower-pic { width: calc(32px + var(--tray-extra) / 2); height: calc(32px + var(--tray-extra) / 2); }
+
+  /* The next-unlock line wraps to two lines instead of being cut off */
+  #unlock-tracker .unlock-label {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    margin-bottom: 2px;
+  }
+
+  /* Compact enough for two lines over the HUD, the only free strip above the board */
+  #tutorial-overlay { padding: 6px 12px; font-size: 14px; line-height: 1.3; }
+  #tutorial-overlay .tutorial-msg { margin-bottom: 2px; }
 }
 
-/* Desktop: HUD, board and wave controls stack like the portrait phone, so
-   nothing floats over the board. The board shrinks by height, keeping its
-   ratio, on short windows; on tall ones it stays centred under the HUD. */
+/* Desktop: a centred column with the HUD as wide as the board, the board,
+   and the wave controls in one row under it (fitBoard sets --board-w and
+   --board-bottom). The slot reserves the wave controls' strip, so nothing
+   floats over the board and the phase never moves it. */
 @media (min-width: 769px) and (min-height: 501px) {
-  #canvas-wrapper { flex-direction: column; }
-
   #hud {
     position: relative;
-    align-self: stretch;
     flex: 0 0 auto;
+    width: var(--board-w, 100%);
   }
 
-  canvas {
-    flex: 0 1 auto;
-    min-height: 0;
-    margin-top: auto;
-  }
+  #board-slot { margin-bottom: 64px; }
 
   #wave-controls {
-    position: static;
-    transform: none;
-    flex: 0 0 auto;
-    /* Height of the tallest state (phase line, preview, button), so hiding
-       the preview and the button during a wave never moves the board */
-    min-height: 115px;
-    margin-bottom: auto;
+    top: var(--board-bottom, auto);
+    bottom: auto;
+    width: var(--board-w, 100%);
+    height: 64px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
   }
+
+  #tower-panel { width: 280px; }
+  .tower-btn .tower-pic { width: 48px; height: 48px; }
 }
 
-/* Tall portrait phones have room for the one-line tower descriptions */
-@media (max-width: 768px) and (min-height: 760px) {
-  .tower-btn .tower-desc { display: block; }
-}
-
-/* Landscape phones */
+/* Landscape phones: a left rail (HUD on top, wave controls at the bottom),
+   the board, and the tray as a column on the right. Nothing covers the board. */
 @media (max-height: 500px) {
   #game-container {
     flex-direction: row;
   }
 
+  #canvas-wrapper {
+    display: grid;
+    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  #hud {
+    position: relative;
+    grid-column: 1;
+    grid-row: 1;
+    padding: 6px 8px;
+    background: none;
+  }
+
+  #hud-row2 { flex-direction: column; align-items: stretch; }
+  #unlock-tracker { flex: none; max-width: none; }
+  /* Speed, pause and sound on one row of the rail */
+  #speed-controls .speed-btn { flex: 1 1 auto; padding: 0 4px; font-size: 13px; }
+  #unlock-tracker .unlock-label { white-space: normal; }
+
+  #board-slot { grid-column: 2; grid-row: 1 / 3; align-items: center; }
+
+  #wave-controls {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    transform: none;
+    padding: 6px 8px 8px;
+    gap: 6px;
+  }
+
+  #phase-label { white-space: normal; text-align: center; }
+  #wave-preview { white-space: normal; padding: 4px 8px; }
+
+  /* The tutorial caption docks in the rail, beside the board */
+  #tutorial-overlay { left: 6px; width: 178px; transform: none; padding: 8px 10px; font-size: 14px; line-height: 1.3; }
+
   #tower-panel {
-    width: 160px;
-    max-height: 100vh;
+    width: 112px;
+    padding: 6px;
     border-top: none;
     border-left: 1px solid #1a1a2e;
     flex-direction: column;
     flex-wrap: nowrap;
   }
 
-  .tower-btn {
-    flex: unset;
-    min-width: unset;
-    min-height: 44px;
+  #tower-panel h3 { font-size: 14px; }
+  #panel-head { min-height: 36px; align-content: center; text-align: center; }
+
+  #tower-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 
-  .tower-btn .tower-desc { display: none; }
+  .tower-btn { min-height: 44px; }
 
-  /* Label beside the value to keep the HUD short */
-  #ui-overlay { font-size: 16px; }
-  .hud-item { flex-direction: row; align-items: baseline; gap: 4px; }
-  #hud { padding: 4px 8px; }
+  /* Counters in a 2x2 block */
+  #ui-overlay { grid-template-columns: repeat(2, 1fr); row-gap: 4px; font-size: 18px; }
+  #start-wave-btn { padding: 8px 18px; font-size: 15px; }
 }
 
-/* Landscape phones: the sheet and the tower card dock to the right edge,
-   full height, over the tower panel column */
+/* Landscape phones: the tower card docks to the right edge, full height,
+   over the tray column; the upgrade sheet docks to the right edge, or the
+   left one with .sheet-left, away from the selected tower */
 @media (max-height: 500px) and (pointer: coarse) {
   #upgrade-panel,
   #tower-stats-tooltip {
@@ -1242,10 +1348,23 @@ canvas {
     width: 320px;
     max-width: none;
     max-height: none !important;
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+    padding-bottom: 14px;
     border: none;
     border-left: 1px solid rgba(0, 255, 255, 0.4);
     border-radius: 12px 0 0 12px;
   }
+
+  #upgrade-panel.sheet-left {
+    left: 0 !important;
+    right: auto;
+    padding: 14px 16px 14px calc(16px + env(safe-area-inset-left, 0px));
+    border-left: none;
+    border-right: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 0 12px 12px 0;
+  }
+  #upgrade-panel .up-close { right: calc(2px + env(safe-area-inset-right, 0px)); }
+  #upgrade-panel.sheet-left .up-close { right: 2px; }
 }
 
 /* Touch devices: larger tap targets */
@@ -1374,7 +1493,7 @@ canvas {
       </div>
     </div>
 
-    <canvas id="game-canvas"></canvas>
+    <div id="board-slot"><canvas id="game-canvas"></canvas></div>
 
     <div id="wave-controls">
       <div id="phase-label"></div>

@@ -229,15 +229,18 @@ export class Tutorial {
 
   // Dock the caption where it covers neither the board nor the step target:
   // above the wave controls, else above the board, else over the top bar,
-  // else over the tower panel.
+  // else over the tower panel. Only rects the caption's columns cross count,
+  // so in the landscape rail it never conflicts with the board beside it.
   _placeCaption(avoid) {
     const wrapper = document.getElementById('canvas-wrapper').getBoundingClientRect();
     const board = this.game.renderer.canvas.getBoundingClientRect();
     const controls = document.getElementById('wave-controls').getBoundingClientRect();
     const speed = document.getElementById('speed-controls').getBoundingClientRect();
+    const box = this.overlay.getBoundingClientRect();
     const h = this.overlay.offsetHeight;
     const gap = 6;
-    const clearOf = (rects) => (top) => rects.every(r => !r || top + h <= r.top || top >= r.bottom);
+    const clearOf = (rects) => (top) => rects.every(r => !r || top + h <= r.top || top >= r.bottom ||
+      box.right <= r.left || box.left >= r.right);
     const clear = clearOf([board, avoid]);
 
     const panel = document.getElementById('tower-panel').getBoundingClientRect();

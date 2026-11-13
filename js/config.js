@@ -2,8 +2,8 @@ export const IS_MOBILE = ('ontouchstart' in window) || (navigator.maxTouchPoints
 export const SHADOW_BLUR_SCALE = IS_MOBILE ? 0.3 : 1.0;
 
 export const CONFIG = {
-  GRID_COLS: IS_MOBILE ? 12 : 20,
-  GRID_ROWS: IS_MOBILE ? 9 : 15,
+  GRID_COLS: 20,
+  GRID_ROWS: 15,
   TILE_SIZE: 40,
   get CANVAS_WIDTH() { return this.GRID_COLS * this.TILE_SIZE; },
   get CANVAS_HEIGHT() { return this.GRID_ROWS * this.TILE_SIZE; },
@@ -20,6 +20,17 @@ export const CONFIG = {
   // Enemy HP multiplier per difficulty, on top of the wave curve
   DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1 },
 };
+
+// Board shape for the next game: 9x12 on a phone-sized screen held upright,
+// 12x9 on one held sideways, 20x15 otherwise. A phone is a touch screen or a
+// window at most 768px wide (the phone layout in index.html). Under the Node
+// shim innerHeight is undefined, so touch there would mean landscape.
+export function chooseGridShape() {
+  const phone = IS_MOBILE || window.innerWidth <= 768;
+  const portrait = window.innerHeight > window.innerWidth;
+  [CONFIG.GRID_COLS, CONFIG.GRID_ROWS] = !phone ? [20, 15] : portrait ? [9, 12] : [12, 9];
+}
+chooseGridShape();
 
 export const COLORS = {
   BACKGROUND: '#0a0a0a',

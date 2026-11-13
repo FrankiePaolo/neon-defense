@@ -3,7 +3,7 @@
 // wave-scaling, tower-balance and difficulty-levels specs.
 //
 //   npm run balance                       all grids, difficulties and players, then the checks
-//   node scripts/simulate-balance.mjs --grid mobile --difficulty normal --player sensible [--seed 1] [--seeds 5]
+//   node scripts/simulate-balance.mjs --grid mobile|portrait|desktop --difficulty normal --player sensible [--seed 1] [--seeds 5]
 //
 // Each grid, difficulty and player runs on --seeds maps (seeds --seed, --seed+1, ...).
 // Checks use the median run by wave reached; tower value pools all runs.
@@ -38,7 +38,8 @@ const { resolveHit, updateSynergies } = await import('../js/combat.js');
 const { maxPlausibleScore } = await import('../netlify/functions/scores.mjs');
 const { gridToPixel, distance } = await import('../js/utils.js');
 
-const GRIDS = { mobile: [12, 9], desktop: [20, 15] };
+// mobile is the phone held sideways, portrait the phone held upright
+const GRIDS = { mobile: [12, 9], portrait: [9, 12], desktop: [20, 15] };
 const DIFFICULTIES = ['easy', 'normal', 'hard'];
 const PLAYERS = ['naive', 'sensible'];
 const DT = 1 / 60;
@@ -151,8 +152,12 @@ function rankTiles(grid, range, tieTo = 'exit') {
   const anchor = tieTo === 'entry' ? grid.entry : grid.exit;
   const r2 = range * range;
   const tiles = [];
-  for (let y = 0; y < grid.rows; y++) {
-    for (let x = 0; x < grid.cols; x++) {
+  // Scan rows of a wide board, columns of a tall one, so the portrait board
+  // (the landscape board turned) breaks ties exactly as the landscape one
+  const tall = grid.rows > grid.cols;
+  for (let a = 0; a < (tall ? grid.cols : grid.rows); a++) {
+    for (let b = 0; b < (tall ? grid.rows : grid.cols); b++) {
+      const x = tall ? a : b, y = tall ? b : a;
       if (!grid.isPlaceable(x, y)) continue;
       const covered = grid.path.filter(p => (p.x - x) ** 2 + (p.y - y) ** 2 <= r2).length;
       if (covered === 0) continue;
@@ -383,8 +388,12 @@ class Run {
         const remaining = this.grid.path.slice(enemy.pathIndex).map(p => gridToPixel(p.x, p.y));
         if (remaining.length < 2) continue;
         const child = new Enemy(enemy.splitType, remaining, {});
-        child.x = enemy.x + (Math.random() - 0.5) * 10;
-        child.y = enemy.y + (Math.random() - 0.5) * 10;
+        // First offset along the board's long side, so the portrait run
+        // mirrors the landscape run on the same seed
+        const along = (Math.random() - 0.5) * 10, across = (Math.random() - 0.5) * 10;
+        const tall = this.grid.rows > this.grid.cols;
+        child.x = enemy.x + (tall ? across : along);
+        child.y = enemy.y + (tall ? along : across);
         this.enemies.push(child);
       }
     }
@@ -833,9 +842,10 @@ function difficultyChecks(runs) {
   }
   for (const diff of DIFFICULTIES) {
     for (const p of PLAYERS) {
-      const a = get('mobile', diff, p), b = get('desktop', diff, p);
-      const wa = a.reached, wb = b.reached;
-      check(`phone and desktop within 3 waves (${diff} ${p})`, Math.abs(wa - wb) <= 3, `${wa} vs ${wb}`);
+      for (const [ga, gb, label] of [['mobile', 'desktop', 'phone and desktop'], ['portrait', 'desktop', 'portrait phone and desktop'], ['portrait', 'mobile', 'portrait and landscape phone']]) {
+        const wa = get(ga, diff, p).reached, wb = get(gb, diff, p).reached;
+        check(`${label} within 3 waves (${diff} ${p})`, Math.abs(wa - wb) <= 3, `${wa} vs ${wb}`);
+      }
     }
   }
 

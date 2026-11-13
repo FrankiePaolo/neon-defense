@@ -77,7 +77,28 @@ export class UIController {
     this._placeCancelButton();
     window.matchMedia(PHONE_LAYOUT).addEventListener('change', () => this._placeCancelButton());
     window.addEventListener('resize', () => this._fitSheet());
+    new ResizeObserver(() => this.fitBoard()).observe(document.getElementById('board-slot'));
+    window.visualViewport?.addEventListener('resize', () => this.fitBoard());
     this.applyLanguage();
+  }
+
+  // The board's displayed size: the largest that fits the slot CSS leaves
+  // for it, keeping the ratio, at most twice the logical size. The slot never
+  // depends on the canvas, so this cannot loop. Wave controls placed under the
+  // board follow it through --board-bottom.
+  fitBoard() {
+    const slot = document.getElementById('board-slot');
+    const w = CONFIG.CANVAS_WIDTH, h = CONFIG.CANVAS_HEIGHT;
+    const scale = Math.min(slot.clientWidth / w, slot.clientHeight / h, 2);
+    if (!(scale > 0)) return;
+    const canvas = this.game.renderer.canvas;
+    canvas.style.width = w * scale + 'px';
+    canvas.style.height = h * scale + 'px';
+    const container = document.getElementById('game-container');
+    container.style.setProperty('--board-w', w * scale + 'px');
+    const top = slot.getBoundingClientRect().top - slot.parentElement.getBoundingClientRect().top;
+    container.style.setProperty('--board-bottom', top + h * scale + 'px');
+    this.game.renderer.resize(scale);
   }
 
   applyLanguage() {
@@ -165,6 +186,9 @@ export class UIController {
         (progress.canUnlock(type) ? ' tower-can-unlock' : '') +
         (type === this.game.input.placingType ? ' selected' : '');
       btn.dataset.towerType = type;
+      // The phone tray shows picture and price only, so the name is the accessible name
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-label', t('tower.' + type));
       btn.style.setProperty('--tower-color', unlocked ? def.color : '#333');
       if (unlocked) {
         btn.innerHTML = `
@@ -203,6 +227,7 @@ export class UIController {
           <span class="tower-text">
             <span class="tower-name locked-name">${t('tower.' + type)}</span>
             <span class="tower-unlock-req">${t('unlock.price').replace('{n}', cores(def.unlockCost))}</span>
+            <span class="tower-short-price">${ICONS.core}${def.unlockCost}</span>
             <span class="tower-desc">${t('tower.' + type + '.desc')}</span>
           </span>
         `;
@@ -456,6 +481,8 @@ export class UIController {
       panel.style.top = '';
       this._fitSheet();
     } else {
+      panel.classList.remove('sheet-top', 'sheet-left');
+      panel.style.maxWidth = panel.style.maxHeight = '';
       this._placeBesideTower(panel, pos);
     }
 
@@ -536,13 +563,28 @@ export class UIController {
     else controls.after(btn);
   }
 
-  // Portrait phones: the upgrade sheet may grow up to the bottom edge of the
-  // board, never over it. Landscape CSS gives it the full height instead.
+  // Phones: the upgrade sheet docks to the screen edge away from the selected
+  // tower (bottom or top in portrait, right or left in landscape) and may
+  // grow up to the near edge of the tower's tile, never over it
   _fitSheet() {
     const panel = this.elements.upgradePanel;
-    if (panel.style.display !== 'block' || !isPhoneLayout()) return;
-    const boardBottom = this.game.renderer.canvas.getBoundingClientRect().bottom;
-    panel.style.maxHeight = Math.max(160, window.innerHeight - boardBottom - 8) + 'px';
+    const tower = this.game.input.selectedTower;
+    if (panel.style.display !== 'block' || !isPhoneLayout() || !tower) return;
+    const board = this.game.renderer.canvas.getBoundingClientRect();
+    const ts = CONFIG.TILE_SIZE * board.width / CONFIG.CANVAS_WIDTH;
+    const left = board.left + tower.gx * ts, top = board.top + tower.gy * ts, gap = 8;
+    let side;
+    if (window.matchMedia('(max-height: 500px) and (pointer: coarse)').matches) {
+      side = left + ts / 2 < board.left + board.width / 2 ? 'right' : 'left';
+      panel.style.maxWidth = (side === 'right' ? window.innerWidth - left - ts : left) - gap + 'px';
+      panel.style.maxHeight = '';
+    } else {
+      side = top + ts / 2 < board.top + board.height / 2 ? 'bottom' : 'top';
+      panel.style.maxHeight = (side === 'bottom' ? window.innerHeight - top - ts : top) - gap + 'px';
+      panel.style.maxWidth = '';
+    }
+    panel.classList.toggle('sheet-top', side === 'top');
+    panel.classList.toggle('sheet-left', side === 'left');
   }
 
   // The only code that shows carry state outside the board: tower button
@@ -580,14 +622,15 @@ export class UIController {
 
     if (!unlocked) {
       html += `<div class="ttp-locked-hint">${ICONS.lock}${t('unlock.price').replace('{n}', cores(def.unlockCost))}</div>`;
+    } else if (isMobile && !canAfford) {
+      // The phone tray shows the price only, so the card says what is missing
+      html += `<div class="ttp-need">${t('panel.need').replace('{n}', def.cost - this.game.economy.gold)}</div>`;
     }
 
     if (isMobile && !unlocked) {
       html += `<button class="ttp-place-btn" ${progress.canUnlock(type) ? '' : 'disabled'} data-tower-type="${type}" data-action="unlock">${ICONS.core}${t('unlock.price').replace('{n}', cores(def.unlockCost))}</button>`;
     } else if (isMobile) {
-      const label = canAfford ? `${t('stats.place')} (${def.cost})`
-        : t('panel.need').replace('{n}', def.cost - this.game.economy.gold);
-      html += `<button class="ttp-place-btn" ${canAfford ? '' : 'disabled'} data-tower-type="${type}">${label}</button>`;
+      html += `<button class="ttp-place-btn" ${canAfford ? '' : 'disabled'} data-tower-type="${type}">${t('stats.place')} (${def.cost})</button>`;
     }
 
     return html;
