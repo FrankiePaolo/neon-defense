@@ -1423,7 +1423,7 @@ scenario('Cannot afford', { layouts: ['phone', 'desktop'], open: { storage: { ne
   assert(w.cores === 3 && !w.unlocked.includes('lightning'), `cores ${w.cores}, unlocked ${w.unlocked}`);
 });
 
-// The wallet row: balance over the next price with a small label, nothing else
+// The wallet row: the balance with a small label, no price, nothing else
 const tracker = (g) => g.eval(() => ({
   balance: document.getElementById('cores-value')?.textContent,
   price: document.querySelector('#unlock-tracker .hud-total')?.textContent,
@@ -1431,20 +1431,20 @@ const tracker = (g) => g.eval(() => ({
   extras: document.querySelectorAll('#unlock-tracker img, #unlock-tracker .unlock-bar-bg').length,
 }));
 
-scenario('Wallet toward Cannon', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '15', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
+scenario('Wallet shows only the balance', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '15', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
   await g.startGame();
   const tr = await tracker(g);
-  assert(tr.balance === '15' && tr.price === '/ 20' && tr.label === 'Cores' && tr.extras === 0, `wallet row: ${JSON.stringify(tr)}`);
+  assert(tr.balance === '15' && tr.price === undefined && tr.label === 'Cores' && tr.extras === 0, `wallet row: ${JSON.stringify(tr)}`);
 });
 
-scenario('Wallet price follows the next unlock', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '20', neon_td_unlocked: '["frost","lightning"]' } } }, async (g) => {
+scenario('Wallet balance follows an unlock', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '20', neon_td_unlocked: '["frost","lightning"]' } } }, async (g) => {
   await g.startGame();
   const before = await tracker(g);
-  // Tower bar order: Cannon (20) is next, then Sniper (25)
-  assert(before.balance === '20' && before.price === '/ 20', `before: ${JSON.stringify(before)}`);
+  assert(before.balance === '20' && before.price === undefined, `before: ${JSON.stringify(before)}`);
+  // Cannon, the next tower in the bar, costs 20
   await g.eval(() => window.game.ui._unlockTower(window.game.progressTracker.getNextUnlock().type));
   const after = await tracker(g);
-  assert(after.balance === '0' && after.price === '/ 25', `after: ${JSON.stringify(after)}`);
+  assert(after.balance === '0' && after.price === undefined, `after: ${JSON.stringify(after)}`);
 });
 
 scenario('Wallet with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {

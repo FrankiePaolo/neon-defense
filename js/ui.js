@@ -850,21 +850,17 @@ export class UIController {
     btn.classList.toggle('active', !muted);
   }
 
-  // The wallet row, laid out like the counters above it: core balance over
-  // the price of the next locked tower, or only the balance when every
-  // tower is unlocked.
+  // The wallet row, laid out like the counters above it: the core balance
   updateUnlockTracker() {
     const el = document.getElementById('unlock-tracker');
     if (!el) return;
     const progress = this.game.progressTracker;
-    const key = `${progress.cores}:${progress.unlocked.size}`;
+    const key = progress.cores;
     if (key === this._trackerKey) return;
     this._trackerKey = key;
 
-    const next = progress.getNextUnlock();
-    const price = next ? `<span class="hud-total">/ ${next.cost}</span>` : '';
     el.innerHTML = `<span class="hud-item unlock-cores">` +
-      `<span class="hud-main">${ICONS.core}<span id="cores-value">${progress.cores}</span>${price}</span>` +
+      `<span class="hud-main">${ICONS.core}<span id="cores-value">${progress.cores}</span></span>` +
       `<span class="hud-label">${t('hud.cores')}</span></span>`;
     el.classList.remove('hidden');
   }
