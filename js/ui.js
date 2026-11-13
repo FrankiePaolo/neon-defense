@@ -110,6 +110,7 @@ export class UIController {
         `${t('menu.' + diff)}<span class="diff-sub">${t('menu.' + diff + '.sub')}</span>`;
     }
     document.getElementById('high-scores-btn').textContent = t('menu.scores');
+    if (this.elements.highScoresList.style.display === 'block') this._renderHighScores(this._board);
 
     // HUD: icon and value, with a word label under them
     const hudItem = (id, icon, valueId, label, extra = '') => {
@@ -294,6 +295,12 @@ export class UIController {
       this._showHighScores();
     });
 
+    // Board tabs are redrawn with the list, so listen on the list
+    this.elements.highScoresList.addEventListener('click', (e) => {
+      const tab = e.target.closest('.board-tab');
+      if (tab) this._renderHighScores(tab.dataset.board);
+    });
+
     this.elements.startWaveBtn.addEventListener('click', () => {
       this.game.startNextWave();
     });
@@ -320,7 +327,7 @@ export class UIController {
       }
       saveBtn.disabled = true;
       try { localStorage.setItem('neon_td_player_name', name); } catch {}
-      await this.game.scoreTracker.save(name, this.game.waveManager.currentWave);
+      await this.game.scoreTracker.save(name, this.game.waveManager.currentWave, this.game.difficulty);
       if (this.game.scoreTracker.submitFailed) {
         nameWarn.textContent = t('score.notSaved');
         nameWarn.style.display = '';
@@ -898,17 +905,27 @@ export class UIController {
       await tracker.fetchGlobalScores();
     }
 
-    const scores = tracker.highScores;
-    if (scores.length === 0) {
-      list.innerHTML = `<div style="color:#666; padding:8px">${t('scores.empty')}</div>`;
-    } else {
-      list.innerHTML = scores.map((s, i) =>
-        `<div class="score-entry">${i + 1}. ${s.name} — ${s.score.toLocaleString()} (${t('game.wave')} ${s.wave})</div>`
-      ).join('');
-    }
+    // Open on the board of the last game played
+    if (!wasVisible) this._renderHighScores(this.game.difficulty || 'normal');
     const nowVisible = !wasVisible;
     list.style.display = nowVisible ? 'block' : 'none';
     document.getElementById('high-scores-btn').classList.toggle('active', nowVisible);
+  }
+
+  _renderHighScores(difficulty) {
+    this._board = difficulty;
+    const tabs = ['easy', 'normal', 'hard'].map(d =>
+      `<button class="board-tab${d === difficulty ? ' active' : ''}" data-board="${d}">${t('menu.' + d)}</button>`
+    ).join('');
+    // Scores saved before difficulty was recorded count as normal
+    const scores = this.game.scoreTracker.highScores.filter(s => (s.difficulty || 'normal') === difficulty);
+    const entries = scores.length === 0
+      ? `<div class="board-empty">${t('scores.empty')}</div>`
+      : scores.map((s, i) =>
+        `<div class="score-entry"><span class="se-rank">${i + 1}</span><span class="se-name">${s.name}</span>` +
+        `<span class="se-score">${s.score.toLocaleString()}</span><span class="se-wave">${t('game.wave')} ${s.wave}</span></div>`
+      ).join('');
+    this.elements.highScoresList.innerHTML = `<div class="board-tabs">${tabs}</div>${entries}`;
   }
 
   // ── Share Feature ──

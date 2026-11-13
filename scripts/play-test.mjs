@@ -39,7 +39,12 @@ function serve() {
       if (req.method === 'POST') {
         let body = '';
         req.on('data', (c) => { body += c; });
-        req.on('end', () => { leaderboard.push(JSON.parse(body)); res.end('{}'); });
+        // Like the real API, a score without difficulty is normal
+        req.on('end', () => {
+          const entry = JSON.parse(body);
+          leaderboard.push({ ...entry, difficulty: entry.difficulty ?? 'normal' });
+          res.end('{}');
+        });
         return;
       }
       res.setHeader('Content-Type', 'application/json');
@@ -469,6 +474,77 @@ scenario("Someone else's name", { layouts: ['desktop'], open: { storage: { neon_
   assert(w.startsWith('Name already taken'), `warning reads "${w}"`);
   assert(leaderboard.length === 1, 'score was posted');
   assert(await g.visible('#game-over-screen'), 'left the end screen');
+});
+
+scenario('Hard run saved', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame('hard');
+  await loseGame(g);
+  await g.eval(() => { document.getElementById('player-name').value = ''; });
+  await g.press('#player-name');
+  await g.page.keyboard.type('Fra');
+  await g.press('#save-score-btn');
+  await g.page.waitForFunction(() => document.getElementById('menu-screen').style.display === 'flex', { timeout: 3000 });
+  const sent = leaderboard.at(-1);
+  assert(sent && sent.difficulty === 'hard', `posted difficulty ${sent && sent.difficulty}`);
+});
+
+scenario('Saved while offline', { layouts: ['desktop'], open: { storage: {
+  neon_td_pending_scores: JSON.stringify([{ name: 'Off', score: 500, wave: 4, difficulty: 'easy' }]),
+} } }, async (g) => {
+  await g.page.waitForFunction(() => localStorage.getItem('neon_td_pending_scores') === '[]', { timeout: 3000 });
+  const sent = leaderboard.find(s => s.name === 'Off');
+  assert(sent && sent.difficulty === 'easy', `queued score sent as ${sent && sent.difficulty}`);
+});
+
+// Seed the fake server and reload the board without starting a game
+async function seedBoard(g, entries) {
+  leaderboard.push(...entries);
+  await g.eval(() => window.game.scoreTracker.fetchGlobalScores());
+}
+
+const boardRows = (g) => g.eval(() =>
+  [...document.querySelectorAll('#high-scores-list > div:not(.board-tabs)')].map(e =>
+    [...e.children].map(c => c.textContent).join(' ') || e.textContent));
+const activeBoard = (g) => g.eval(() => document.querySelector('#high-scores-list .board-tab.active')?.dataset.board);
+
+scenario('Switching tabs', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {
+  await seedBoard(g, [
+    { name: 'Bob', score: 50000, wave: 25, difficulty: 'easy' },
+    { name: 'Fra', score: 12345, wave: 20, difficulty: 'hard' },
+  ]);
+  await g.press('#high-scores-btn');
+  const want = g.lang === 'it' ? ['FACILE', 'NORMALE', 'DIFFICILE'] : ['EASY', 'NORMAL', 'HARD'];
+  const labels = await g.eval(() => [...document.querySelectorAll('.board-tab')].map(b => b.textContent));
+  assert(JSON.stringify(labels) === JSON.stringify(want), `tabs read ${labels}`);
+  await g.press('.board-tab[data-board="hard"]');
+  const rows = await boardRows(g);
+  const score = await g.eval(() => (12345).toLocaleString());
+  assert(rows.length === 1 && rows[0].startsWith('1 Fra') && rows[0].includes(score), `hard board reads ${rows}`);
+  assert(await activeBoard(g) === 'hard', 'hard tab not selected');
+  // Thumb-sized tabs, no sideways scroll
+  const tab = await g.rect('.board-tab[data-board="hard"]');
+  assert(tab.height >= 44, `tab is ${tab.height}px tall`);
+  assert(await g.eval(() => document.documentElement.scrollWidth <= window.innerWidth), 'page scrolls sideways');
+});
+
+scenario('Empty board', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {
+  await seedBoard(g, [{ name: 'Fra', score: 100, wave: 3, difficulty: 'hard' }]);
+  await g.press('#high-scores-btn');
+  await g.press('.board-tab[data-board="easy"]');
+  const rows = await boardRows(g);
+  const want = g.lang === 'it' ? 'Nessun punteggio' : 'No scores yet';
+  assert(rows.length === 1 && rows[0] === want, `easy board reads ${rows}`);
+});
+
+scenario('Board opens on last difficulty', { layouts: ['phone'] }, async (g) => {
+  await g.press('#high-scores-btn');
+  assert(await activeBoard(g) === 'normal', `fresh load opens ${await activeBoard(g)}`);
+  await g.press('#high-scores-btn');
+  await g.startGame('hard');
+  await loseGame(g);
+  await g.press('#play-again-btn');
+  await g.press('#high-scores-btn');
+  assert(await activeBoard(g) === 'hard', `after a Hard game opens ${await activeBoard(g)}`);
 });
 
 scenario('Game started before the banner delay', { layouts: ['phone'], open: { userAgent: IPHONE_UA } }, async (g) => {

@@ -807,6 +807,8 @@ canvas {
 
 #high-scores-list {
   display: none;
+  width: min(360px, calc(100% - 32px));
+  box-sizing: border-box;
   margin-top: 20px;
   text-align: left;
   font-size: 13px;
@@ -819,6 +821,47 @@ canvas {
   padding: 4px 0;
   border-bottom: 1px solid #1a1a1a;
 }
+
+/* One board per difficulty; tabs stay on top while the list scrolls */
+#high-scores-list .board-tabs {
+  position: sticky;
+  top: 0;
+  display: flex;
+  gap: 6px;
+  padding-bottom: 6px;
+  background: #0a0a0a;
+}
+
+#high-scores-list .board-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #333;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+#high-scores-list .board-tab[data-board="easy"].active { color: #00ff66; border-color: #00ff66; background: rgba(0, 255, 100, 0.1); }
+#high-scores-list .board-tab[data-board="normal"].active { color: #ffaa00; border-color: #ffaa00; background: rgba(255, 170, 0, 0.1); }
+#high-scores-list .board-tab[data-board="hard"].active { color: #ff4444; border-color: #ff4444; background: rgba(255, 68, 68, 0.1); }
+
+/* Rank, name, score and wave in columns, so scores line up */
+#high-scores-list .score-entry {
+  display: grid;
+  grid-template-columns: 2em 1fr auto 5.5em;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 4px;
+}
+#high-scores-list .se-rank { color: #555; text-align: right; }
+#high-scores-list .se-name { color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#high-scores-list .se-score { color: #fff; text-align: right; font-variant-numeric: tabular-nums; }
+#high-scores-list .se-wave { color: #666; font-size: 11px; text-align: right; }
+#high-scores-list .board-empty { color: #666; padding: 16px 0; text-align: center; }
 
 @keyframes pulse {
   0%, 100% { opacity: 0.6; }

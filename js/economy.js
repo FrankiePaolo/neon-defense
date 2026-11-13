@@ -25,6 +25,14 @@ export class Economy {
   }
 }
 
+// Highest first, at most n per difficulty board. Scores saved before
+// difficulty was recorded count as normal
+function topPerDifficulty(scores, n) {
+  const kept = { easy: 0, normal: 0, hard: 0 };
+  return [...scores].sort((a, b) => b.score - a.score)
+    .filter(s => kept[s.difficulty || 'normal']++ < n);
+}
+
 export class ScoreTracker {
   constructor() {
     this.score = 0;
@@ -49,13 +57,11 @@ export class ScoreTracker {
     return lower !== own && this.highScores.some(s => s.name.toLowerCase() === lower);
   }
 
-  save(name, wave) {
-    const entry = { name, score: this.score, wave, date: Date.now() };
-    this.highScores.push(entry);
-    this.highScores.sort((a, b) => b.score - a.score);
-    this.highScores = this.highScores.slice(0, 50);
-    try { localStorage.setItem('neon_td_scores', JSON.stringify(this.highScores.slice(0, 10))); } catch {}
-    return this._submitRemote(name, wave);
+  save(name, wave, difficulty) {
+    const entry = { name, score: this.score, wave, difficulty, date: Date.now() };
+    this.highScores = topPerDifficulty([...this.highScores, entry], 50);
+    try { localStorage.setItem('neon_td_scores', JSON.stringify(topPerDifficulty(this.highScores, 10))); } catch {}
+    return this._submitRemote(name, wave, difficulty);
   }
 
   async fetchGlobalScores() {
@@ -68,8 +74,8 @@ export class ScoreTracker {
     } catch {}
   }
 
-  async _submitRemote(name, wave) {
-    const payload = { name, score: this.score, wave };
+  async _submitRemote(name, wave, difficulty) {
+    const payload = { name, score: this.score, wave, difficulty };
     this.submitFailed = false;
     try {
       const res = await fetch('/api/scores', {

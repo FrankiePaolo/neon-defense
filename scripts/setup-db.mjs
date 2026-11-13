@@ -22,4 +22,12 @@ await sql`
 
 await sql`CREATE INDEX IF NOT EXISTS idx_scores_top ON scores (score DESC)`;
 
+// Scores saved before difficulty was recorded count as normal
+await sql`
+  ALTER TABLE scores ADD COLUMN IF NOT EXISTS difficulty VARCHAR(6) NOT NULL DEFAULT 'normal'
+    CHECK (difficulty IN ('easy', 'normal', 'hard'))
+`;
+
+await sql`CREATE INDEX IF NOT EXISTS idx_scores_difficulty_top ON scores (difficulty, score DESC)`;
+
 console.log("Database ready.");
