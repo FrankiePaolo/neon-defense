@@ -1,5 +1,5 @@
 import { CONFIG, TOWER_DEFS, IS_MOBILE, chooseGridShape } from './config.js';
-import { gridToPixel } from './utils.js';
+import { gridToPixel, mulberry32, randomSeed } from './utils.js';
 import { Grid } from './grid.js';
 import { SpatialHash } from './pathfinding.js';
 import { ParticleSystem } from './particles.js';
@@ -72,12 +72,18 @@ export class Game {
     requestAnimationFrame(this._loop);
   }
 
-  startNewGame(difficulty = 'normal') {
+  // Every run has a seed, so every run can be shared as a challenge. A
+  // challenge brings its seed and board class, so the map and the waves match
+  // the sender's run.
+  /** @param {import('./challenge.js').Challenge | null} [challenge] */
+  startNewGame(difficulty = 'normal', challenge = null) {
     this.difficulty = difficulty;
+    this.challenge = challenge;
+    this.seed = challenge?.seed ?? randomSeed();
     // The board shape follows how the device is held now; the grid and the
     // board size pick it up from CONFIG
-    chooseGridShape();
-    this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal);
+    this.board = chooseGridShape(challenge?.board);
+    this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal, mulberry32(this.seed));
     this.ui.fitBoard();
     this.renderer.markDirty();
     this.towers = [];
@@ -94,7 +100,8 @@ export class Game {
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
     this.coresThisRun = 0;
-    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1, CONFIG.DIFFICULTY_REWARD[this.difficulty] ?? 1);
+    this.runTime = 0;
+    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1, CONFIG.DIFFICULTY_REWARD[this.difficulty] ?? 1, this.seed);
     this.lives = CONFIG.BASE_LIVES;
     this.repairs = 0;
     this.baseFlash = 0;
@@ -266,6 +273,9 @@ export class Game {
     let rawDt = (timestamp - this.lastTimestamp) / 1000;
     this.lastTimestamp = timestamp;
     rawDt = Math.min(rawDt, 0.1);
+
+    // Survival time on the end card: real time spent in the run, pauses excluded
+    if (this.state === 'PLAYING' || this.state === 'BETWEEN_WAVES') this.runTime += rawDt;
 
     if (this.state === 'PLAYING') {
       const dt = rawDt * this.speedMultiplier;

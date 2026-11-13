@@ -17,6 +17,25 @@ export default async (req) => {
   const sql = neon();
 
   if (req.method === "GET") {
+    // With ?score=&difficulty=, where that score ranks among the saved scores
+    // of that difficulty, as a top percentage (the end card's "TOP 8%")
+    const params = new URL(req.url).searchParams;
+    if (params.has("score")) {
+      const score = Number(params.get("score"));
+      const difficulty = params.get("difficulty") ?? "normal";
+      if (!Number.isInteger(score) || score < 0) {
+        return new Response("Invalid score", { status: 400 });
+      }
+      if (!DIFFICULTIES.includes(difficulty)) {
+        return new Response("Invalid difficulty", { status: 400 });
+      }
+      const [{ above, total }] = await sql`
+        SELECT count(*) FILTER (WHERE score > ${score})::int AS above, count(*)::int AS total
+        FROM scores WHERE difficulty = ${difficulty}
+      `;
+      return Response.json({ top: Math.ceil((above + 1) / (total + 1) * 100) });
+    }
+
     // Top 50 of each difficulty, one board per difficulty
     const rows = await sql`
       SELECT name, score, wave, difficulty, created_at FROM (

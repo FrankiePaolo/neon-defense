@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-defense-v30';
+const CACHE_NAME = 'neon-defense-v31';
 
 const STATIC_ASSETS = [
   '/',
@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
   '/js/utils.js',
   '/js/icons.js',
   '/js/sprites.js',
+  '/js/challenge.js',
   '/icons/icon.svg',
   '/icons/icon-maskable.svg',
   '/icons/icon-192.png',
@@ -52,12 +53,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Network-first for the scores API; only cache successful GET responses
+  // Network-first for the scores API; only cache successful GET responses of
+  // the board (a rank query differs per score, so it is not kept)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          if (request.method === 'GET' && res.ok) {
+          if (request.method === 'GET' && res.ok && !url.search) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
@@ -68,9 +70,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for all static assets
+  // Cache-first for all static assets. A page opened from a challenge link
+  // (/?c=...) is the cached page: its query is read by the page itself.
+  const navigate = request.mode === 'navigate';
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request, { ignoreSearch: navigate }).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((res) => {
         const clone = res.clone();

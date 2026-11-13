@@ -4,6 +4,7 @@ import { CONFIG } from './config.js';
 import { t, getLang, setLang, cores } from './i18n.js';
 import { ICONS } from './icons.js';
 import { towerSprite, enemySprite, spriteImg } from './sprites.js';
+import { encodeChallenge } from './challenge.js';
 
 // Stat key -> [i18n label key, icon]
 const STAT_LABELS = {
@@ -40,6 +41,12 @@ function formatStatChanges(stats) {
 
 // One definition of "phone layout", shared with the CSS phone rules in index.html.
 // IS_MOBILE (touch) only decides tap versus hover.
+// Seconds as mm:ss, the survival time on the end card
+function formatTime(seconds) {
+  const s = Math.floor(seconds || 0);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
 const PHONE_LAYOUT = '(max-width: 768px), (max-height: 500px) and (pointer: coarse)';
 
 export function isPhoneLayout() {
@@ -146,8 +153,12 @@ export class UIController {
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
-    document.getElementById('final-score-label').textContent = t('game.score');
-    document.getElementById('final-wave-label').textContent = t('game.wave');
+    document.getElementById('final-rank-label').textContent = t('game.rank');
+    document.getElementById('final-time-label').textContent = t('game.survival');
+    document.getElementById('share-cta-title').textContent = t('share.cta.title');
+    document.getElementById('share-cta-sub').textContent = t('share.cta.sub');
+    if (this._lastWave !== undefined) this.elements.finalWave.textContent = t('game.waveReached').replace('{n}', this._lastWave);
+    if (this._linkChallenge) this.showChallengeBanner(this._linkChallenge);
     /** @type {HTMLInputElement} */ (document.getElementById('player-name')).placeholder = t('game.enterName');
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
@@ -285,6 +296,10 @@ export class UIController {
         this.elements.menuScreen.style.display = 'none';
         this.game.startNewGame(diffBtn.dataset.difficulty);
       }
+      if (target.closest('#accept-challenge-btn')) {
+        this.elements.menuScreen.style.display = 'none';
+        this.game.startNewGame(this._linkChallenge.difficulty, this._linkChallenge);
+      }
       const langBtn = /** @type {HTMLElement} */ (target.closest('.lang-btn'));
       if (langBtn) {
         setLang(langBtn.dataset.lang);
@@ -347,7 +362,7 @@ export class UIController {
     document.getElementById('play-again-btn').addEventListener('click', () => {
       this.elements.gameOverScreen.style.display = 'none';
       this.elements.towerPanel.style.display = '';
-      this.game.startNewGame(this.game.difficulty);
+      this.game.startNewGame(this.game.difficulty, this.game.challenge);
     });
 
     document.getElementById('end-menu-btn').addEventListener('click', () => {
@@ -375,13 +390,13 @@ export class UIController {
       this.game.togglePause();
       this.hidePause();
       this.game.tutorial.replay();
-      this.game.startNewGame(this.game.difficulty);
+      this.game.startNewGame(this.game.difficulty, this.game.challenge);
     });
 
-    // A fresh run on the same difficulty
+    // A fresh run on the same difficulty, or the same challenge again
     document.getElementById('restart-btn').addEventListener('click', () => {
       this.hidePause();
-      this.game.startNewGame(this.game.difficulty);
+      this.game.startNewGame(this.game.difficulty, this.game.challenge);
     });
 
     document.getElementById('main-menu-btn').addEventListener('click', () => {
@@ -819,24 +834,24 @@ export class UIController {
     this.hideUnlockTracker();
     this._lastScore = score;
     this._lastWave = wave;
-    this.elements.finalScore.textContent = score;
-    this.elements.finalWave.textContent = wave;
+    this.elements.finalScore.textContent = score.toLocaleString();
+    this.elements.finalWave.textContent = t('game.waveReached').replace('{n}', wave);
+    document.getElementById('final-time').textContent = formatTime(this.game.runTime);
+    this._fillRank(score);
 
     this._fillCoreProgress();
 
-    // Challenge result
+    // Result against the challenge this run replayed
     const resultEl = document.getElementById('challenge-result');
-    const challenge = window._challengeData;
-    if (challenge && resultEl) {
-      if (score > challenge.s) {
-        resultEl.textContent = t('challenge.beat').replace('{name}', challenge.n);
-        resultEl.className = 'beat';
-      } else {
-        resultEl.textContent = t('challenge.lost').replace('{name}', challenge.n);
-        resultEl.className = 'lost';
-      }
+    const challenge = this.game.challenge;
+    if (challenge) {
+      const beat = score > challenge.score;
+      resultEl.textContent = t(beat ? 'challenge.beat' : 'challenge.lost')
+        .replace('{name}', challenge.name)
+        .replace('{n}', Math.abs(score - challenge.score).toLocaleString());
+      resultEl.className = beat ? 'beat' : 'lost';
       resultEl.style.display = 'block';
-    } else if (resultEl) {
+    } else {
       resultEl.style.display = 'none';
     }
 
@@ -852,6 +867,27 @@ export class UIController {
 
     this.elements.gameOverScreen.style.display = 'flex';
     this.elements.towerPanel.style.display = 'none';
+  }
+
+  // Rank among saved scores of this difficulty; hidden until it arrives and
+  // when the API cannot be reached
+  async _fillRank(score) {
+    const stat = document.getElementById('final-rank-stat');
+    stat.style.display = 'none';
+    this._rank = null;
+    const query = new URLSearchParams({ score: String(score), difficulty: this.game.difficulty || 'normal' });
+    try {
+      const res = await fetch(`/api/scores?${query}`);
+      if (!res.ok) return;
+      const { top } = await res.json();
+      // A newer end screen may have started meanwhile
+      if (this._lastScore !== score || !Number.isInteger(top)) return;
+      this._rank = top;
+      document.getElementById('final-rank').textContent = t('game.rankTop').replace('{n}', top);
+      stat.style.display = '';
+    } catch {
+      // Offline: the card shows the time alone
+    }
   }
 
   // End screen: cores earned this run and the next locked tower, both gone
@@ -973,14 +1009,34 @@ export class UIController {
 
   // ── Share Feature ──
 
-  showChallengeBanner(data) {
+  // Menu banner for a challenge link. The name comes from the URL, so it
+  // only ever goes in as text. A link from before seeds has no accept button.
+  /** @param {import('./challenge.js').Challenge | null} challenge */
+  showChallengeBanner(challenge) {
+    if (!challenge) return;
+    this._linkChallenge = challenge;
     const banner = document.getElementById('challenge-banner');
-    if (!banner || !data) return;
-    banner.innerHTML = `
-      <div class="challenge-from">${t('challenge.from')}</div>
-      <div class="challenge-name">${data.n}</div>
-      <div class="challenge-stats">${data.s.toLocaleString()} pts · Wave ${data.w}</div>
-    `;
+    const line = (className, text) => {
+      const el = document.createElement('div');
+      el.className = className;
+      el.textContent = text;
+      return el;
+    };
+    banner.replaceChildren(
+      line('challenge-from', t('challenge.from')),
+      line('challenge-name', challenge.name),
+      line('challenge-stats', t('challenge.stats')
+        .replace('{score}', challenge.score.toLocaleString())
+        .replace('{wave}', String(challenge.wave))
+        .replace('{difficulty}', t('menu.' + challenge.difficulty))),
+    );
+    if (challenge.seed !== null) {
+      const accept = document.createElement('button');
+      accept.id = 'accept-challenge-btn';
+      accept.className = 'menu-btn';
+      accept.textContent = t('challenge.accept');
+      banner.append(accept);
+    }
     banner.classList.remove('hidden');
   }
 
@@ -1049,7 +1105,7 @@ export class UIController {
       // POINTS label
       ctx.font = '14px "Courier New", monospace';
       ctx.fillStyle = '#666';
-      ctx.fillText('POINTS', W / 2, 168);
+      ctx.fillText(this._rank ? `POINTS  ·  TOP ${this._rank}%` : 'POINTS', W / 2, 168);
 
       // Stats row
       const diffLabels = { hard: 'SHORT PATH', normal: 'MEDIUM PATH', easy: 'LONG PATH' };
@@ -1058,7 +1114,7 @@ export class UIController {
       ctx.fillStyle = '#ffd700';
       ctx.shadowColor = '#ffd700';
       ctx.shadowBlur = 8;
-      ctx.fillText(`WAVE ${wave}  ·  ${diffLabels[diff] || 'MEDIUM PATH'}`, W / 2, 208);
+      ctx.fillText(`WAVE ${wave}  ·  ${formatTime(this.game.runTime)}  ·  ${diffLabels[diff] || 'MEDIUM PATH'}`, W / 2, 208);
       ctx.shadowBlur = 0;
 
       // Divider
@@ -1093,7 +1149,11 @@ export class UIController {
                        localStorage.getItem('neon_td_player_name') || '';
     const diff = this.game.difficulty || 'normal';
 
-    const challengeData = btoa(JSON.stringify({ n: playerName || 'Anon', s: score, w: wave, d: diff }));
+    const challengeData = encodeChallenge({
+      seed: this.game.seed, board: this.game.board,
+      difficulty: /** @type {import('./challenge.js').Challenge['difficulty']} */ (diff),
+      name: playerName || 'Anon', score, wave,
+    });
     const shareUrl = `${window.location.origin}${window.location.pathname}?c=${challengeData}`;
     const shareText = this._getShareText(score, wave);
 

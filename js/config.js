@@ -29,10 +29,15 @@ export const CONFIG = {
 // 12x9 on one held sideways, 20x15 otherwise. A phone is a touch screen or a
 // window at most 768px wide (the phone layout in index.html). Under the Node
 // shim innerHeight is undefined, so touch there would mean landscape.
-export function chooseGridShape() {
-  const phone = IS_MOBILE || window.innerWidth <= 768;
+// A challenge passes its board class ('phone' or 'desktop') to replay the
+// sender's map; the way the device is held still decides wide or tall.
+// Returns the board class.
+/** @param {'phone' | 'desktop' | null} [board] @returns {'phone' | 'desktop'} */
+export function chooseGridShape(board) {
+  const phone = board ? board === 'phone' : IS_MOBILE || window.innerWidth <= 768;
   const portrait = window.innerHeight > window.innerWidth;
-  [CONFIG.GRID_COLS, CONFIG.GRID_ROWS] = !phone ? [20, 15] : portrait ? [9, 12] : [12, 9];
+  [CONFIG.GRID_COLS, CONFIG.GRID_ROWS] = phone ? (portrait ? [9, 12] : [12, 9]) : (portrait && board ? [15, 20] : [20, 15]);
+  return phone ? 'phone' : 'desktop';
 }
 chooseGridShape();
 

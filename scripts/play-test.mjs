@@ -48,6 +48,14 @@ function serve() {
         return;
       }
       res.setHeader('Content-Type', 'application/json');
+      // Like the real API, ?score= asks for the rank as a top percentage
+      if (url.searchParams.has('score')) {
+        const score = Number(url.searchParams.get('score'));
+        const board = leaderboard.filter(e => (e.difficulty ?? 'normal') === (url.searchParams.get('difficulty') ?? 'normal'));
+        const above = board.filter(e => e.score > score).length;
+        res.end(JSON.stringify({ top: Math.ceil((above + 1) / (board.length + 1) * 100) }));
+        return;
+      }
       res.end(JSON.stringify(leaderboard));
       return;
     }
@@ -73,8 +81,8 @@ function assert(cond, msg) { if (!cond) throw new Error(msg); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // One fresh browser context per run, so storage never leaks between scenarios
-// insets: { top, right, bottom, left } safe-area insets to emulate
-async function openGame(browser, base, layout, lang, { tutorial = false, storage = {}, userAgent, scale, insets } = {}) {
+// insets: { top, right, bottom, left } safe-area insets to emulate; query: appended to the URL
+async function openGame(browser, base, layout, lang, { tutorial = false, storage = {}, userAgent, scale, insets, query = '' } = {}) {
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
   const errors = [];
@@ -89,7 +97,7 @@ async function openGame(browser, base, layout, lang, { tutorial = false, storage
   await page.evaluateOnNewDocument((init) => {
     for (const [k, v] of Object.entries(init)) localStorage.setItem(k, v);
   }, init);
-  await page.goto(base, { waitUntil: 'load' });
+  await page.goto(base + query, { waitUntil: 'load' });
   await page.waitForFunction(() => window.game);
   return { page, context, errors, layout, lang, touch: !!LAYOUTS[layout].hasTouch, ...helpers(page, layout) };
 }
@@ -494,6 +502,105 @@ scenario('End screen fits a landscape phone', { layouts: ['landscape'] }, async 
   const r = await g.rect('#end-menu-btn');
   const h = await g.eval(() => innerHeight);
   assert(r.height >= 44 && r.bottom <= h, `main menu button at ${JSON.stringify(r)}, viewport ${h}`);
+});
+
+// ── Challenges ──
+
+// The map and the waves of a seed, as a run started from a challenge on that board
+const seededRun = (g, seed, board) => g.eval((seed, board) => {
+  const game = window.game;
+  game.startNewGame('normal', { seed, board, difficulty: 'normal', name: 'A', score: 1, wave: 1 });
+  const waves = [];
+  for (let w = 10; w >= 1; w--) waves.unshift(game.waveManager.generateWave(w).map(e => e.type).join());
+  return { path: game.grid.path, waves, shape: `${game.grid.cols}x${game.grid.rows}`, board: game.board };
+}, seed, board);
+
+scenario('A seed replays its map and waves', { layouts: ['phone'] }, async (g) => {
+  const a = await seededRun(g, 12345, 'phone');
+  const b = await seededRun(g, 12345, 'phone');
+  assert(a.shape === '9x12' && a.board === 'phone', `shape ${a.shape}, board ${a.board}`);
+  assert(JSON.stringify(a) === JSON.stringify(b), 'same seed gave a different run');
+  assert(JSON.stringify(a.waves) === JSON.stringify(await g.eval(() => {
+    const wm = window.game.waveManager;
+    return Array.from({ length: 10 }, (_, i) => wm.generateWave(i + 1).map(e => e.type).join());
+  })), 'waves depend on the order they are generated in');
+  const other = await seededRun(g, 54321, 'phone');
+  assert(JSON.stringify(other.path) !== JSON.stringify(a.path), 'another seed gave the same map');
+
+  // Held sideways, the same seed is the same map turned
+  await g.page.setViewport(LAYOUTS.landscape);
+  const wide = await seededRun(g, 12345, 'phone');
+  assert(wide.shape === '12x9', `landscape shape ${wide.shape}`);
+  assert(JSON.stringify(wide.path.map(p => ({ x: p.y, y: p.x }))) === JSON.stringify(a.path), 'landscape map is not the portrait map turned');
+  assert(JSON.stringify(wide.waves) === JSON.stringify(a.waves), 'waves differ by orientation');
+
+  // A desktop challenge on a phone held upright is the desktop board turned
+  await g.page.setViewport(LAYOUTS.phone);
+  assert((await seededRun(g, 12345, 'desktop')).shape === '15x20', 'desktop board not turned on a phone');
+});
+
+const link = (data) => '?c=' + Buffer.from(JSON.stringify(data)).toString('base64url');
+const CHALLENGE = { v: 1, seed: 777, b: 'phone', d: 'hard', n: '<b>x</b>', s: 5000, w: 9 };
+
+scenario('Accepting a challenge link', { layouts: ['phone', 'desktop'], open: { query: link(CHALLENGE) } }, async (g) => {
+  assert(await g.visible('#challenge-banner'), 'banner not shown');
+  const banner = await g.eval(() => ({
+    name: document.querySelector('#challenge-banner .challenge-name').textContent,
+    markup: !!document.querySelector('#challenge-banner b'),
+    url: location.search,
+  }));
+  assert(banner.name === '<b>x</b>' && !banner.markup, `name not shown as text: ${JSON.stringify(banner)}`);
+  assert(banner.url === '', `URL keeps the link: ${banner.url}`);
+
+  await g.press('#accept-challenge-btn');
+  await g.page.waitForFunction(() => window.game.state === 'BETWEEN_WAVES');
+  const run = () => g.eval(() => ({ seed: window.game.seed, board: window.game.board, difficulty: window.game.difficulty }));
+  const started = await run();
+  assert(started.seed === 777 && started.board === 'phone' && started.difficulty === 'hard', `run: ${JSON.stringify(started)}`);
+  assert(await shape(g) === (g.layout === 'phone' ? '9x12' : '12x9'), `shape ${await shape(g)}`);
+
+  await loseGame(g);
+  const result = await g.eval(() => document.getElementById('challenge-result').textContent);
+  assert(result === '<b>x</b> still leads by 5,000', `result reads "${result}"`);
+  await g.page.waitForFunction(() => document.getElementById('final-rank-stat').style.display !== 'none', { timeout: 3000 });
+  const card = await g.eval(() => ({
+    rank: document.getElementById('final-rank').textContent,
+    time: document.getElementById('final-time').textContent,
+  }));
+  assert(card.rank === 'TOP 100%' && /^\d\d:\d\d$/.test(card.time), `card: ${JSON.stringify(card)}`);
+  assert(await inViewport(g, await g.rect('#share-score-btn')), 'share button outside the viewport');
+
+  // Sharing back passes the same seed on with this run's score
+  await g.eval(() => {
+    Object.defineProperty(navigator, 'canShare', { value: undefined });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (text) => { window.copied = text; } } });
+    document.getElementById('player-name').value = 'Bea';
+  });
+  await g.press('#share-score-btn');
+  await g.page.waitForFunction(() => window.copied);
+  const shared = await g.eval(async () => {
+    const { decodeChallenge } = await import('/js/challenge.js');
+    return decodeChallenge(new URL(window.copied.split('\n').pop()).searchParams.get('c'));
+  });
+  assert(shared && shared.seed === 777 && shared.board === 'phone' && shared.difficulty === 'hard' && shared.name === 'Bea' && shared.score === 0,
+    `shared: ${JSON.stringify(shared)}`);
+
+  await g.press('#play-again-btn');
+  const again = await run();
+  assert(again.seed === 777, `play again left the challenge: ${JSON.stringify(again)}`);
+});
+
+scenario('A link from before seeds shows only the banner', { layouts: ['phone'], open: { query: '?c=' + Buffer.from(JSON.stringify({ n: 'Old', s: 100, w: 3, d: 'normal' })).toString('base64') } }, async (g) => {
+  assert(await g.visible('#challenge-banner'), 'banner not shown');
+  assert(!(await g.visible('#accept-challenge-btn')), 'accept shown without a seed');
+  await g.startGame();
+  await loseGame(g);
+  assert(!(await g.visible('#challenge-result')), 'result shown for a run on another map');
+});
+
+scenario('A broken challenge link is ignored', { layouts: ['phone'], open: { query: '?c=%25%25not-a-link' } }, async (g) => {
+  assert(!(await g.visible('#challenge-banner')), 'banner shown');
+  await g.startGame();
 });
 
 async function seedLeaderboard(g, entries) {

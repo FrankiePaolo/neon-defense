@@ -861,10 +861,11 @@ canvas {
 #pause-overlay #restart-btn { --accent: 255, 136, 0; }
 #pause-overlay #main-menu-btn { --accent: 255, 85, 85; }
 
-/* Game Over and victory: the result as two big numbers, the cores, saving,
-   then one column of actions styled like the pause screen. Play again is the
-   only filled button. The spacers centre the column and give way to
-   scrolling on short screens, as on the menu. */
+/* Game Over and victory: the run card (score, wave, rank, time and the
+   challenge pitch) with its share button, the cores, saving, then one column
+   of actions styled like the pause screen. Play again is the only filled
+   button. The spacers centre the column and give way to scrolling on short
+   screens, as on the menu. */
 #game-over-screen {
   position: absolute;
   inset: 0;
@@ -892,12 +893,32 @@ canvas {
   text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
 }
 
+#run-card {
+  width: min(320px, 100%);
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  border-radius: 12px;
+  background: #0b1120;
+  text-align: center;
+}
+
+#final-wave { color: var(--text-2); font-size: 15px; margin-top: 4px; }
+
 #final-stats {
   display: flex;
   justify-content: center;
-  gap: 48px;
-  margin: 20px 0 16px;
+  gap: 40px;
+  margin: 14px 0;
 }
+
+#share-cta {
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0, 255, 255, 0.08);
+}
+#share-cta-title { color: #fff; font-size: 17px; font-weight: 600; }
+#share-cta-sub { color: #9db4ff; font-size: 13px; margin-top: 4px; }
 
 .final-stat {
   display: flex;
@@ -906,21 +927,27 @@ canvas {
   line-height: 1.1;
 }
 
-#final-score,
-#final-wave {
+#final-score {
+  color: #fff;
   font-size: 40px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
-#final-score { color: #fff; }
-#final-wave { color: #00ffff; }
+#final-rank,
+#final-time {
+  color: #00ffff;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .final-label { font-size: 13px; color: var(--text-2); margin-top: 2px; }
 
 #game-over-screen p { color: var(--text-2); font-size: 14px; text-align: center; }
-#game-over-screen #cores-earned { color: #c77dff; font-size: 16px; font-weight: 600; }
+#game-over-screen #cores-earned { color: #c77dff; font-size: 16px; font-weight: 600; margin-top: 14px; }
 #game-over-screen #next-unlock-hint { margin-top: 6px; }
-#game-over-screen #challenge-result { font-size: 16px; font-weight: bold; margin-top: 8px; }
+#game-over-screen #challenge-result { font-size: 16px; font-weight: bold; margin-top: 12px; }
 
 /* Name and save on one row */
 #save-row {
@@ -1597,6 +1624,17 @@ canvas {
   color: #ffd700;
   margin-top: 4px;
 }
+#challenge-banner .menu-btn {
+  --accent: 255, 136, 0;
+  width: 100%;
+  min-height: 48px;
+  margin: 10px 0 0;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  color: rgb(var(--accent));
+  border-color: rgba(var(--accent), 0.7);
+}
 @keyframes challenge-pulse {
   0%, 100% { border-color: rgba(255, 136, 0, 0.3); box-shadow: 0 0 8px rgba(255, 136, 0, 0.1); }
   50% { border-color: rgba(255, 136, 0, 0.7); box-shadow: 0 0 16px rgba(255, 136, 0, 0.25); }
@@ -1736,20 +1774,28 @@ canvas {
 
     <div id="game-over-screen">
       <h2>GAME OVER</h2>
-      <div id="final-stats">
-        <div class="final-stat"><span id="final-score">0</span><span class="final-label" id="final-score-label">Score</span></div>
-        <div class="final-stat"><span id="final-wave">0</span><span class="final-label" id="final-wave-label">Wave</span></div>
+      <p id="challenge-result" style="display:none;"></p>
+      <div id="run-card">
+        <div id="final-score">0</div>
+        <div id="final-wave"></div>
+        <div id="final-stats">
+          <div class="final-stat" id="final-rank-stat" style="display:none;"><span id="final-rank"></span><span class="final-label" id="final-rank-label">Rank</span></div>
+          <div class="final-stat"><span id="final-time">00:00</span><span class="final-label" id="final-time-label">Survival</span></div>
+        </div>
+        <div id="share-cta">
+          <div id="share-cta-title">Can you beat my score?</div>
+          <div id="share-cta-sub">Same challenge. Same starting conditions.</div>
+        </div>
       </div>
+      <button class="menu-btn" id="share-score-btn">CHALLENGE A FRIEND</button>
       <p id="cores-earned"></p>
       <p id="next-unlock-hint" style="display:none;"></p>
-      <p id="challenge-result" style="display:none;"></p>
       <div id="save-row">
         <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off">
         <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
       </div>
       <p id="name-taken-warn" style="visibility:hidden;">&nbsp;</p>
       <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>
-      <button class="menu-btn" id="share-score-btn">CHALLENGE A FRIEND</button>
       <button class="menu-btn" id="end-menu-btn">MAIN MENU</button>
     </div>
   </div>

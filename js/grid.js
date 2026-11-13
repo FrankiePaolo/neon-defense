@@ -16,6 +16,7 @@ export class Grid {
     this.path = [];
     this.nearRoad = new Set();
     this.towers = new Map();
+    this.rng = Math.random;
   }
 
   // Size defaults to CONFIG, so a new game picks up the board shape it chose
@@ -33,8 +34,10 @@ export class Grid {
   }
 
   // A board taller than wide is the wide board generated with cols and rows
-  // swapped, then turned: the road runs top to bottom with the same lengths
-  generate(minLength = 25) {
+  // swapped, then turned: the road runs top to bottom with the same lengths.
+  // A seeded rng gives the same road on every board of the same class.
+  generate(minLength = 25, rng = Math.random) {
+    this.rng = rng;
     this.init();
     const tall = this.rows > this.cols;
     if (tall) this.init(this.rows, this.cols);
@@ -47,8 +50,8 @@ export class Grid {
   _generateWide(minLength) {
     for (let attempt = 0; attempt < 400; attempt++) {
       this.init(this.cols, this.rows);
-      const entryY = randInt(2, this.rows - 3);
-      const exitY = randInt(2, this.rows - 3);
+      const entryY = randInt(2, this.rows - 3, this.rng);
+      const exitY = randInt(2, this.rows - 3, this.rng);
       this.entry = { x: 0, y: entryY };
       this.exit = { x: this.cols - 1, y: exitY };
 
@@ -149,7 +152,7 @@ export class Grid {
 
       stuckCount = 0;
       const totalWeight = candidates.reduce((s, c) => s + c.weight, 0);
-      let roll = Math.random() * totalWeight;
+      let roll = this.rng() * totalWeight;
       let chosen = candidates[0];
       for (const c of candidates) {
         roll -= c.weight;

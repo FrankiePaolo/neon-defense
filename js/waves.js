@@ -1,5 +1,5 @@
 import { CONFIG, ENEMY_DEFS } from './config.js';
-import { choose, randInt } from './utils.js';
+import { choose, randInt, mulberry32 } from './utils.js';
 
 export const ENEMY_UNLOCK = [
   { wave: 1,  type: 'basic' },
@@ -53,9 +53,12 @@ export function waveScaling(waveNum) {
 }
 
 export class WaveManager {
-  constructor(hpMult = 1, rewardMult = 1) {
+  // With a seed each wave draws from its own stream, so wave N is the same
+  // whenever it is generated and whatever happened before it
+  constructor(hpMult = 1, rewardMult = 1, seed = null) {
     this.hpMult = hpMult;
     this.rewardMult = rewardMult;
+    this.seed = seed;
     this.currentWave = 0;
     this.spawnQueue = [];
     this.spawnTimer = 0;
@@ -75,11 +78,12 @@ export class WaveManager {
 
     const available = ENEMY_UNLOCK.filter(u => waveNum >= u.wave).map(u => u.type);
     const queue = [];
+    const rng = this.seed === null ? Math.random : mulberry32(this.seed ^ Math.imul(waveNum, 0x9E3779B1));
 
     let remaining = scale.count;
     while (remaining > 0) {
-      const type = choose(available);
-      const count = Math.min(remaining, randInt(2, 5));
+      const type = choose(available, rng);
+      const count = Math.min(remaining, randInt(2, 5, rng));
       for (let i = 0; i < count; i++) {
         queue.push({
           type,

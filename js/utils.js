@@ -2,9 +2,24 @@ import { CONFIG } from './config.js';
 
 export function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 export function lerp(a, b, t) { return a + (b - a) * t; }
-export function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+export function randInt(min, max, rng = Math.random) { return Math.floor(rng() * (max - min + 1)) + min; }
 export function randFloat(min, max) { return Math.random() * (max - min) + min; }
-export function choose(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+export function choose(arr, rng = Math.random) { return arr[Math.floor(rng() * arr.length)]; }
+
+// Seeded generator (mulberry32): the same seed gives the same numbers on
+// every device, so a challenge seed replays its map and waves
+export function mulberry32(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0]; }
 
 export function distance(x1, y1, x2, y2) {
   const dx = x2 - x1, dy = y2 - y1;
