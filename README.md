@@ -142,4 +142,6 @@ npm run typecheck
 
 ## License
 
-MIT
+[PolyForm Noncommercial 1.0.0](LICENSE). You may read, run and modify the code for any noncommercial purpose. Commercial use is not allowed without written permission from the author.
+
+The "Neon Defense" name and logo are not covered by the license.
