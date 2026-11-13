@@ -8,7 +8,7 @@ import { Projectile } from './projectile.js';
 import { Tower } from './tower.js';
 import { WaveManager, waveBonusGold, waveCores } from './waves.js';
 import { resolveHit, updateSynergies } from './combat.js';
-import { Economy, ScoreTracker, ProgressTracker } from './economy.js';
+import { Economy, ScoreTracker, ProgressTracker, repairCost } from './economy.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
 import { UIController } from './ui.js';
@@ -91,8 +91,9 @@ export class Game {
     this.economy = new Economy();
     this.scoreTracker = new ScoreTracker();
     this.coresThisRun = 0;
-    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1);
+    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1, CONFIG.DIFFICULTY_REWARD[this.difficulty] ?? 1);
     this.lives = CONFIG.BASE_LIVES;
+    this.repairs = 0;
     this.baseFlash = 0;
     this.state = 'BETWEEN_WAVES';
     this.speedMultiplier = 1;
@@ -166,8 +167,16 @@ export class Game {
     return true;
   }
 
+  // Selling the last tower must leave the gold to place another, or no
+  // wave could start again
+  canSell(tower) {
+    return this.towers.length > 1
+      || this.economy.gold + tower.getSellValue() >= TOWER_DEFS.blaster.cost;
+  }
+
   sellTower(tower) {
-    if (this.state !== 'BETWEEN_WAVES') return;
+    if (this.state !== 'BETWEEN_WAVES') return false;
+    if (!this.canSell(tower)) return false;
     const value = tower.getSellValue();
     this.economy.earn(value);
     this.grid.removeTower(tower.gx, tower.gy);
@@ -175,11 +184,11 @@ export class Game {
     this.renderer.markDirty();
     this.audio.playSfx('sell');
     this.ui.updateHUD();
+    return true;
   }
 
   sellSelectedTower() {
-    if (this.input.selectedTower) {
-      this.sellTower(this.input.selectedTower);
+    if (this.input.selectedTower && this.sellTower(this.input.selectedTower)) {
       this.input.selectedTower = null;
       this.ui.hideUpgradePanel();
     }
@@ -199,6 +208,22 @@ export class Game {
     if (this.input.selectedTower === tower) {
       this.ui.showUpgradePanel(tower, level.stats);
     }
+  }
+
+  // Gold for the next life, or null when lives are full
+  getRepairCost() {
+    return this.lives < CONFIG.BASE_LIVES ? repairCost(this.repairs) : null;
+  }
+
+  repairLife() {
+    if (this.state !== 'BETWEEN_WAVES') return false;
+    const cost = this.getRepairCost();
+    if (cost === null || !this.economy.spend(cost)) return false;
+    this.lives++;
+    this.repairs++;
+    this.audio.playSfx('upgrade');
+    this.ui.updateHUD();
+    return true;
   }
 
   setSpeed(speed) {
@@ -223,7 +248,8 @@ export class Game {
       this.ui.showPause();
     } else if (this.state === 'PAUSED') {
       this.state = this._prevState || 'PLAYING';
-      this.audio.playTrack('gameplay');
+      const bossWave = this.state === 'PLAYING' && this.waveManager.currentWave % CONFIG.BOSS_INTERVAL === 0;
+      this.audio.playTrack(bossWave ? 'boss' : 'gameplay');
       this.ui.hidePause();
     }
   }
@@ -350,7 +376,7 @@ export class Game {
           .slice(enemy.pathIndex)
           .map(p => gridToPixel(p.x, p.y));
         if (remainingPath.length < 2) continue;
-        const child = new Enemy(enemy.splitType, remainingPath, {});
+        const child = new Enemy(enemy.splitType, remainingPath, enemy.waveMult);
         child.x = enemy.x + (Math.random() - 0.5) * 10;
         child.y = enemy.y + (Math.random() - 0.5) * 10;
         this.enemies.push(child);
@@ -392,16 +418,16 @@ export class Game {
   }
 
   _onEnemyReachedEnd(enemy) {
-    this.lives--;
-    this.livesLostThisWave++;
+    this.lives = Math.max(0, this.lives - enemy.lifeCost);
+    this.livesLostThisWave += enemy.lifeCost;
     this.audio.playSfx('damage');
 
-    // Show it on screen too: base flashes, "-1" heart rises, lives counter flashes
+    // Show it on screen too: base flashes, "-N" heart rises, lives counter flashes
     const base = gridToPixel(this.grid.exit.x, this.grid.exit.y);
     this.baseFlash = 1;
     this.floatingTexts.push({
       x: base.x, y: base.y - CONFIG.TILE_SIZE * 0.6,
-      text: '-1 \u2665', color: '#ff4444',
+      text: `-${enemy.lifeCost} \u2665`, color: '#ff4444',
       life: 1.2, maxLife: 1.2, large: true,
     });
     this.ui.flashLives();
@@ -424,12 +450,15 @@ export class Game {
     const earned = waveCores(this.waveManager.currentWave);
     this.progressTracker.earn(earned);
     this.coresThisRun += earned;
-    this.floatingTexts.push({
-      x: CONFIG.CANVAS_WIDTH / 2, y: 60,
-      text: `+${cores(earned)}`, color: '#c77dff',
-      life: 1.5, maxLife: 1.5, large: true,
-    });
-    this.ui.pulseCores();
+    // With every tower unlocked cores buy nothing, so they stay out of sight
+    if (this.progressTracker.getNextUnlock()) {
+      this.floatingTexts.push({
+        x: CONFIG.CANVAS_WIDTH / 2, y: 60,
+        text: `+${cores(earned)}`, color: '#c77dff',
+        life: 1.5, maxLife: 1.5, large: true,
+      });
+      this.ui.pulseCores();
+    }
 
     if (this.waveManager.currentWave >= CONFIG.MAX_WAVES) {
       this._onVictory();

@@ -6,8 +6,10 @@ export class Enemy {
     const def = ENEMY_DEFS[type];
     this.type = type;
     this.def = def;
+    this.waveMult = waveMult;
     this.active = true;
     this.reachedEnd = false;
+    this.lifeCost = def.lives || 1;
 
     this.maxHp = def.hp * (waveMult.hp || 1);
     this.hp = this.maxHp;
@@ -24,18 +26,27 @@ export class Enemy {
     this.splitCount = def.splitCount || 0;
     this.splitType = def.splitType || null;
     this.healRange = def.healRange || 0;
-    this.healAmount = def.healAmount || 0;
+    // Healing is a share of the healed enemy's max HP; regeneration and
+    // shields grow with the wave HP. All keep their weight on late waves.
+    const hpMult = waveMult.hp || 1;
+    this.healShare = def.healShare || 0;
     this.healInterval = def.healInterval || 0;
     this.healTimer = 0;
-    this.bossRegen = def.bossRegen || 0;
-    this.shield = def.shield ? def.shield * (waveMult.hp || 1) : 0;
+    this.bossRegen = (def.bossRegen || 0) * hpMult;
+    this.shield = def.shield ? def.shield * hpMult : 0;
     this.maxShield = this.shield;
-    this.shieldRegen = def.shieldRegen || 0;
+    this.shieldRegen = (def.shieldRegen || 0) * hpMult;
     this.shieldRegenDelay = def.shieldRegenDelay || 0;
     this.shieldRegenTimer = 0;
 
     this.path = this.flying ? this._simplifyPath(path, 6) : path;
     this.pathIndex = 0;
+    // rest[i]: distance from path point i to the exit along this path
+    this.rest = new Array(this.path.length).fill(0);
+    for (let i = this.path.length - 2; i >= 0; i--) {
+      const a = this.path[i], b = this.path[i + 1];
+      this.rest[i] = this.rest[i + 1] + Math.hypot(b.x - a.x, b.y - a.y);
+    }
     if (path.length > 0) {
       this.x = path[0].x;
       this.y = path[0].y;
@@ -65,6 +76,15 @@ export class Enemy {
         this.shield = Math.min(this.maxShield, this.shield + this.shieldRegen * dt);
       }
     }
+  }
+
+  // How far this enemy still has to go, comparable across enemies whatever
+  // path they walk (a Wraith's thinned path, a Hydra child's tail of the road)
+  distanceToExit() {
+    const next = Math.min(this.pathIndex + 1, this.path.length - 1);
+    const p = this.path[next];
+    if (!p) return 0;
+    return Math.hypot(p.x - this.x, p.y - this.y) + this.rest[next];
   }
 
   takeDamage(amount, damageType) {
@@ -99,7 +119,7 @@ export class Enemy {
       if (e === this || !e.active) continue;
       const d = distance(this.x, this.y, e.x, e.y);
       if (d <= this.healRange * CONFIG.TILE_SIZE) {
-        e.hp = Math.min(e.maxHp, e.hp + this.healAmount);
+        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * this.healShare);
       }
     }
   }

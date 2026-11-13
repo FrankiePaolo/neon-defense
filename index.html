@@ -472,6 +472,7 @@ canvas {
 #upgrade-panel .up-actions { margin-top: 8px; display: flex; gap: 12px; }
 #upgrade-panel .move-btn { font-size: 14px; color: #33bbff; cursor: pointer; }
 #upgrade-panel .sell-btn { font-size: 14px; color: #ff6666; cursor: pointer; }
+#upgrade-panel .sell-btn.sell-blocked { color: var(--text-3); cursor: default; }
 
 /* Tower Stats Tooltip */
 #tower-stats-tooltip {
@@ -1138,6 +1139,29 @@ canvas {
 #game-container.tutorial-on #phase-label,
 #game-container.tutorial-on #wave-preview { display: none; }
 
+/* Repair: buys back one life between waves, while lives are below the start.
+   Gone during a wave and while a tower is carried (CANCEL takes its place). */
+#repair-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 85, 85, 0.1);
+  color: #ff5555;
+  border: 1px solid rgba(255, 85, 85, 0.7);
+  padding: 8px 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#repair-btn .repair-cost { display: inline-flex; align-items: center; gap: 2px; color: #ffd700; }
+#repair-btn:hover:not(:disabled) { background: rgba(255, 85, 85, 0.2); }
+#repair-btn:disabled { color: var(--text-3); border-color: #444; background: transparent; cursor: default; }
+#repair-btn:disabled .repair-cost { color: var(--text-3); }
+#game-container[data-phase="wave"] #repair-btn,
+#game-container[data-carry] #repair-btn { display: none; }
+
 /* Cancel placement button */
 #cancel-place-btn {
   position: absolute;
@@ -1379,7 +1403,8 @@ canvas {
   #wave-progress,
   #wave-preview { grid-column: 1; grid-row: 2; justify-self: start; text-align: left; }
   #wave-preview { padding: 2px 8px; }
-  #wave-controls #cancel-place-btn { grid-column: 2; grid-row: 1 / 3; }
+  #wave-controls #cancel-place-btn,
+  #repair-btn { grid-column: 2; grid-row: 1 / 3; }
   #start-wave-btn { grid-column: 3; grid-row: 1 / 3; }
 
   /* Fixed height, so the mid-wave note never changes the tray's height */
@@ -1541,7 +1566,8 @@ canvas {
   .tower-btn { min-height: 48px; }
   .menu-btn { min-height: 48px; padding: 12px 32px; }
   #start-wave-btn { min-height: 48px; }
-  #cancel-place-btn { min-height: 44px; }
+  #cancel-place-btn,
+  #repair-btn { min-height: 44px; }
   #pause-overlay p { display: none; }
 }
 
@@ -1662,6 +1688,7 @@ canvas {
       <div id="phase-label"></div>
       <div id="wave-progress"></div>
       <div id="wave-preview">Next: <span id="wave-preview-content"></span></div>
+      <button id="repair-btn" class="hidden"></button>
       <button id="start-wave-btn">START WAVE</button>
     </div>
     <button id="cancel-place-btn" class="hidden">CANCEL</button>

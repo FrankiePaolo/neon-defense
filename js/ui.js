@@ -305,6 +305,10 @@ export class UIController {
       this.game.startNextWave();
     });
 
+    document.getElementById('repair-btn').addEventListener('click', () => {
+      this.game.repairLife();
+    });
+
     const saveBtn = document.getElementById('save-score-btn');
     const nameInput = document.getElementById('player-name');
     const nameWarn = document.getElementById('name-taken-warn');
@@ -398,10 +402,22 @@ export class UIController {
     if (this.game.state === 'BETWEEN_WAVES') {
       this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
       this._updatePhaseLabel();
+      this.updateRepairButton();
     }
     this.updateWaveProgress();
     this.updateUnlockTracker();
     this._updateTowerAffordability();
+  }
+
+  // +1 life and its price, shown while lives are below the start
+  updateRepairButton() {
+    const btn = document.getElementById('repair-btn');
+    const cost = this.game.getRepairCost();
+    btn.classList.toggle('hidden', cost === null);
+    if (cost === null) return;
+    btn.innerHTML = `${ICONS.heart}+1 <span class="repair-cost">${ICONS.coin}${cost}</span>`;
+    btn.disabled = !this.game.economy.canAfford(cost);
+    btn.setAttribute('aria-label', t('game.repair').replace('{n}', cost));
   }
 
   updateWaveProgress() {
@@ -488,8 +504,13 @@ export class UIController {
     if (canModify) {
       html += `<div class="up-actions">`;
       html += `<div class="move-btn">${t('towers.move')}</div>`;
-      html += `<div class="sell-btn">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
-      html += `</div>`;
+      if (game.canSell(tower)) {
+        html += `<div class="sell-btn">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
+        html += `</div>`;
+      } else {
+        html += `<div class="sell-btn sell-blocked">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
+        html += `</div><div class="up-need">${t('towers.lastTower')}</div>`;
+      }
     }
 
     panel.innerHTML = html;
@@ -530,7 +551,7 @@ export class UIController {
 
     // Sell asks once: the first tap arms it, the second sells. Any re-render
     // or closing the panel builds a new, unarmed button.
-    const sellBtn = panel.querySelector('.sell-btn');
+    const sellBtn = panel.querySelector('.sell-btn:not(.sell-blocked)');
     if (sellBtn) {
       sellBtn.addEventListener('click', () => {
         if (!sellBtn.dataset.armed) {
@@ -718,6 +739,7 @@ export class UIController {
     this.elements.towerPanel.classList.remove('panel-hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
     this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
+    this.updateRepairButton();
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
       const def = ENEMY_DEFS[type];
@@ -828,12 +850,15 @@ export class UIController {
     this.elements.gameOverScreen.style.display = 'flex';
   }
 
-  // End screen: cores earned this run and the next locked tower
+  // End screen: cores earned this run and the next locked tower, both gone
+  // once every tower is unlocked
   _fillCoreProgress() {
-    document.getElementById('cores-earned').innerHTML =
+    const coresEl = document.getElementById('cores-earned');
+    coresEl.innerHTML =
       `${ICONS.core}${t('unlock.earned').replace('{n}', cores(this.game.coresThisRun || 0))}`;
     const nextUnlockEl = document.getElementById('next-unlock-hint');
     const next = this.game.progressTracker.getNextUnlock();
+    coresEl.style.display = next ? '' : 'none';
     if (next) {
       const towerName = t('tower.' + next.type);
       nextUnlockEl.innerHTML = `${spriteImg(towerSprite(next.type), 'unlock-pic')} ${next.toGo === 0 ? t('unlock.canUnlock').replace('{name}', towerName) : `${t('unlock.next')}: <span style="color:${TOWER_DEFS[next.type].color}">${towerName}</span> ${t('unlock.in')} <span class="core-amount">${cores(next.toGo)}</span>`}`;
@@ -859,14 +884,16 @@ export class UIController {
     btn.classList.toggle('active', !muted);
   }
 
-  // The wallet row, laid out like the counters above it: the core balance
+  // The wallet row, laid out like the counters above it: the core balance,
+  // kept out of sight once every tower is unlocked and cores buy nothing
   updateUnlockTracker() {
     const el = document.getElementById('unlock-tracker');
     if (!el) return;
     const progress = this.game.progressTracker;
-    const key = progress.cores;
+    const key = progress.getNextUnlock() ? progress.cores : 'done';
     if (key === this._trackerKey) return;
     this._trackerKey = key;
+    if (key === 'done') { el.classList.add('hidden'); return; }
 
     el.innerHTML = `<span class="hud-item unlock-cores">` +
       `<span class="hud-main">${ICONS.core}<span id="cores-value">${progress.cores}</span></span>` +

@@ -25,6 +25,11 @@ export class Economy {
   }
 }
 
+// Gold for the next life bought back, after `repairs` repairs this run
+export function repairCost(repairs) {
+  return CONFIG.REPAIR_COST * 2 ** repairs;
+}
+
 // Highest first, at most n per difficulty board. Scores saved before
 // difficulty was recorded count as normal
 function topPerDifficulty(scores, n) {

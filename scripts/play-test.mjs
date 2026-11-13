@@ -1475,10 +1475,16 @@ scenario('Wallet balance follows an unlock', { layouts: ['phone', 'desktop'], op
   assert(after.balance === '0' && after.price === undefined, `after: ${JSON.stringify(after)}`);
 });
 
-scenario('Wallet with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
+// Cores buy nothing once every tower is unlocked, so the wallet is out of sight
+scenario('Wallet with everything unlocked', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
   await g.startGame();
-  const tr = await tracker(g);
-  assert(tr.balance === '40' && tr.price === undefined, `wallet row: ${JSON.stringify(tr)}`);
+  const hidden = await g.eval(() => getComputedStyle(document.getElementById('unlock-tracker')).visibility === 'hidden');
+  assert(hidden, 'wallet shown');
+  await clearWave(g);
+  const coreText = await g.eval(() => window.game.floatingTexts.some(f => f.color === '#c77dff'));
+  assert(!coreText, '+cores text shown');
+  const controls = await g.rect('#speed-controls');
+  assert(controls.width > 0, 'controls gone with the wallet');
 });
 
 scenario('Speed button colours the multiplier', { layouts: ['phone', 'desktop'] }, async (g) => {
@@ -1523,9 +1529,83 @@ scenario('End screen with everything unlocked', { layouts: ['desktop'], langs: [
   await clearWave(g);
   await g.eval(() => { window.game.startNextWave(); window.game.lives = 0; });
   await g.page.waitForFunction(() => window.game.state === 'GAME_OVER', { timeout: 3000 });
-  const earned = await g.eval(() => document.getElementById('cores-earned').textContent);
-  assert(earned.startsWith('+1 core'), `earned: ${earned}`);
+  assert(!(await g.visible('#cores-earned')), 'cores line shown');
   assert(!(await g.visible('#next-unlock-hint')), 'next-unlock line shown');
+});
+
+// REPAIR buys back one life between waves at 100 gold, doubling each time
+scenario('Repair buys back lives', { layouts: ['phone', 'landscape', 'desktop'] }, async (g) => {
+  await g.startGame();
+  assert(!(await g.visible('#repair-btn')), 'repair shown at full lives');
+  await clearWave(g);
+  await g.eval(() => { window.game.lives = 18; window.game.economy.gold = 1000; window.game.ui.updateHUD(); });
+  assert(await g.visible('#repair-btn'), 'repair hidden with lives lost');
+  const start = await g.rect('#start-wave-btn');
+  const repair = await g.rect('#repair-btn');
+  assert(!intersects(start, repair), 'repair overlaps START WAVE');
+  await g.press('#repair-btn');
+  let s = await g.eval(() => ({ lives: window.game.lives, gold: window.game.economy.gold, next: window.game.getRepairCost() }));
+  assert(s.lives === 19 && s.gold === 900 && s.next === 200, `after one repair: ${JSON.stringify(s)}`);
+  await g.press('#repair-btn');
+  s = await g.eval(() => ({ lives: window.game.lives, gold: window.game.economy.gold }));
+  assert(s.lives === 20 && s.gold === 700, `after two repairs: ${JSON.stringify(s)}`);
+  assert(!(await g.visible('#repair-btn')), 'repair shown at full lives');
+  await g.eval(() => { window.game.lives = 10; window.game.economy.gold = 50; window.game.ui.updateHUD(); });
+  assert(await g.eval(() => document.getElementById('repair-btn').disabled), 'repair enabled without the gold');
+  await g.eval(() => window.game.startNextWave());
+  assert(!(await g.visible('#repair-btn')), 'repair shown during a wave');
+});
+
+// Selling the only tower would leave no way to place one and start a wave
+scenario('Last tower cannot be sold without gold for another', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  const blocked = await g.eval(() => {
+    const game = window.game;
+    game.economy.gold = 0;
+    game.input.selectedTower = game.towers[0];
+    game.ui.showUpgradePanel(game.towers[0]);
+    return !!document.querySelector('#upgrade-panel .sell-btn.sell-blocked');
+  });
+  assert(blocked, 'sell offered');
+  await g.press('#upgrade-panel .sell-btn');
+  await g.page.keyboard.press('s');
+  assert(await g.eval(() => window.game.towers.length === 1), 'last tower sold');
+  const allowed = await g.eval(() => {
+    const game = window.game;
+    game.economy.gold = 40;
+    game.ui.showUpgradePanel(game.towers[0]);
+    return !document.querySelector('#upgrade-panel .sell-btn.sell-blocked');
+  });
+  assert(allowed, 'sell blocked with gold for another tower');
+});
+
+scenario('A leaking boss costs 5 lives', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  const lives = await g.eval(() => {
+    const game = window.game;
+    game.startNextWave();
+    game.waveManager.spawnQueue = [];
+    game._spawnEnemy({ type: 'boss', waveMult: {} });
+    const boss = game.enemies.at(-1);
+    boss.pathIndex = boss.path.length - 1;
+    return game.lives;
+  });
+  await g.page.waitForFunction(() => window.game.enemies.length === 0, { timeout: 3000 });
+  const after = await g.eval(() => window.game.lives);
+  assert(after === lives - 5, `lives ${lives} -> ${after}`);
+});
+
+scenario('Boss music after a pause', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await clearWave(g);
+  await g.eval(() => { window.game.waveManager.currentWave = 4; window.game.waveManager.nextWaveQueue = null; window.game.startNextWave(); });
+  assert(await g.eval(() => window.game.audio.currentTrack === 'boss'), 'boss wave without boss music');
+  await g.press('#pause-btn');
+  await g.press('#resume-btn');
+  const music = await g.eval(() => window.game.audio.currentTrack);
+  assert(music === 'boss', `music after resume: ${music}`);
 });
 
 scenario('Visual unlock states refresh after spending', { layouts: ['phone', 'desktop'], langs: ['en', 'it'], open: { storage: { neon_td_cores: '5' } } }, async (g) => {

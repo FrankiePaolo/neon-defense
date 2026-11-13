@@ -55,17 +55,19 @@ export function chainLightning(firstTarget, proj, ctx) {
   }
 }
 
+// Auras do not stack: a tower takes the strongest Support bonus in range
 export function updateSynergies(towers) {
   for (const tower of towers) {
-    tower.damageMultiplier = 1.0;
-    tower.fireRateMultiplier = 1.0;
+    let damageAmp = 0, fireRateAmp = 0;
     for (const other of towers) {
       if (other === tower || other.type !== 'support') continue;
       const d = distance(tower.x, tower.y, other.x, other.y);
       if (d <= other.currentStats.buffRange * CONFIG.TILE_SIZE) {
-        tower.damageMultiplier += other.currentStats.damageAmp || 0;
-        tower.fireRateMultiplier += other.currentStats.fireRateAmp || 0;
+        damageAmp = Math.max(damageAmp, other.currentStats.damageAmp || 0);
+        fireRateAmp = Math.max(fireRateAmp, other.currentStats.fireRateAmp || 0);
       }
     }
+    tower.damageMultiplier = 1 + damageAmp;
+    tower.fireRateMultiplier = 1 + fireRateAmp;
   }
 }

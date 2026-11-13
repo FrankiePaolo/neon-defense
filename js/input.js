@@ -170,11 +170,7 @@ export class InputHandler {
       case '2': game.setSpeed(2); break;
       case '3': game.setSpeed(3); break;
       case 's': case 'S':
-        if (this.selectedTower) {
-          game.sellTower(this.selectedTower);
-          this.selectedTower = null;
-          game.ui.hideUpgradePanel();
-        }
+        game.sellSelectedTower();
         break;
     }
   }

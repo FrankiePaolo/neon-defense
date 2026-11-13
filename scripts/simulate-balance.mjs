@@ -34,6 +34,7 @@ const { Enemy } = await import('../js/enemy.js');
 const { Tower } = await import('../js/tower.js');
 const { Projectile } = await import('../js/projectile.js');
 const { WaveManager, ENEMY_UNLOCK, WAVE, waveBonusGold, waveCores } = await import('../js/waves.js');
+const { repairCost } = await import('../js/economy.js');
 const { resolveHit, updateSynergies } = await import('../js/combat.js');
 const { maxPlausibleScore } = await import('../netlify/functions/scores.mjs');
 const { gridToPixel, distance } = await import('../js/utils.js');
@@ -98,10 +99,14 @@ function hitWithAttribution(proj, ctx) {
   }
 }
 
+// Auras do not stack, so the boost is credited to the strongest Support in range
 function markBuffs(towers) {
   for (const tower of towers) {
-    tower.buffedBy = towers.filter(o => o !== tower && o.type === 'support'
+    const inRange = towers.filter(o => o !== tower && o.type === 'support'
       && distance(tower.x, tower.y, o.x, o.y) <= o.currentStats.buffRange * CONFIG.TILE_SIZE);
+    const amp = (s) => s.currentStats.damageAmp || 0;
+    const strongest = inRange.reduce((best, s) => (!best || amp(s) > amp(best)) ? s : best, null);
+    tower.buffedBy = strongest ? [strongest] : [];
   }
 }
 
@@ -181,7 +186,7 @@ class Run {
     this.pixelPath = this.grid.path.map(p => gridToPixel(p.x, p.y));
     this.spatialHash = new FastSpatialHash(80);
     this.ctx = { spatialHash: this.spatialHash };
-    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[difficulty]);
+    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[difficulty], CONFIG.DIFFICULTY_REWARD[difficulty]);
     this.towers = [];
     this.enemies = [];
     this.projectiles = [];
@@ -189,6 +194,7 @@ class Run {
     this.totalEarned = CONFIG.START_GOLD;
     this.score = 0;
     this.lives = CONFIG.BASE_LIVES;
+    this.repairs = 0;
     this.killStreak = 0;
     this.killStreakTimer = 0;
     this.cores = 0;
@@ -249,8 +255,19 @@ class Run {
 
   // Spends cores on the next unlock, buys the cheapest type it owns the fewest of, places Frost and Support
   // first on the first turn it can afford them after they unlock, upgrades
-  // its oldest tower when that costs less than a new tower
+  // its oldest tower when that costs less than a new tower, then buys back
+  // lives with the gold left over
   actSensible() {
+    this.shop();
+    while (this.lives < CONFIG.BASE_LIVES && this.gold >= repairCost(this.repairs)) {
+      this.gold -= repairCost(this.repairs);
+      this.repairs++;
+      this.lives++;
+      if (TRACE) console.log(`  before wave ${this.waveManager.currentWave + 1}: repair to ${this.lives} lives`);
+    }
+  }
+
+  shop() {
     this.spendCores();
     for (let guard = 0; guard < 100; guard++) {
       const owned = (type) => this.towers.filter(t => t.type === type).length;
@@ -328,8 +345,8 @@ class Run {
           this.onKilled(enemy, wave);
           this.enemies.splice(i, 1);
         } else if (enemy.reachedEnd) {
-          this.lives--;
-          livesLost++;
+          this.lives -= enemy.lifeCost;
+          livesLost += enemy.lifeCost;
           leaked[enemy.type] = (leaked[enemy.type] || 0) + 1;
           this.enemies.splice(i, 1);
         }
@@ -387,7 +404,7 @@ class Run {
       for (let i = 0; i < enemy.splitCount; i++) {
         const remaining = this.grid.path.slice(enemy.pathIndex).map(p => gridToPixel(p.x, p.y));
         if (remaining.length < 2) continue;
-        const child = new Enemy(enemy.splitType, remaining, {});
+        const child = new Enemy(enemy.splitType, remaining, enemy.waveMult);
         // First offset along the board's long side, so the portrait run
         // mirrors the landscape run on the same seed
         const along = (Math.random() - 0.5) * 10, across = (Math.random() - 0.5) * 10;
@@ -496,7 +513,7 @@ function effectiveHp(type, mult) {
   const def = ENEMY_DEFS[type];
   const armor = def.armor + (mult.armor || 0);
   let hp = def.hp * (mult.hp || 1) + (def.shield ? def.shield * (mult.hp || 1) : 0);
-  if (def.splitCount) hp += def.splitCount * ENEMY_DEFS[def.splitType].hp;
+  if (def.splitCount) hp += def.splitCount * ENEMY_DEFS[def.splitType].hp * (mult.hp || 1);
   return hp * (armor + 25) / 25;
 }
 
@@ -760,7 +777,7 @@ function towerChecks(runs) {
       if (type === 'support' && path === 'B') continue; // Economy pays gold, checked by repayment
       const v = paths[`${type} ${path}`];
       const name = TOWER_DEFS[type].upgrades[`path${path}`].name;
-      check(`${type} ${name} reaches 0.75x of Blaster Heavy Rounds`, v && reference && v.perGold / reference >= 0.75,
+      check(`${type} ${name} is within 0.75x-1.5x of Blaster Heavy Rounds`, v && reference && v.perGold / reference >= 0.75 && v.perGold / reference <= 1.5,
         v ? `${(v.perGold / reference).toFixed(2)}x` : 'no tower reached level 3');
     }
   }
@@ -909,7 +926,7 @@ if ('curve' in args) {
     for (let i = 0; i < 50; i++) {
       for (const e of wm.generateWave(w)) {
         const def = ENEMY_DEFS[e.type];
-        reward += Math.floor(def.reward * (e.waveMult.reward || 1)) + (def.splitCount ? def.splitCount * ENEMY_DEFS[def.splitType].reward : 0);
+        reward += Math.floor(def.reward * (e.waveMult.reward || 1)) + (def.splitCount ? def.splitCount * Math.floor(ENEMY_DEFS[def.splitType].reward * (e.waveMult.reward || 1)) : 0);
       }
     }
     earned += reward / 50 + waveBonusGold(w);

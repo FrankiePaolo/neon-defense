@@ -14,11 +14,15 @@ export const CONFIG = {
   MAX_WAVES: 35,
   BOSS_INTERVAL: 5,
   SELL_REFUND_RATE: 0.6,
+  // Gold for the first life bought back between waves; each repair in a run doubles it
+  REPAIR_COST: 100,
   SYNERGY_RANGE: 3,
   // Minimum path length in tiles per difficulty, same on every grid
   DIFFICULTY: { easy: 46, normal: 32, hard: 21 },
   // Enemy HP multiplier per difficulty, on top of the wave curve
   DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1 },
+  // Kill reward multiplier per difficulty, on top of the wave curve
+  DIFFICULTY_REWARD: { easy: 1, normal: 1, hard: 0.95 },
 };
 
 // Board shape for the next game: 9x12 on a phone-sized screen held upright,
@@ -80,9 +84,9 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Deep Freeze',
         levels: [
-          { cost: 110, stats: { slowAmount: 0.3, slowDuration: 1.8, fireRate: 1.3 } },
-          { cost: 140, stats: { slowAmount: 0.4, slowDuration: 2.2, fireRate: 1.6 } },
-          { cost: 170, stats: { slowAmount: 0.55, slowDuration: 2.5, range: 3.5, fireRate: 2.2 } },
+          { cost: 110, stats: { slowAmount: 0.26, slowDuration: 1.8, fireRate: 1.3 } },
+          { cost: 140, stats: { slowAmount: 0.33, slowDuration: 2.2, fireRate: 1.6 } },
+          { cost: 160, stats: { slowAmount: 0.43, slowDuration: 2.5, range: 3.5, fireRate: 2.2 } },
         ]
       },
       pathB: {
@@ -134,7 +138,7 @@ export const TOWER_DEFS = {
         levels: [
           { cost: 140, stats: { splashRadius: 2.0, damage: 46 } },
           { cost: 175, stats: { splashRadius: 2.3, damage: 56, fireRate: 0.6 } },
-          { cost: 215, stats: { splashRadius: 2.6, damage: 72 } },
+          { cost: 215, stats: { splashRadius: 2.6, damage: 78 } },
         ]
       },
       pathB: {
@@ -182,9 +186,9 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Command',
         levels: [
-          { cost: 150, stats: { damageAmp: 0.14 } },
-          { cost: 185, stats: { damageAmp: 0.21, buffRange: 3.0 } },
-          { cost: 225, stats: { damageAmp: 0.28, fireRateAmp: 0.06 } },
+          { cost: 140, stats: { damageAmp: 0.13 } },
+          { cost: 175, stats: { damageAmp: 0.19, buffRange: 3.0 } },
+          { cost: 210, stats: { damageAmp: 0.25, fireRateAmp: 0.06 } },
         ]
       },
       pathB: {
@@ -204,10 +208,10 @@ export const ENEMY_DEFS = {
   fast:     { name: 'Scout',    hp: 20,   speed: 120, armor: 0, reward: 5,   color: '#ff8844', shape: 'triangle', size: 6 },
   tank:     { name: 'Brute',    hp: 150,  speed: 30,  armor: 0, reward: 15,  color: '#aa44aa', shape: 'square',   size: 12 },
   armored:  { name: 'Sentinel', hp: 240,  speed: 45,  armor: 5, reward: 12,  color: '#888888', shape: 'pentagon', size: 10 },
-  healer:   { name: 'Medic',    hp: 200,  speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healAmount: 5, healInterval: 1.0 },
+  healer:   { name: 'Medic',    hp: 200,  speed: 50,  armor: 0, reward: 20,  color: '#44ff44', shape: 'cross',    size: 8,  healRange: 2, healShare: 0.01, healInterval: 1.0 },
   splitter: { name: 'Hydra',    hp: 240,  speed: 50,  armor: 0, reward: 8,   color: '#44ffff', shape: 'diamond',  size: 10, splitCount: 2, splitType: 'basic' },
   flying:   { name: 'Wraith',   hp: 170,  speed: 70,  armor: 0, reward: 10,  color: '#ff44ff', shape: 'triangle', size: 7,  flying: true },
-  boss:     { name: 'Overlord', hp: 1000, speed: 20,  armor: 5, reward: 150, color: '#ff0000', shape: 'hexagon',  size: 18, bossRegen: 5 },
+  boss:     { name: 'Overlord', hp: 1000, speed: 20,  armor: 5, reward: 150, color: '#ff0000', shape: 'hexagon',  size: 18, bossRegen: 5, lives: 5 },
   stealth:  { name: 'Phantom',  hp: 145,  speed: 80,  armor: 0, reward: 15,  color: '#666666', shape: 'circle',   size: 6,  stealth: true, revealRange: 2.0 },
   shielded: { name: 'Guardian', hp: 240,  speed: 40,  armor: 0, reward: 18,  color: '#4488ff', shape: 'octagon',  size: 10, shield: 50, shieldRegen: 2, shieldRegenDelay: 3.0 },
 };

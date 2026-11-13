@@ -53,8 +53,9 @@ export function waveScaling(waveNum) {
 }
 
 export class WaveManager {
-  constructor(hpMult = 1) {
+  constructor(hpMult = 1, rewardMult = 1) {
     this.hpMult = hpMult;
+    this.rewardMult = rewardMult;
     this.currentWave = 0;
     this.spawnQueue = [];
     this.spawnTimer = 0;
@@ -65,6 +66,7 @@ export class WaveManager {
   generateWave(waveNum) {
     const scale = waveScaling(waveNum);
     scale.hp *= this.hpMult;
+    scale.reward *= this.rewardMult;
     const isBoss = waveNum % CONFIG.BOSS_INTERVAL === 0;
     const waveMult = (type) => ({
       hp: scale.hp, speed: scale.speed, reward: scale.reward,

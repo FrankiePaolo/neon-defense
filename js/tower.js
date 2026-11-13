@@ -86,11 +86,12 @@ export class Tower {
       return true;
     });
 
-    if (inRange.length === 0) { this.target = null; return null; }
+    // An idle tower is ready to fire but does not bank shots
+    if (inRange.length === 0) { this.target = null; this.cooldown = Math.max(0, this.cooldown); return null; }
 
     const targeting = this.currentStats.targeting || 'first';
     if (targeting === 'first') {
-      this.target = inRange.reduce((best, e) => (!best || e.pathIndex > best.pathIndex) ? e : best, null);
+      this.target = inRange.reduce((best, e) => (!best || e.distanceToExit() < best.distanceToExit()) ? e : best, null);
     } else if (targeting === 'strongest') {
       this.target = inRange.reduce((best, e) => (!best || e.hp > best.hp) ? e : best, null);
     } else if (targeting === 'closest') {
@@ -107,7 +108,8 @@ export class Tower {
     }
 
     if (this.cooldown <= 0 && this.target) {
-      this.cooldown = 1 / (this.currentStats.fireRate * this.fireRateMultiplier);
+      // Keep the time past the shot, so the rate does not depend on frame length
+      this.cooldown = Math.max(0, this.cooldown + 1 / (this.currentStats.fireRate * this.fireRateMultiplier));
       return this.target;
     }
     return null;

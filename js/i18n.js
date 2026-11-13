@@ -30,6 +30,7 @@ const STRINGS = {
     'game.startWave': 'START WAVE',
     'game.startWaveDesktop': 'START WAVE (SPACE)',
     'game.cancel': 'CANCEL',
+    'game.repair': 'Buy back 1 life for {n} gold',
     'game.paused': 'PAUSED',
     'game.pauseHint': 'Press SPACE or ESC to resume',
     'game.resume': 'RESUME',
@@ -51,6 +52,7 @@ const STRINGS = {
     'towers.move': 'MOVE',
     'towers.sell': 'SELL',
     'towers.sellConfirm': 'Sell for {n}?',
+    'towers.lastTower': 'Your last tower: selling it would leave too little gold for another',
 
     // Unlock
     'unlock.single': 'NEW TOWER UNLOCKED',
@@ -253,6 +255,7 @@ const STRINGS = {
     'game.startWave': 'INIZIA ONDATA',
     'game.startWaveDesktop': 'INIZIA ONDATA (SPAZIO)',
     'game.cancel': 'ANNULLA',
+    'game.repair': 'Ricompra 1 vita per {n} oro',
     'game.paused': 'IN PAUSA',
     'game.pauseHint': 'Premi SPAZIO o ESC per riprendere',
     'game.resume': 'RIPRENDI',
@@ -274,6 +277,7 @@ const STRINGS = {
     'towers.move': 'SPOSTA',
     'towers.sell': 'VENDI',
     'towers.sellConfirm': 'Vendi per {n}?',
+    'towers.lastTower': 'La tua ultima torre: vendendola non avresti oro per un\'altra',
 
     // Unlock
     'unlock.single': 'NUOVA TORRE SBLOCCATA',
