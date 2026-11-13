@@ -18,7 +18,7 @@ import { t, cores } from './i18n.js';
 
 export class Game {
   constructor() {
-    this.canvas = document.getElementById('game-canvas');
+    this.canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('game-canvas'));
     this.renderer = new Renderer(this.canvas);
     this.grid = new Grid();
     this.particles = new ParticleSystem(IS_MOBILE ? 200 : 500);
@@ -32,8 +32,11 @@ export class Game {
     this.ui = new UIController(this);
     this.tutorial = new Tutorial(this);
 
+    /** @type {Tower[]} */
     this.towers = [];
+    /** @type {Enemy[]} */
     this.enemies = [];
+    /** @type {Projectile[]} */
     this.projectiles = [];
     this._lightningChains = [];
     this.floatingTexts = [];
@@ -151,6 +154,7 @@ export class Game {
     return true;
   }
 
+  /** @param {Tower} tower */
   moveTower(tower, newGx, newGy) {
     if (this.state !== 'BETWEEN_WAVES') return false;
     if (tower.gx === newGx && tower.gy === newGy) return false;
@@ -169,11 +173,13 @@ export class Game {
 
   // Selling the last tower must leave the gold to place another, or no
   // wave could start again
+  /** @param {Tower} tower */
   canSell(tower) {
     return this.towers.length > 1
       || this.economy.gold + tower.getSellValue() >= TOWER_DEFS.blaster.cost;
   }
 
+  /** @param {Tower} tower */
   sellTower(tower) {
     if (this.state !== 'BETWEEN_WAVES') return false;
     if (!this.canSell(tower)) return false;
@@ -194,6 +200,7 @@ export class Game {
     }
   }
 
+  /** @param {Tower} tower */
   upgradeTower(tower, path) {
     if (this.state !== 'BETWEEN_WAVES') return;
     if (!tower) return;
@@ -345,11 +352,13 @@ export class Game {
     this.enemies.push(enemy);
   }
 
+  /** @param {Tower} tower @param {Enemy} target */
   _createProjectile(tower, target) {
     const proj = new Projectile({ x: tower.x, y: tower.y }, target, tower);
     this.projectiles.push(proj);
   }
 
+  /** @param {Enemy} enemy */
   _onEnemyKilled(enemy) {
     this.economy.earn(enemy.reward);
     this.scoreTracker.addKill(enemy, this.waveManager.currentWave);
@@ -417,6 +426,7 @@ export class Game {
     this.shakeTimer = duration;
   }
 
+  /** @param {Enemy} enemy */
   _onEnemyReachedEnd(enemy) {
     this.lives = Math.max(0, this.lives - enemy.lifeCost);
     this.livesLostThisWave += enemy.lifeCost;

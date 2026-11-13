@@ -76,6 +76,7 @@ function caption(key) {
 }
 
 export class Tutorial {
+  /** @param {import('./game.js').Game} game */
   constructor(game) {
     this.game = game;
     this.step = -1;

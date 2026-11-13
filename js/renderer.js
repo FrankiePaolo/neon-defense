@@ -144,6 +144,7 @@ export class Renderer {
     ctx.restore();
   }
 
+  /** @param {import('./game.js').Game} game */
   renderFrame(game) {
     const ctx = this.ctx;
 
@@ -317,6 +318,7 @@ export class Renderer {
     return tiles;
   }
 
+  /** @param {import('./game.js').Game} game */
   _renderBuildableTiles(ctx, game) {
     const input = game.input;
     const color = input.movingTower ? input.movingTower.def.color : TOWER_DEFS[input.placingType].color;
@@ -357,6 +359,7 @@ export class Renderer {
   // The tower being placed or moved floats over the tile it would land on.
   // It glides between tiles and shows its range and a landing frame;
   // everything turns red where it can't go.
+  /** @param {import('./game.js').Game} game */
   _renderCarry(ctx, game) {
     const input = game.input;
     const cell = input.hoveredCell;
@@ -456,6 +459,7 @@ export class Renderer {
     ctx.restore();
   }
 
+  /** @param {import('./game.js').Game} game */
   _renderLightningChains(ctx, game) {
     if (!game._lightningChains || game._lightningChains.length === 0) return;
     const now = Date.now();
@@ -482,6 +486,7 @@ export class Renderer {
     }
   }
 
+  /** @param {import('./game.js').Game} game */
   _renderFloatingTexts(ctx, game) {
     for (const ft of game.floatingTexts) {
       const alpha = ft.life / ft.maxLife;
@@ -512,6 +517,7 @@ export class Renderer {
     }
   }
 
+  /** @param {import('./game.js').Game} game */
   _renderKillStreak(ctx, game) {
     if (game.killStreak < 8 || game.killStreakTimer <= 0) return;
     ctx.save();
@@ -525,6 +531,7 @@ export class Renderer {
     ctx.restore();
   }
 
+  /** @param {import('./game.js').Game} game */
   _renderWaveBanner(ctx, game) {
     if (!game.waveBanner) return;
     const b = game.waveBanner;

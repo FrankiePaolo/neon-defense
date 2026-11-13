@@ -90,6 +90,14 @@ npm run balance
 node scripts/simulate-balance.mjs --grid mobile --difficulty normal --player sensible
 ```
 
+### Type check
+
+The game stays plain JavaScript with no build step. `jsconfig.json` turns on TypeScript checking for `js/`, so VS Code shows type errors as you edit, and JSDoc comments (`@type`, `@param`, `@typedef`) give the checker the types it cannot infer. `types/globals.d.ts` declares the globals the game sets on `window`. Check the whole project:
+
+```bash
+npm run typecheck
+```
+
 ## Project Structure
 
 ```
@@ -121,6 +129,9 @@ node scripts/simulate-balance.mjs --grid mobile --difficulty normal --player sen
 │   └── simulate-balance.mjs  # Headless balance simulator and checks
 ├── netlify/functions/
 │   └── scores.mjs      # Leaderboard API endpoint
+├── types/
+│   └── globals.d.ts    # Types for the globals set on window (checking only)
+├── jsconfig.json       # TypeScript checking settings
 ├── sw.js               # Service worker for offline support
 └── manifest.json       # PWA manifest
 ```

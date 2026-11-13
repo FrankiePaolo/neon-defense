@@ -3,6 +3,7 @@ import { TOWER_DEFS, SHADOW_BLUR_SCALE } from './config.js';
 const SB = SHADOW_BLUR_SCALE;
 
 export class Projectile {
+  /** @param {{ x: number, y: number }} origin @param {import('./enemy.js').Enemy} target @param {import('./tower.js').Tower} tower */
   constructor(origin, target, tower) {
     this.x = origin.x;
     this.y = origin.y;

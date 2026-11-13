@@ -239,6 +239,7 @@ export class AudioEngine {
     }
   }
 
+  /** @param {OscillatorType} [wave] */
   _sfxTone(freq, time, dur, wave = 'square') {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();

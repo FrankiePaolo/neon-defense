@@ -47,6 +47,7 @@ export function isPhoneLayout() {
 }
 
 export class UIController {
+  /** @param {import('./game.js').Game} game */
   constructor(game) {
     this.game = game;
     this.elements = {
@@ -58,7 +59,7 @@ export class UIController {
       upgradePanel: document.getElementById('upgrade-panel'),
       wavePreview: document.getElementById('wave-preview'),
       wavePreviewContent: document.getElementById('wave-preview-content'),
-      startWaveBtn: document.getElementById('start-wave-btn'),
+      startWaveBtn: /** @type {HTMLButtonElement} */ (document.getElementById('start-wave-btn')),
       menuScreen: document.getElementById('menu-screen'),
       pauseOverlay: document.getElementById('pause-overlay'),
       gameOverScreen: document.getElementById('game-over-screen'),
@@ -147,7 +148,7 @@ export class UIController {
     document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
     document.getElementById('final-score-label').textContent = t('game.score');
     document.getElementById('final-wave-label').textContent = t('game.wave');
-    document.getElementById('player-name').placeholder = t('game.enterName');
+    /** @type {HTMLInputElement} */ (document.getElementById('player-name')).placeholder = t('game.enterName');
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
     document.getElementById('play-again-btn').textContent = t('game.playAgain');
@@ -167,7 +168,7 @@ export class UIController {
     }
 
     // Language buttons
-    document.querySelectorAll('.lang-btn').forEach(b => {
+    document.querySelectorAll('.lang-btn').forEach((/** @type {HTMLElement} */ b) => {
       b.classList.toggle('active', b.dataset.lang === getLang());
     });
 
@@ -278,12 +279,13 @@ export class UIController {
 
   _bindButtons() {
     this.elements.menuScreen.addEventListener('click', (e) => {
-      const diffBtn = e.target.closest('.difficulty-btn');
+      const target = /** @type {Element} */ (e.target);
+      const diffBtn = /** @type {HTMLElement} */ (target.closest('.difficulty-btn'));
       if (diffBtn) {
         this.elements.menuScreen.style.display = 'none';
         this.game.startNewGame(diffBtn.dataset.difficulty);
       }
-      const langBtn = e.target.closest('.lang-btn');
+      const langBtn = /** @type {HTMLElement} */ (target.closest('.lang-btn'));
       if (langBtn) {
         setLang(langBtn.dataset.lang);
         this.applyLanguage();
@@ -291,13 +293,13 @@ export class UIController {
     });
 
     document.getElementById('high-scores-btn').addEventListener('click', (e) => {
-      e.currentTarget.blur();
+      /** @type {HTMLElement} */ (e.currentTarget).blur();
       this._showHighScores();
     });
 
     // Board tabs are redrawn with the list, so listen on the list
     this.elements.highScoresList.addEventListener('click', (e) => {
-      const tab = e.target.closest('.board-tab');
+      const tab = /** @type {HTMLElement} */ (/** @type {Element} */ (e.target).closest('.board-tab'));
       if (tab) this._renderHighScores(tab.dataset.board);
     });
 
@@ -309,8 +311,8 @@ export class UIController {
       this.game.repairLife();
     });
 
-    const saveBtn = document.getElementById('save-score-btn');
-    const nameInput = document.getElementById('player-name');
+    const saveBtn = /** @type {HTMLButtonElement} */ (document.getElementById('save-score-btn'));
+    const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('player-name'));
     const nameWarn = document.getElementById('name-taken-warn');
     saveBtn.disabled = true;
     const updateSaveBtn = () => {
@@ -395,10 +397,10 @@ export class UIController {
   }
 
   updateHUD() {
-    this.elements.goldValue.textContent = this.game.economy.gold;
-    this.elements.waveValue.textContent = this.game.waveManager.currentWave;
-    this.elements.livesValue.textContent = this.game.lives;
-    this.elements.scoreValue.textContent = this.game.scoreTracker.score;
+    this.elements.goldValue.textContent = String(this.game.economy.gold);
+    this.elements.waveValue.textContent = String(this.game.waveManager.currentWave);
+    this.elements.livesValue.textContent = String(this.game.lives);
+    this.elements.scoreValue.textContent = String(this.game.scoreTracker.score);
     if (this.game.state === 'BETWEEN_WAVES') {
       this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
       this._updatePhaseLabel();
@@ -411,7 +413,7 @@ export class UIController {
 
   // +1 life and its price, shown while lives are below the start
   updateRepairButton() {
-    const btn = document.getElementById('repair-btn');
+    const btn = /** @type {HTMLButtonElement} */ (document.getElementById('repair-btn'));
     const cost = this.game.getRepairCost();
     btn.classList.toggle('hidden', cost === null);
     if (cost === null) return;
@@ -429,7 +431,7 @@ export class UIController {
 
   _updateTowerAffordability() {
     const gold = this.game.economy.gold;
-    this.elements.towerList.querySelectorAll('.tower-btn:not(.tower-locked)').forEach(btn => {
+    this.elements.towerList.querySelectorAll('.tower-btn:not(.tower-locked)').forEach((/** @type {HTMLElement} */ btn) => {
       const type = btn.dataset.towerType;
       const def = TOWER_DEFS[type];
       if (def) {
@@ -532,7 +534,7 @@ export class UIController {
     });
 
     // Bind upgrade clicks
-    panel.querySelectorAll('.upgrade-option[data-upgrade-path]').forEach(el => {
+    panel.querySelectorAll('.upgrade-option[data-upgrade-path]').forEach((/** @type {HTMLElement} */ el) => {
       const path = el.dataset.upgradePath;
       if (path) {
         el.addEventListener('click', () => {
@@ -551,7 +553,7 @@ export class UIController {
 
     // Sell asks once: the first tap arms it, the second sells. Any re-render
     // or closing the panel builds a new, unarmed button.
-    const sellBtn = panel.querySelector('.sell-btn:not(.sell-blocked)');
+    const sellBtn = /** @type {HTMLElement} */ (panel.querySelector('.sell-btn:not(.sell-blocked)'));
     if (sellBtn) {
       sellBtn.addEventListener('click', () => {
         if (!sellBtn.dataset.armed) {
@@ -631,7 +633,7 @@ export class UIController {
   // highlight, CANCEL, data-carry on the container, the card and the panel
   syncCarry(input) {
     const carrying = !!(input.placingType || input.movingTower);
-    document.querySelectorAll('.tower-btn').forEach(b => {
+    document.querySelectorAll('.tower-btn').forEach((/** @type {HTMLElement} */ b) => {
       b.classList.toggle('selected', b.dataset.towerType === input.placingType);
     });
     this.elements.cancelPlaceBtn.classList.toggle('hidden', !carrying);
@@ -715,7 +717,7 @@ export class UIController {
     }
 
     // Bind PLACE button
-    const placeBtn = tooltip.querySelector('.ttp-place-btn');
+    const placeBtn = /** @type {HTMLButtonElement} */ (tooltip.querySelector('.ttp-place-btn'));
     if (placeBtn && !placeBtn.disabled) {
       placeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -837,8 +839,8 @@ export class UIController {
       resultEl.style.display = 'none';
     }
 
-    const nameInput = document.getElementById('player-name');
-    const saveBtn = document.getElementById('save-score-btn');
+    const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('player-name'));
+    const saveBtn = /** @type {HTMLButtonElement} */ (document.getElementById('save-score-btn'));
     const lastUsed = localStorage.getItem('neon_td_player_name') || '';
     nameInput.value = lastUsed;
     saveBtn.disabled = !lastUsed;
@@ -1085,7 +1087,7 @@ export class UIController {
   async _shareScore() {
     const score = this._lastScore;
     const wave = this._lastWave;
-    const playerName = document.getElementById('player-name').value.trim() ||
+    const playerName = /** @type {HTMLInputElement} */ (document.getElementById('player-name')).value.trim() ||
                        localStorage.getItem('neon_td_player_name') || '';
     const diff = this.game.difficulty || 'normal';
 

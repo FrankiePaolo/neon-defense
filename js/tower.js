@@ -68,6 +68,7 @@ export class Tower {
     return Math.floor(this.totalInvested * CONFIG.SELL_REFUND_RATE);
   }
 
+  /** @param {number} dt @param {import('./enemy.js').Enemy[]} enemies @param {import('./pathfinding.js').SpatialHash} spatialHash */
   update(dt, enemies, spatialHash) {
     if (this.type === 'support') return null;
 

@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "balance": "node scripts/simulate-balance.mjs",
-    "play-test": "node scripts/play-test.mjs"
+    "play-test": "node scripts/play-test.mjs",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@netlify/neon": "^0.1.2"
   },
   "devDependencies": {
-    "puppeteer-core": "^25.16.0"
+    "puppeteer-core": "^25.16.0",
+    "typescript": "^7.0.2"
   }
 }

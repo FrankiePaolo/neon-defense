@@ -47,6 +47,40 @@ export const COLORS = {
   TOWER_RANGE: 'rgba(0, 255, 255, 0.06)',
 };
 
+/**
+ * Stats a tower has and its upgrades change. Each tower type uses a subset.
+ * @typedef {object} TowerStats
+ * @property {number} [range]
+ * @property {number} [damage]
+ * @property {number} [fireRate]
+ * @property {number} [slowAmount]
+ * @property {number} [slowDuration]
+ * @property {number} [chainCount]
+ * @property {number} [chainRange]
+ * @property {number} [chainDecay]
+ * @property {number} [splashRadius]
+ * @property {number} [damageAmp]
+ * @property {number} [fireRateAmp]
+ * @property {number} [buffRange]
+ * @property {number} [goldPerWave]
+ */
+
+/**
+ * @typedef {object} UpgradePath
+ * @property {string} name
+ * @property {{ cost: number, stats: TowerStats }[]} levels
+ */
+
+/**
+ * @typedef {TowerStats & {
+ *   name: string, cost: number, color: string, glowColor: string, shape: string,
+ *   projectileSpeed?: number, targeting?: string, splashDecay?: number,
+ *   description: string, unlockCost: number,
+ *   upgrades: { pathA: UpgradePath, pathB: UpgradePath },
+ * }} TowerDef
+ */
+
+/** @type {Record<string, TowerDef>} */
 export const TOWER_DEFS = {
   blaster: {
     name: 'Blaster', cost: 90, color: '#00ffff', glowColor: '#00ccff',
@@ -203,6 +237,32 @@ export const TOWER_DEFS = {
   },
 };
 
+/**
+ * @typedef {object} EnemyDef
+ * @property {string} name
+ * @property {number} hp
+ * @property {number} speed
+ * @property {number} armor
+ * @property {number} reward
+ * @property {string} color
+ * @property {string} shape
+ * @property {number} size
+ * @property {number} [healRange]
+ * @property {number} [healShare]
+ * @property {number} [healInterval]
+ * @property {number} [splitCount]
+ * @property {string} [splitType]
+ * @property {boolean} [flying]
+ * @property {number} [bossRegen]
+ * @property {number} [lives]
+ * @property {boolean} [stealth]
+ * @property {number} [revealRange]
+ * @property {number} [shield]
+ * @property {number} [shieldRegen]
+ * @property {number} [shieldRegenDelay]
+ */
+
+/** @type {Record<string, EnemyDef>} */
 export const ENEMY_DEFS = {
   basic:    { name: 'Drone',    hp: 20,   speed: 60,  armor: 0, reward: 5,   color: '#ff4444', shape: 'circle',   size: 8 },
   fast:     { name: 'Scout',    hp: 20,   speed: 120, armor: 0, reward: 5,   color: '#ff8844', shape: 'triangle', size: 6 },

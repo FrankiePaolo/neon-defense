@@ -3,6 +3,7 @@ import { CONFIG, TOWER_DEFS } from './config.js';
 import { t } from './i18n.js';
 
 export class InputHandler {
+  /** @param {HTMLCanvasElement} canvas @param {import('./game.js').Game} game */
   constructor(canvas, game) {
     this.canvas = canvas;
     this.game = game;

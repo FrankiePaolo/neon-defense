@@ -112,6 +112,7 @@ export class Enemy {
     }
   }
 
+  /** @param {Enemy[]} enemies @param {number} dt */
   healNearby(enemies, dt) {
     if (this.healTimer > 0) return;
     this.healTimer = this.healInterval;

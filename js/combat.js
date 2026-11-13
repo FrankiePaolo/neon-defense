@@ -4,6 +4,7 @@
 import { CONFIG } from './config.js';
 import { distance } from './utils.js';
 
+/** @param {import('./projectile.js').Projectile} proj */
 export function resolveHit(proj, ctx) {
   const target = proj.target;
   if (!target || !target.active) return;
@@ -31,6 +32,7 @@ export function resolveHit(proj, ctx) {
   ctx.onHit?.(target, proj);
 }
 
+/** @param {import('./enemy.js').Enemy} firstTarget @param {import('./projectile.js').Projectile} proj */
 export function chainLightning(firstTarget, proj, ctx) {
   const visited = new Set([firstTarget]);
   let current = firstTarget;
@@ -56,6 +58,7 @@ export function chainLightning(firstTarget, proj, ctx) {
 }
 
 // Auras do not stack: a tower takes the strongest Support bonus in range
+/** @param {import('./tower.js').Tower[]} towers */
 export function updateSynergies(towers) {
   for (const tower of towers) {
     let damageAmp = 0, fireRateAmp = 0;
