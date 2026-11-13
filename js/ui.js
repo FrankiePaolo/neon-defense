@@ -162,7 +162,8 @@ export class UIController {
     /** @type {HTMLInputElement} */ (document.getElementById('player-name')).placeholder = t('game.enterName');
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
-    document.getElementById('play-again-btn').textContent = t('game.playAgain');
+    document.getElementById('retry-map-btn').textContent = t('game.retryMap');
+    document.getElementById('play-again-btn').textContent = t('game.newMap');
     document.getElementById('end-menu-btn').textContent = t('game.mainMenu');
     if (this._won !== undefined) this._fillCoreProgress();
     this._trackerKey = null;
@@ -356,6 +357,13 @@ export class UIController {
         return;
       }
       this.game.returnToMenu();
+    });
+
+    // The same map and waves again, so the player can try what the loss taught
+    document.getElementById('retry-map-btn').addEventListener('click', () => {
+      this.elements.gameOverScreen.style.display = 'none';
+      this.elements.towerPanel.style.display = '';
+      this.game.startNewGame(this.game.difficulty, this.game.challenge, { seed: this.game.seed, board: this.game.board });
     });
 
     // A fresh run on the same difficulty, as RESTART on the pause screen
@@ -854,6 +862,8 @@ export class UIController {
     } else {
       resultEl.style.display = 'none';
     }
+    // A challenge run starts again on the challenge's map, so only RETRY MAP fits
+    document.getElementById('play-again-btn').style.display = challenge ? 'none' : '';
 
     const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('player-name'));
     const saveBtn = /** @type {HTMLButtonElement} */ (document.getElementById('save-score-btn'));

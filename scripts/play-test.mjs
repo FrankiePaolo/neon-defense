@@ -466,7 +466,7 @@ scenario('Last wave cleared', { layouts: PLACE_LAYOUTS, langs: ['en', 'it'] }, a
   assert(await heading() === want, `heading reads "${await heading()}"`);
   await g.eval(() => window.game.ui.applyLanguage());
   assert(await heading() === want, 'heading lost after applyLanguage');
-  assert(await g.visible('#save-score-btn') && await g.visible('#share-score-btn') && await g.visible('#play-again-btn') && await g.visible('#end-menu-btn'), 'end actions missing');
+  assert(await g.visible('#save-score-btn') && await g.visible('#share-score-btn') && await g.visible('#retry-map-btn') && await g.visible('#play-again-btn') && await g.visible('#end-menu-btn'), 'end actions missing');
 });
 
 scenario('Defeat still says game over', { layouts: ['desktop'] }, async (g) => {
@@ -478,8 +478,10 @@ scenario('Defeat still says game over', { layouts: ['desktop'] }, async (g) => {
 
 scenario('Play again after a defeat', { layouts: ['phone', 'desktop'] }, async (g) => {
   await g.startGame('hard');
+  const lost = await g.eval(() => window.game.seed);
   await loseGame(g);
   await g.press('#play-again-btn');
+  assert(await g.eval(() => window.game.seed) !== lost, 'new map kept the seed');
   assert(!(await g.visible('#game-over-screen')), 'end screen still shown');
   assert(!(await g.visible('#menu-screen')), 'menu shown');
   const run = await g.eval(() => ({
@@ -493,6 +495,28 @@ scenario('Play again after a defeat', { layouts: ['phone', 'desktop'] }, async (
   assert(run.state === 'BETWEEN_WAVES' && run.difficulty === 'hard', `run: ${JSON.stringify(run)}`);
   assert(run.wave === 0 && run.towers === 0, `new game not fresh: ${JSON.stringify(run)}`);
   assert(run.music === 'gameplay' && run.wallet, `run: ${JSON.stringify(run)}`);
+});
+
+scenario('Retry the map after a defeat', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame('hard');
+  const runOf = () => g.eval(() => ({
+    seed: window.game.seed,
+    board: window.game.board,
+    path: JSON.stringify(window.game.grid.path),
+    wave1: window.game.waveManager.getNextWaveQueue().map(e => e.type).join(),
+  }));
+  const lost = await runOf();
+  await loseGame(g);
+  await g.press('#retry-map-btn');
+  assert(!(await g.visible('#game-over-screen')), 'end screen still shown');
+  const again = await runOf();
+  assert(JSON.stringify(again) === JSON.stringify(lost), `retry changed the run: ${JSON.stringify({ lost, again })}`);
+  const fresh = await g.eval(() => ({
+    state: window.game.state, difficulty: window.game.difficulty,
+    wave: window.game.waveManager.currentWave, towers: window.game.towers.length, lives: window.game.lives,
+  }));
+  assert(fresh.state === 'BETWEEN_WAVES' && fresh.difficulty === 'hard' && fresh.wave === 0 && fresh.towers === 0 && fresh.lives === 20,
+    `retry not fresh: ${JSON.stringify(fresh)}`);
 });
 
 scenario('End screen fits a landscape phone', { layouts: ['landscape'] }, async (g) => {
@@ -585,9 +609,10 @@ scenario('Accepting a challenge link', { layouts: ['phone', 'desktop'], open: { 
   assert(shared && shared.seed === 777 && shared.board === 'phone' && shared.difficulty === 'hard' && shared.name === 'Bea' && shared.score === 0,
     `shared: ${JSON.stringify(shared)}`);
 
-  await g.press('#play-again-btn');
+  assert(!(await g.visible('#play-again-btn')), 'new map offered in a challenge');
+  await g.press('#retry-map-btn');
   const again = await run();
-  assert(again.seed === 777, `play again left the challenge: ${JSON.stringify(again)}`);
+  assert(again.seed === 777 && await g.eval(() => !!window.game.challenge), `retry left the challenge: ${JSON.stringify(again)}`);
 });
 
 scenario('A link from before seeds shows only the banner', { layouts: ['phone'], open: { query: '?c=' + Buffer.from(JSON.stringify({ n: 'Old', s: 100, w: 3, d: 'normal' })).toString('base64') } }, async (g) => {

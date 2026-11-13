@@ -43,7 +43,8 @@ const STRINGS = {
     'game.saveScore': 'SAVE SCORE',
     'game.nameTaken': 'Name already taken — choose a different one',
     'score.notSaved': 'Score could not be saved',
-    'game.playAgain': 'PLAY AGAIN',
+    'game.retryMap': 'RETRY MAP',
+    'game.newMap': 'NEW MAP',
     'game.next': 'Next',
 
     // Tower panel
@@ -275,7 +276,8 @@ const STRINGS = {
     'game.saveScore': 'SALVA PUNTEGGIO',
     'game.nameTaken': 'Nome già in uso — scegline un altro',
     'score.notSaved': 'Punteggio non salvato',
-    'game.playAgain': 'GIOCA ANCORA',
+    'game.retryMap': 'RIPROVA LA MAPPA',
+    'game.newMap': 'NUOVA MAPPA',
     'game.next': 'Prossimi',
 
     // Tower panel

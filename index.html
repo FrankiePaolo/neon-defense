@@ -1002,7 +1002,7 @@ canvas {
 
 #game-over-screen #name-taken-warn { color: #ff6666; font-size: 12px; margin-top: 4px; }
 
-#game-over-screen #play-again-btn {
+#game-over-screen #retry-map-btn {
   min-height: 60px;
   margin-top: 12px;
   font-size: 22px;
@@ -1013,9 +1013,9 @@ canvas {
 }
 
 @media (hover: hover) {
-  #game-over-screen #play-again-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
+  #game-over-screen #retry-map-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
 }
-#game-over-screen #play-again-btn.touching { background: #66ffff; }
+#game-over-screen #retry-map-btn.touching { background: #66ffff; }
 
 #game-over-screen #share-score-btn { --accent: 0, 255, 102; }
 #game-over-screen #end-menu-btn { --accent: 170, 170, 170; }
@@ -1795,7 +1795,8 @@ canvas {
         <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
       </div>
       <p id="name-taken-warn" style="visibility:hidden;">&nbsp;</p>
-      <button class="menu-btn" id="play-again-btn">PLAY AGAIN</button>
+      <button class="menu-btn" id="retry-map-btn">RETRY MAP</button>
+      <button class="menu-btn" id="play-again-btn">NEW MAP</button>
       <button class="menu-btn" id="end-menu-btn">MAIN MENU</button>
     </div>
   </div>

@@ -74,15 +74,18 @@ export class Game {
 
   // Every run has a seed, so every run can be shared as a challenge. A
   // challenge brings its seed and board class, so the map and the waves match
-  // the sender's run.
-  /** @param {import('./challenge.js').Challenge | null} [challenge] */
-  startNewGame(difficulty = 'normal', challenge = null) {
+  // the sender's run. A replay does the same for the player's own last run.
+  /**
+   * @param {import('./challenge.js').Challenge | null} [challenge]
+   * @param {{ seed: number, board: 'phone' | 'desktop' } | null} [replay]
+   */
+  startNewGame(difficulty = 'normal', challenge = null, replay = null) {
     this.difficulty = difficulty;
     this.challenge = challenge;
-    this.seed = challenge?.seed ?? randomSeed();
+    this.seed = challenge?.seed ?? replay?.seed ?? randomSeed();
     // The board shape follows how the device is held now; the grid and the
     // board size pick it up from CONFIG
-    this.board = chooseGridShape(challenge?.board);
+    this.board = chooseGridShape(challenge?.board ?? replay?.board);
     this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal, mulberry32(this.seed));
     this.ui.fitBoard();
     this.renderer.markDirty();
