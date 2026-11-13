@@ -1440,10 +1440,11 @@ scenario('Wallet toward Cannon', { layouts: ['phone', 'desktop'], open: { storag
 scenario('Wallet price follows the next unlock', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '20', neon_td_unlocked: '["frost","lightning"]' } } }, async (g) => {
   await g.startGame();
   const before = await tracker(g);
-  assert(before.balance === '20' && before.price === '/ 15', `before: ${JSON.stringify(before)}`);
+  // Tower bar order: Cannon (20) is next, then Sniper (25)
+  assert(before.balance === '20' && before.price === '/ 20', `before: ${JSON.stringify(before)}`);
   await g.eval(() => window.game.ui._unlockTower(window.game.progressTracker.getNextUnlock().type));
   const after = await tracker(g);
-  assert(after.balance === '5' && after.price === '/ 20', `after: ${JSON.stringify(after)}`);
+  assert(after.balance === '0' && after.price === '/ 25', `after: ${JSON.stringify(after)}`);
 });
 
 scenario('Wallet with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
