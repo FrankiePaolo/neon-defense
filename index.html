@@ -605,28 +605,53 @@ canvas {
   cursor: default;
 }
 
-/* Menu Screen */
+/* Menu Screen: one centred column over a faint board grid. The two spacers
+   centre it vertically and shrink to nothing when the open scores need the
+   height, so the menu scrolls instead of clipping. */
 #menu-screen {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: #0a0a0a;
+  padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(0, 255, 255, 0.07), transparent 55%),
+    radial-gradient(ellipse at 50% 40%, transparent 20%, #0a0a0a 75%),
+    linear-gradient(rgba(0, 255, 255, 0.06) 1px, transparent 1px) 50% 0 / 40px 40px,
+    linear-gradient(90deg, rgba(0, 255, 255, 0.06) 1px, transparent 1px) 50% 0 / 40px 40px,
+    #0a0a0a;
   z-index: 100;
 }
 
+#menu-screen::before,
+#menu-screen::after { content: ''; flex: 1 0 0; }
+
+/* Sized by the width on phones and by the height in landscape. The negative
+   margin takes back the letter spacing after the last letter, so the title
+   sits centred. */
 #menu-screen h1 {
   font-family: var(--font-brand);
-  font-size: 72px;
+  font-size: clamp(30px, min(9.5vw, 12vh), 72px);
+  line-height: 1.1;
+  text-align: center;
   color: #00ffff;
-  letter-spacing: 12px;
+  letter-spacing: 0.16em;
+  margin: 0 -0.16em clamp(20px, 6vh, 44px) 0;
   text-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
-  margin-bottom: 40px;
+  animation: menu-in 0.5s ease-out both;
 }
 
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) { #menu-screen h1 { animation: none; } }
+
+/* --accent is the button colour as r, g, b, so hover and press can tint it */
 .menu-btn {
+  --accent: 0, 255, 255;
   background: transparent;
   color: #00ffff;
   border: 1px solid #00ffff;
@@ -641,101 +666,112 @@ canvas {
 
 @media (hover: hover) {
   .menu-btn:hover {
-    background: rgba(0, 255, 255, 0.15);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    background: rgba(var(--accent), 0.15);
+    box-shadow: 0 0 20px rgba(var(--accent), 0.4);
   }
 }
 
 .menu-btn.touching {
-  background: rgba(0, 255, 255, 0.15);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  background: rgba(var(--accent), 0.15);
+  box-shadow: 0 0 20px rgba(var(--accent), 0.4);
   transition: none;
 }
 
 .menu-btn.active {
-  background: rgba(0, 255, 255, 0.15);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  background: rgba(var(--accent), 0.15);
+  box-shadow: 0 0 20px rgba(var(--accent), 0.4);
 }
 
+/* EN and IT as one segmented control */
 #lang-select {
   position: absolute;
   top: calc(16px + env(safe-area-inset-top, 0px));
-  right: 20px;
+  right: calc(16px + env(safe-area-inset-right, 0px));
   display: flex;
-  gap: 4px;
 }
 
 .lang-btn {
-  background: transparent;
-  color: #555;
+  min-width: 48px;
+  min-height: 44px;
+  background: rgba(10, 10, 10, 0.8);
+  color: var(--text-3);
   border: 1px solid #333;
-  padding: 8px 16px;
-  font-family: 'Courier New', monospace;
-  font-size: 22px;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.lang-btn:hover { color: #aaa; border-color: #666; }
+.lang-btn + .lang-btn { margin-left: -1px; }
+.lang-btn:hover { color: var(--text-1); }
 .lang-btn.active {
+  position: relative;
   color: #00ffff;
   border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
 }
 
 #difficulty-label {
-  color: #666;
-  font-family: 'Courier New', monospace;
-  font-size: 22px;
-  letter-spacing: 3px;
-  margin-bottom: 8px;
+  color: var(--text-3);
+  font-family: var(--font-brand);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  margin: 0 -0.3em 12px 0;
+  text-align: center;
 }
 
+/* The game starts here, so these are the strongest buttons: a column on
+   phones, one row of equal buttons when there is room */
 #difficulty-buttons {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, 100%);
 }
+
+#difficulty-buttons .difficulty-btn {
+  flex: 1 1 0;
+  margin: 0;
+  min-height: 64px;
+  padding: 10px 16px;
+  font-size: 20px;
+  font-weight: bold;
+  color: rgb(var(--accent));
+  border-color: rgb(var(--accent));
+  background: rgba(var(--accent), 0.06);
+  box-shadow: inset 0 0 12px rgba(var(--accent), 0.08);
+}
+
+.difficulty-btn[data-difficulty="easy"] { --accent: 0, 255, 102; }
+.difficulty-btn[data-difficulty="normal"] { --accent: 255, 170, 0; }
+.difficulty-btn[data-difficulty="hard"] { --accent: 255, 68, 68; }
 
 .difficulty-btn .diff-sub {
   display: block;
-  font-size: 0.7em;
-  opacity: 0.6;
-  margin-top: 3px;
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--text-2);
+  margin-top: 4px;
   letter-spacing: 1px;
   text-transform: lowercase;
 }
 
-.difficulty-btn {
-  padding: 12px 24px;
-  font-size: 18px;
+@media (min-width: 600px) {
+  #difficulty-buttons { flex-direction: row; width: min(600px, 100%); gap: 12px; }
 }
 
-.difficulty-btn[data-difficulty="hard"] {
-  color: #ff4444;
-  border-color: #ff4444;
-}
-.difficulty-btn[data-difficulty="hard"]:hover {
-  background: rgba(255, 68, 68, 0.15);
-  box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
-}
-
-.difficulty-btn[data-difficulty="normal"] {
-  color: #ffaa00;
-  border-color: #ffaa00;
-}
-.difficulty-btn[data-difficulty="normal"]:hover {
-  background: rgba(255, 170, 0, 0.15);
-  box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+/* Secondary: quieter than the difficulty buttons, cyan only while open */
+#high-scores-btn {
+  margin: 24px 0 0;
+  min-height: 48px;
+  padding: 10px 28px;
+  font-size: 15px;
+  color: var(--text-2);
+  border-color: #444;
 }
 
-.difficulty-btn[data-difficulty="easy"] {
-  color: #00ff66;
-  border-color: #00ff66;
-}
-.difficulty-btn[data-difficulty="easy"]:hover {
-  background: rgba(0, 255, 100, 0.15);
-  box-shadow: 0 0 20px rgba(0, 255, 100, 0.4);
-}
+#high-scores-btn.active { color: #00ffff; border-color: #00ffff; }
 
 /* Pause Overlay */
 #pause-overlay {
@@ -807,7 +843,7 @@ canvas {
 
 #high-scores-list {
   display: none;
-  width: min(360px, calc(100% - 32px));
+  width: min(360px, 100%);
   box-sizing: border-box;
   margin-top: 20px;
   text-align: left;
@@ -1010,26 +1046,8 @@ canvas {
     padding: 4px 10px;
   }
 
-  #menu-screen {
-    justify-content: flex-start;
-    padding-top: 80px;
-    padding-bottom: 40px;
-    overflow-y: auto;
-  }
-
-  #menu-screen h1 {
-    font-size: 36px;
-    letter-spacing: 6px;
-    margin-top: 40px;
-  }
-
   #high-scores-list {
     max-height: 55vh;
-  }
-
-  #difficulty-buttons {
-    flex-direction: column;
-    gap: 8px;
   }
 
   .menu-btn {
@@ -1040,16 +1058,6 @@ canvas {
 
   #game-over-screen h2 { font-size: 28px; }
   #pause-overlay h2 { font-size: 28px; }
-
-  #lang-select {
-    gap: 8px;
-  }
-  .lang-btn {
-    font-size: 16px;
-    padding: 10px 18px;
-    min-width: 48px;
-    min-height: 48px;
-  }
 }
 
 /* Phone layout, portrait or landscape. The same query is PHONE_LAYOUT in js/ui.js. */
@@ -1324,6 +1332,9 @@ canvas {
   }
 
   .tower-btn { min-height: 44px; }
+
+  /* The title is narrow enough here to clear the language toggle */
+  #menu-screen { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
 
   /* Counters in a 2x2 block */
   #ui-overlay { grid-template-columns: repeat(2, 1fr); row-gap: 4px; font-size: 18px; }
