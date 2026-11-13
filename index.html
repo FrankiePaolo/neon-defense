@@ -148,13 +148,13 @@ canvas {
 }
 
 /* Unlock Tracker */
+/* As wide as one counter column and centred in it, so it lines up under Gold */
 #unlock-tracker {
-  flex: 1;
+  flex: 0 0 25%;
   min-width: 0;
-  max-width: 340px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   font-size: 13px;
   line-height: 1.25;
   pointer-events: none;
@@ -163,45 +163,8 @@ canvas {
 #unlock-tracker.hidden { display: flex !important; visibility: hidden; }
 
 /* Core balance: the persistent unlock currency */
-#unlock-tracker .unlock-cores {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #c77dff;
-  font-size: 1.3em;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-#unlock-tracker .unlock-cores .icon { margin-right: 0; filter: drop-shadow(0 0 4px currentColor); }
+#unlock-tracker .unlock-cores { color: #c77dff; font-size: 1.3em; }
 #unlock-tracker .unlock-cores.hud-pulse { animation: hud-pulse 0.35s ease-out; }
-
-#unlock-tracker .unlock-next { flex: 1; min-width: 0; display: block; }
-
-#unlock-tracker .unlock-label {
-  display: block;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-
-#unlock-tracker .unlock-bar-bg {
-  display: block;
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-#unlock-tracker .unlock-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease-out;
-  box-shadow: 0 0 6px currentColor;
-}
 
 /* Speed, pause and sound */
 #speed-controls {
@@ -1223,15 +1186,6 @@ canvas {
   #tower-list .tower-btn { min-height: calc(60px + var(--tray-extra)); }
   .tower-btn .tower-pic { width: calc(32px + var(--tray-extra) / 2); height: calc(32px + var(--tray-extra) / 2); }
 
-  /* The next-unlock line wraps to two lines instead of being cut off */
-  #unlock-tracker .unlock-label {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    white-space: normal;
-    margin-bottom: 2px;
-  }
-
   /* Compact enough for two lines over the HUD, the only free strip above the board */
   #tutorial-overlay { padding: 6px 12px; font-size: 14px; line-height: 1.3; }
   #tutorial-overlay .tutorial-msg { margin-bottom: 2px; }
@@ -1286,10 +1240,9 @@ canvas {
   }
 
   #hud-row2 { flex-direction: column; align-items: stretch; }
-  #unlock-tracker { flex: none; max-width: none; }
+  #unlock-tracker { flex: none; width: 50%; }
   /* Speed, pause and sound on one row of the rail */
   #speed-controls .speed-btn { flex: 1 1 auto; padding: 0 4px; font-size: 13px; }
-  #unlock-tracker .unlock-label { white-space: normal; }
 
   #board-slot { grid-column: 2; grid-row: 1 / 3; align-items: center; }
 

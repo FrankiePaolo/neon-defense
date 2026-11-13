@@ -69,8 +69,6 @@ const STRINGS = {
     'place.far': 'Build next to the road',
     'place.taken': 'Tile taken',
     'place.gold': 'Not enough gold',
-    'unlock.tracker': 'Next tower: {name}',
-    'unlock.toGo': '{n} to go',
     'panel.need': 'Need {n} more',
     'up.otherPath': 'You picked the other path',
 
@@ -293,8 +291,6 @@ const STRINGS = {
     'place.far': 'Costruisci accanto alla strada',
     'place.taken': 'Casella occupata',
     'place.gold': 'Oro insufficiente',
-    'unlock.tracker': 'Prossima torre: {name}',
-    'unlock.toGo': 'ancora {n}',
     'panel.need': 'Mancano {n}',
     'up.otherPath': 'Hai scelto l\'altro ramo',
 

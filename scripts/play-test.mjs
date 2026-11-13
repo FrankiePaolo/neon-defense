@@ -1325,41 +1325,42 @@ scenario('Cannot afford', { layouts: ['phone', 'desktop'], open: { storage: { ne
   assert(w.cores === 3 && !w.unlocked.includes('lightning'), `cores ${w.cores}, unlocked ${w.unlocked}`);
 });
 
+// The wallet row: balance over the next price with a small label, nothing else
 const tracker = (g) => g.eval(() => ({
-  label: document.querySelector('#unlock-tracker .unlock-label')?.textContent.trim(),
-  fill: document.querySelector('#unlock-tracker .unlock-bar-fill')?.style.width,
   balance: document.getElementById('cores-value')?.textContent,
+  price: document.querySelector('#unlock-tracker .hud-total')?.textContent,
+  label: document.querySelector('#unlock-tracker .hud-label')?.textContent,
+  extras: document.querySelectorAll('#unlock-tracker img, #unlock-tracker .unlock-bar-bg').length,
 }));
 
-scenario('Tracker toward Cannon', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '15', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
+scenario('Wallet toward Cannon', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '15', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
   await g.startGame();
   const tr = await tracker(g);
-  assert(tr.label === 'Next tower: Cannon, 5 cores to go', `label: ${tr.label}`);
-  assert(tr.fill === '75%', `bar: ${tr.fill}`);
-  assert(tr.balance === '15', `balance: ${tr.balance}`);
+  assert(tr.balance === '15' && tr.price === '/ 20' && tr.label === 'Cores' && tr.extras === 0, `wallet row: ${JSON.stringify(tr)}`);
 });
 
-scenario('Tracker affordable', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '25', neon_td_unlocked: '["frost","lightning","support","sniper"]' } } }, async (g) => {
+scenario('Wallet price follows the next unlock', { layouts: ['phone', 'desktop'], open: { storage: { neon_td_cores: '20', neon_td_unlocked: '["frost","lightning"]' } } }, async (g) => {
+  await g.startGame();
+  const before = await tracker(g);
+  assert(before.balance === '20' && before.price === '/ 15', `before: ${JSON.stringify(before)}`);
+  await g.eval(() => window.game.ui._unlockTower(window.game.progressTracker.getNextUnlock().type));
+  const after = await tracker(g);
+  assert(after.balance === '5' && after.price === '/ 20', `after: ${JSON.stringify(after)}`);
+});
+
+scenario('Wallet with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
   await g.startGame();
   const tr = await tracker(g);
-  assert(tr.label === 'Cannon can be unlocked', `label: ${tr.label}`);
-  assert(tr.fill === '100%', `bar: ${tr.fill}`);
+  assert(tr.balance === '40' && tr.price === undefined, `wallet row: ${JSON.stringify(tr)}`);
 });
 
-scenario('Tracker with everything unlocked', { layouts: ['desktop'], open: { storage: { neon_td_cores: '40', neon_td_unlocked: ALL_UNLOCKED } } }, async (g) => {
+scenario('Wallet on a phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {
   await g.startGame();
-  const tr = await tracker(g);
-  assert(tr.label === undefined && tr.fill === undefined, `still shows ${JSON.stringify(tr)}`);
-  assert(tr.balance === '40', `balance: ${tr.balance}`);
-});
-
-scenario('Tracker on a phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {
-  await g.startGame();
-  const size = await g.eval(() => parseFloat(getComputedStyle(document.querySelector('#unlock-tracker .unlock-label')).fontSize));
-  assert(size >= 12, `label is ${size}px`);
-  const label = await g.rect('#unlock-tracker .unlock-label');
+  const size = await g.eval(() => Math.min(...[...document.querySelectorAll('#unlock-tracker .hud-total, #unlock-tracker .hud-label')].map(e => parseFloat(getComputedStyle(e).fontSize))));
+  assert(size >= 12, `smallest text is ${size}px`);
+  const wallet = await g.rect('#unlock-tracker .unlock-cores');
   const controls = await g.rect('#speed-controls');
-  assert(label.width > 0 && !intersects(label, controls), 'label overlaps the controls');
+  assert(wallet.width > 0 && !intersects(wallet, controls), 'wallet overlaps the controls');
 });
 
 scenario('End screen after wave 2', { layouts: ['desktop'], langs: ['en', 'it'] }, async (g) => {

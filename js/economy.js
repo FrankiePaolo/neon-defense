@@ -152,15 +152,12 @@ export class ProgressTracker {
     return true;
   }
 
-  // Cheapest locked tower as { type, cost, toGo }, or null when all are unlocked
+  // First locked tower in the tower bar as { type, cost, toGo }, or null when all are unlocked
   getNextUnlock() {
-    let next = null;
-    for (const [type, def] of Object.entries(TOWER_DEFS)) {
-      if (this.unlocked.has(type)) continue;
-      if (!next || def.unlockCost < next.cost) next = { type, cost: def.unlockCost };
-    }
-    if (next) next.toGo = Math.max(0, next.cost - this.cores);
-    return next;
+    const entry = Object.entries(TOWER_DEFS).find(([type]) => !this.unlocked.has(type));
+    if (!entry) return null;
+    const [type, def] = entry;
+    return { type, cost: def.unlockCost, toGo: Math.max(0, def.unlockCost - this.cores) };
   }
 
   _save() {

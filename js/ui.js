@@ -809,7 +809,7 @@ export class UIController {
     this.elements.gameOverScreen.style.display = 'flex';
   }
 
-  // End screen: cores earned this run and the cheapest locked tower
+  // End screen: cores earned this run and the next locked tower
   _fillCoreProgress() {
     document.getElementById('cores-earned').innerHTML =
       `${ICONS.core}${t('unlock.earned').replace('{n}', cores(this.game.coresThisRun || 0))}`;
@@ -836,7 +836,9 @@ export class UIController {
     btn.classList.toggle('active', !muted);
   }
 
-  // The wallet row: core balance, then the cheapest locked tower and a bar
+  // The wallet row, laid out like the counters above it: core balance over
+  // the price of the next locked tower, or only the balance when every
+  // tower is unlocked.
   updateUnlockTracker() {
     const el = document.getElementById('unlock-tracker');
     if (!el) return;
@@ -845,21 +847,11 @@ export class UIController {
     if (key === this._trackerKey) return;
     this._trackerKey = key;
 
-    let html = `<span class="unlock-cores" title="${t('hud.cores')}">${ICONS.core}<span id="cores-value">${progress.cores}</span></span>`;
     const next = progress.getNextUnlock();
-    if (next) {
-      const color = TOWER_DEFS[next.type].color;
-      const name = `<span style="color:${color}">${t('tower.' + next.type)}</span>`;
-      const label = next.toGo === 0 ? t('unlock.canUnlock').replace('{name}', name)
-        : `${t('unlock.tracker').replace('{name}', name)}, ${t('unlock.toGo').replace('{n}', cores(next.toGo))}`;
-      const fill = Math.round(Math.min(progress.cores / next.cost, 1) * 100);
-      html += `
-        <span class="unlock-next">
-          <span class="unlock-label">${label}</span>
-          <span class="unlock-bar-bg"><span class="unlock-bar-fill" style="width:${fill}%; background:${color}; color:${color}"></span></span>
-        </span>`;
-    }
-    el.innerHTML = html;
+    const price = next ? `<span class="hud-total">/ ${next.cost}</span>` : '';
+    el.innerHTML = `<span class="hud-item unlock-cores">` +
+      `<span class="hud-main">${ICONS.core}<span id="cores-value">${progress.cores}</span>${price}</span>` +
+      `<span class="hud-label">${t('hud.cores')}</span></span>`;
     el.classList.remove('hidden');
   }
 
