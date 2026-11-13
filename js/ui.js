@@ -140,6 +140,7 @@ export class UIController {
     document.querySelector('#pause-overlay p').textContent = t('game.pauseHint');
     document.getElementById('resume-btn').textContent = t('game.resume');
     document.getElementById('restart-btn').textContent = t('game.restart');
+    document.getElementById('main-menu-btn').textContent = t('game.mainMenu');
     document.getElementById('replay-tutorial-btn').textContent = t('game.replayTutorial');
 
     // Game over
@@ -365,7 +366,13 @@ export class UIController {
       this.game.startNewGame(this.game.difficulty);
     });
 
+    // A fresh run on the same difficulty
     document.getElementById('restart-btn').addEventListener('click', () => {
+      this.hidePause();
+      this.game.startNewGame(this.game.difficulty);
+    });
+
+    document.getElementById('main-menu-btn').addEventListener('click', () => {
       this.game.returnToMenu();
     });
 

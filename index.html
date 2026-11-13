@@ -773,7 +773,10 @@ canvas {
 
 #high-scores-btn.active { color: #00ffff; border-color: #00ffff; }
 
-/* Pause Overlay */
+/* Pause Overlay: the frozen board stays visible, dimmed, behind one column
+   of equal buttons, each in its own colour. Resume is the main action and
+   the only filled one; the colours warm up as the choice costs more of the
+   run, from tutorial (gold) to restart (orange) to main menu (red). */
 #pause-overlay {
   position: absolute;
   inset: 0;
@@ -781,7 +784,10 @@ canvas {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0a0a0a;
+  padding: 16px;
+  background: rgba(10, 10, 10, 0.85);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: 50;
 }
 
@@ -790,14 +796,51 @@ canvas {
   color: #00ffff;
   font-size: 36px;
   letter-spacing: 8px;
+  margin-right: -8px;
   text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
 }
 
 #pause-overlay p {
-  color: #666;
-  margin-top: 16px;
+  color: var(--text-3);
+  margin-top: 8px;
   font-size: 14px;
 }
+
+#pause-overlay .menu-btn {
+  width: min(280px, 100%);
+  min-height: 48px;
+  margin: 10px 0 0;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  color: rgb(var(--accent));
+  border-color: rgba(var(--accent), 0.6);
+  background: rgba(var(--accent), 0.05);
+}
+
+@media (hover: hover) {
+  #pause-overlay .menu-btn:hover { background: rgba(var(--accent), 0.15); }
+}
+#pause-overlay .menu-btn.touching { background: rgba(var(--accent), 0.15); }
+
+#pause-overlay #resume-btn {
+  min-height: 60px;
+  margin-top: 28px;
+  font-size: 22px;
+  color: #0a0a0a;
+  border-color: #00ffff;
+  background: #00ffff;
+  box-shadow: 0 0 18px rgba(0, 255, 255, 0.45);
+}
+
+@media (hover: hover) {
+  #pause-overlay #resume-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
+}
+#pause-overlay #resume-btn.touching { background: #66ffff; }
+
+#pause-overlay #replay-tutorial-btn { --accent: 255, 215, 0; }
+#pause-overlay #restart-btn { --accent: 255, 136, 0; }
+#pause-overlay #main-menu-btn { --accent: 255, 85, 85; }
 
 /* Game Over */
 #game-over-screen {
@@ -1545,9 +1588,10 @@ canvas {
     <div id="pause-overlay">
       <h2>PAUSED</h2>
       <p>Press SPACE or ESC to resume</p>
-      <button class="menu-btn" id="resume-btn" style="margin-top: 16px;">RESUME</button>
-      <button class="menu-btn" id="replay-tutorial-btn" style="margin-top: 8px;">REPLAY TUTORIAL</button>
-      <button class="menu-btn" id="restart-btn" style="margin-top: 8px;">RESTART</button>
+      <button class="menu-btn" id="resume-btn">RESUME</button>
+      <button class="menu-btn" id="replay-tutorial-btn">REPLAY TUTORIAL</button>
+      <button class="menu-btn" id="restart-btn">RESTART</button>
+      <button class="menu-btn" id="main-menu-btn">MAIN MENU</button>
     </div>
 
     <div id="game-over-screen">

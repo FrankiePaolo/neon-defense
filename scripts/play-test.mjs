@@ -404,11 +404,33 @@ scenario('Typing a name with a space and a digit', { layouts: ['desktop'] }, asy
 });
 
 scenario('Restart during a wave', { layouts: PLACE_LAYOUTS }, async (g) => {
-  await g.startGame();
+  await g.startGame('hard');
   await startWave(g);
   await g.page.waitForFunction(() => window.game.enemies.length > 0);
   await g.press('#pause-btn');
   await g.press('#restart-btn');
+  assert(!(await g.visible('#pause-overlay')), 'pause overlay still shown');
+  assert(!(await g.visible('#menu-screen')), 'menu shown');
+  const run = await g.eval(() => ({
+    state: window.game.state,
+    difficulty: window.game.difficulty,
+    wave: window.game.waveManager.currentWave,
+    enemies: window.game.enemies.length,
+    towers: window.game.towers.length,
+    music: window.game.audio.currentTrack,
+  }));
+  assert(run.state === 'BETWEEN_WAVES', `state ${run.state}`);
+  assert(run.difficulty === 'hard', `difficulty ${run.difficulty}`);
+  assert(run.wave === 0 && run.enemies === 0 && run.towers === 0, `new game not fresh: ${JSON.stringify(run)}`);
+  assert(run.music === 'gameplay', `music: ${run.music}`);
+});
+
+scenario('Main menu during a wave', { layouts: PLACE_LAYOUTS }, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await g.page.waitForFunction(() => window.game.enemies.length > 0);
+  await g.press('#pause-btn');
+  await g.press('#main-menu-btn');
   assert(await g.visible('#menu-screen'), 'menu not shown');
   const snap = () => g.eval(() => ({
     enemies: window.game.enemies.map(e => [e.x, e.y]),
@@ -552,7 +574,7 @@ scenario('Game started before the banner delay', { layouts: ['phone'], open: { u
   await sleep(2600);
   assert(!(await g.visible('#pwa-banner')), 'install banner over the game');
   await g.press('#pause-btn');
-  await g.press('#restart-btn');
+  await g.press('#main-menu-btn');
   assert(await g.visible('#pwa-banner'), 'install banner not shown on the menu');
 });
 
