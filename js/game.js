@@ -476,7 +476,8 @@ export class Game {
     // With every tower unlocked cores buy nothing, so they stay out of sight
     if (this.progressTracker.getNextUnlock()) {
       this.floatingTexts.push({
-        x: CONFIG.CANVAS_WIDTH / 2, y: 60,
+        // Above the wave banner, clear of the START tag on the top row
+        x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 50,
         text: `+${cores(earned)}`, color: '#c77dff',
         life: 1.5, maxLife: 1.5, large: true,
       });

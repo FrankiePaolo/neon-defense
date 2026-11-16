@@ -18,6 +18,8 @@ const LAYOUTS = {
   phoneShort: { width: 375, height: 667, deviceScaleFactor: 2, hasTouch: true, isMobile: true },
   landscape: { width: 844, height: 390, deviceScaleFactor: 3, hasTouch: true, isMobile: true, isLandscape: true },
   landscapeShort: { width: 667, height: 375, deviceScaleFactor: 2, hasTouch: true, isMobile: true, isLandscape: true },
+  phoneNarrow: { width: 280, height: 653, deviceScaleFactor: 3, hasTouch: true, isMobile: true },
+  tablet: { width: 820, height: 1180, deviceScaleFactor: 2, hasTouch: true, isMobile: true },
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1 },
   desktopShort: { width: 1280, height: 720, deviceScaleFactor: 1 },
   desktopBig: { width: 1920, height: 1080, deviceScaleFactor: 1 },
@@ -1129,6 +1131,46 @@ scenario('Tall phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) =>
   assert(await noPageScroll(g), 'page scrolls');
   const issues = await sizeAndContrastIssues(g);
   assert(issues.length === 0, `size or contrast: ${issues.join('; ')}`);
+});
+
+// Late game: wave 29's enemy types next, the repair button, five digit gold and
+// a seven digit score. Nothing may overlap, leave the screen, or cut the preview.
+scenario('Late-game controls fit', { layouts: ['phoneNarrow', 'phoneShort', 'phone', 'landscapeShort', 'tablet', 'desktopShort'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  await g.eval(() => {
+    const game = window.game;
+    const t = game.renderer.buildableTiles(game.grid)[0];
+    game.placeTower('blaster', t.x, t.y);
+    game.economy.gold = 13020;
+    game.lives = 10;
+    game.scoreTracker.score = 2252935;
+    game.waveManager.currentWave = 28;
+    game.waveManager.nextWaveQueue = null;
+    game.ui.showBetweenWaves();
+    game.ui.updateHUD();
+  });
+  await sleep(100);
+  const found = await g.eval(() => {
+    const sel = ['#hud-gold .hud-main', '#hud-wave .hud-main', '#hud-lives .hud-main', '#hud-score .hud-main', '#unlock-tracker .unlock-cores',
+      '#speed-controls', '#phase-label', '#wave-preview', '#repair-btn', '#start-wave-btn', '#panel-head', '.tower-btn', '#game-canvas'];
+    const els = sel.flatMap(s => [...document.querySelectorAll(s)]).map(el => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ el, r }) => r.width > 0 && getComputedStyle(el).visibility !== 'hidden');
+    const name = (el) => el.id || el.dataset.towerType || el.className;
+    const issues = [];
+    els.forEach((a, i) => {
+      if (a.r.left < -0.5 || a.r.top < -0.5 || a.r.right > innerWidth + 0.5 || a.r.bottom > innerHeight + 0.5) issues.push(`${name(a.el)} off screen`);
+      for (const b of els.slice(i + 1)) {
+        const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (w > 1 && h > 1) issues.push(`${name(a.el)} over ${name(b.el)}`);
+      }
+    });
+    const p = document.getElementById('wave-preview');
+    if (p.scrollWidth > p.clientWidth + 1 || p.scrollHeight > p.clientHeight + 1) issues.push('preview cut');
+    if (!p.querySelector('.wp-enemy:not([style*="none"])')) issues.push('preview empty');
+    return issues;
+  });
+  assert(found.length === 0, found.join('; '));
 });
 
 scenario('Short phone', { layouts: ['phoneShort'], langs: ['en', 'it'] }, async (g) => {

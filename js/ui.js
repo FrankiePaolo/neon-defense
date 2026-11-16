@@ -47,6 +47,14 @@ function formatTime(seconds) {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
+// HUD counters: from 100,000 a short form (123K, 2.25M), so a value never
+// outgrows its cell; late runs pass a million points
+function shortNumber(n) {
+  if (n < 1e5) return String(n);
+  const [value, unit] = n < 1e6 ? [Math.floor(n / 1e3), 'K'] : [Math.floor(n / 1e4) / 100, 'M'];
+  return value.toLocaleString(getLang()) + unit;
+}
+
 const PHONE_LAYOUT = '(max-width: 768px), (max-height: 500px) and (pointer: coarse)';
 
 export function isPhoneLayout() {
@@ -107,6 +115,7 @@ export class UIController {
     const top = slot.getBoundingClientRect().top - slot.parentElement.getBoundingClientRect().top;
     container.style.setProperty('--board-bottom', top + h * scale + 'px');
     this.game.renderer.resize(scale);
+    this._fitPreview();
   }
 
   applyLanguage() {
@@ -177,6 +186,7 @@ export class UIController {
     const wpEl = document.getElementById('wave-preview');
     if (wpEl) {
       wpEl.firstChild.textContent = t('game.next') + ': ';
+      this._fitPreview();
     }
 
     // Language buttons
@@ -421,10 +431,10 @@ export class UIController {
   }
 
   updateHUD() {
-    this.elements.goldValue.textContent = String(this.game.economy.gold);
+    this.elements.goldValue.textContent = shortNumber(this.game.economy.gold);
     this.elements.waveValue.textContent = String(this.game.waveManager.currentWave);
     this.elements.livesValue.textContent = String(this.game.lives);
-    this.elements.scoreValue.textContent = String(this.game.scoreTracker.score);
+    this.elements.scoreValue.textContent = shortNumber(this.game.scoreTracker.score);
     if (this.game.state === 'BETWEEN_WAVES') {
       this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
       this._updatePhaseLabel();
@@ -774,6 +784,29 @@ export class UIController {
     this.elements.wavePreviewContent.innerHTML = text;
     document.getElementById('wave-controls').classList.add('visible');
     this.setPhase('build');
+    this._fitPreview();
+  }
+
+  // The preview keeps to its box (CSS sets it; late waves list up to 10
+  // enemy types): the enemies that do not fit become one "+N" chip
+  _fitPreview() {
+    const preview = this.elements.wavePreview;
+    const box = this.elements.wavePreviewContent;
+    box.querySelector('.wp-more')?.remove();
+    const chips = /** @type {HTMLElement[]} */ ([...box.querySelectorAll('.wp-enemy')]);
+    chips.forEach(c => { c.style.display = ''; });
+    const fits = () => preview.scrollWidth <= preview.clientWidth + 1 && preview.scrollHeight <= preview.clientHeight + 1;
+    if (!preview.offsetParent || fits()) return;
+    const more = document.createElement('span');
+    more.className = 'wp-enemy wp-more';
+    box.append(more);
+    for (let i = chips.length - 1; i >= 0; i--) {
+      chips[i].style.display = 'none';
+      const hidden = chips.slice(i);
+      more.textContent = '+' + hidden.length;
+      more.title = hidden.map(c => c.title).join(', ');
+      if (fits()) break;
+    }
   }
 
   hideBetweenWaves() {
@@ -793,9 +826,14 @@ export class UIController {
   _updatePhaseLabel() {
     const label = document.getElementById('phase-label');
     if (!label || !this._phase) return;
-    label.textContent = this._phase === 'wave'
+    // Between waves the label only asks for the first tower; then the
+    // preview and START WAVE say what comes next
+    const text = this._phase === 'wave'
       ? t('phase.wave').replace('{n}', this.game.waveManager.currentWave)
-      : this.game.towers.length === 0 ? t('phase.needTower') : t('phase.build');
+      : this.game.towers.length === 0 ? t('phase.needTower') : '';
+    if (label.textContent === text) return;
+    label.textContent = text;
+    this._fitPreview();
   }
 
   flashLives() {
