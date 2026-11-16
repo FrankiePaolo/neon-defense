@@ -84,6 +84,11 @@ export class AudioEngine {
     this.musicGain = null;
     this.sfxGain = null;
     this.muted = false;
+    this.speed = 1;
+    /** @type {Set<AudioScheduledSourceNode>} */
+    this.musicSources = new Set();
+    /** @type {Set<AudioScheduledSourceNode>} */
+    this.sfxSources = new Set();
     this.currentTrack = null;
     this.stepIndex = 0;
     this.barIndex = 0;
@@ -97,7 +102,7 @@ export class AudioEngine {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.value = 0.4;
+    this.masterGain.gain.value = this.muted ? 0 : 0.4;
     this.masterGain.connect(this.ctx.destination);
 
     this.musicGain = this.ctx.createGain();
@@ -120,12 +125,28 @@ export class AudioEngine {
     if (this.masterGain) {
       this.masterGain.gain.value = this.muted ? 0 : 0.4;
     }
+    if (!this.muted) this._resume();
     return this.muted;
+  }
+
+  _resume() {
+    if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  setSpeed(speed) {
+    if (this.speed === speed) return;
+    this.speed = speed;
+    if (this.ctx && this.currentTrack) {
+      this._stopSources(this.musicSources);
+      this.nextStepTime = this.ctx.currentTime + 0.02;
+    }
   }
 
   playTrack(name) {
     if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._resume();
     if (this.currentTrack === name) return;
 
     this.stopMusic();
@@ -137,19 +158,53 @@ export class AudioEngine {
   }
 
   stopMusic() {
-    if (this.timerID) {
+    if (this.timerID !== null) {
       clearInterval(this.timerID);
       this.timerID = null;
     }
     this.currentTrack = null;
+    this._stopSources(this.musicSources);
+  }
+
+  stopSfx() {
+    this._stopSources(this.sfxSources);
+  }
+
+  /** @param {Set<AudioScheduledSourceNode>} sources */
+  _stopSources(sources) {
+    for (const source of sources) source.stop(this.ctx.currentTime);
+    sources.clear();
+  }
+
+  /**
+   * @param {AudioScheduledSourceNode} source
+   * @param {AudioNode[]} nodes
+   * @param {Set<AudioScheduledSourceNode>} sources
+   */
+  _trackSource(source, nodes, sources) {
+    sources.add(source);
+    source.onended = () => {
+      sources.delete(source);
+      source.disconnect();
+      for (const node of nodes) node.disconnect();
+    };
   }
 
   _startScheduler() {
     this.timerID = setInterval(() => {
-      if (!this.currentTrack) return;
+      if (!this.currentTrack || this.ctx.state !== 'running') return;
       const track = TRACKS[this.currentTrack];
       if (!track) return;
-      const stepDur = 60 / track.bpm / 4;
+      const stepDur = 60 / track.bpm / 4 / this.speed;
+      const now = this.ctx.currentTime;
+      // A stalled tab must skip missed beats, never play a backlog at once.
+      if (this.nextStepTime < now) {
+        const skipped = Math.ceil((now - this.nextStepTime) / stepDur);
+        const step = this.stepIndex + skipped;
+        this.barIndex += Math.floor(step / 16);
+        this.stepIndex = step % 16;
+        this.nextStepTime += skipped * stepDur;
+      }
 
       while (this.nextStepTime < this.ctx.currentTime + 0.1) {
         this._playStep(track, this.stepIndex, this.barIndex, this.nextStepTime, stepDur);
@@ -188,22 +243,25 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
     osc.connect(gain);
     gain.connect(this.musicGain);
+    this._trackSource(osc, [gain], this.musicSources);
     osc.start(time);
     osc.stop(time + dur + 0.02);
   }
 
   _playKick(time, vol) {
+    const duration = 1 / this.speed;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(150, time);
-    osc.frequency.exponentialRampToValueAtTime(40, time + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(40, time + 0.08 * duration);
     gain.gain.setValueAtTime(vol, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15 * duration);
     osc.connect(gain);
     gain.connect(this.musicGain);
+    this._trackSource(osc, [gain], this.musicSources);
     osc.start(time);
-    osc.stop(time + 0.2);
+    osc.stop(time + 0.2 * duration);
   }
 
   _playNoiseDrum(time, dur, filterFreq, vol) {
@@ -218,6 +276,7 @@ export class AudioEngine {
     src.connect(filter);
     filter.connect(gain);
     gain.connect(this.musicGain);
+    this._trackSource(src, [filter, gain], this.musicSources);
     src.start(time);
     src.stop(time + dur + 0.02);
   }
@@ -226,16 +285,19 @@ export class AudioEngine {
 
   playSfx(name) {
     if (!this.ctx || this.muted) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._resume();
     const t = this.ctx.currentTime;
+    /** @param {OscillatorType} [wave] */
+    const tone = (freq, offset, dur, wave = 'square') =>
+      this._sfxTone(freq, t + offset / this.speed, dur / this.speed, wave);
     switch (name) {
-      case 'place':  this._sfxTone(440, t, 0.05); this._sfxTone(660, t + 0.05, 0.05); this._sfxTone(880, t + 0.1, 0.08); break;
-      case 'upgrade': [660, 880, 1320].forEach((f, i) => this._sfxTone(f, t + i * 0.06, 0.12, 'triangle')); break;
-      case 'sell':   this._sfxTone(880, t, 0.05); this._sfxTone(660, t + 0.05, 0.05); this._sfxTone(440, t + 0.1, 0.08); break;
-      case 'death':  this._sfxTone(300, t, 0.06); this._sfxTone(450, t + 0.03, 0.06); break;
-      case 'wave':   [523, 659, 784, 1047].forEach((f, i) => this._sfxTone(f, t + i * 0.07, 0.1)); break;
-      case 'damage': this._sfxTone(120, t, 0.12, 'sawtooth'); this._sfxTone(80, t + 0.04, 0.15, 'sawtooth'); break;
-      case 'gameover': [440, 392, 329, 261].forEach((f, i) => this._sfxTone(f, t + i * 0.2, 0.3, 'triangle')); break;
+      case 'place':  tone(440, 0, 0.05); tone(660, 0.05, 0.05); tone(880, 0.1, 0.08); break;
+      case 'upgrade': [660, 880, 1320].forEach((f, i) => tone(f, i * 0.06, 0.12, 'triangle')); break;
+      case 'sell':   tone(880, 0, 0.05); tone(660, 0.05, 0.05); tone(440, 0.1, 0.08); break;
+      case 'death':  tone(300, 0, 0.06); tone(450, 0.03, 0.06); break;
+      case 'wave':   [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.1)); break;
+      case 'damage': tone(120, 0, 0.12, 'sawtooth'); tone(80, 0.04, 0.15, 'sawtooth'); break;
+      case 'gameover': [440, 392, 329, 261].forEach((f, i) => tone(f, i * 0.2, 0.3, 'triangle')); break;
     }
   }
 
@@ -249,6 +311,7 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
     osc.connect(gain);
     gain.connect(this.sfxGain);
+    this._trackSource(osc, [gain], this.sfxSources);
     osc.start(time);
     osc.stop(time + dur + 0.02);
   }

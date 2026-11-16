@@ -68,6 +68,12 @@ export class Game {
       },
     };
 
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && (this.state === 'PLAYING' || this.state === 'BETWEEN_WAVES')) {
+        this.togglePause();
+      }
+    });
+
     this._loop = this._loop.bind(this);
     requestAnimationFrame(this._loop);
   }
@@ -118,6 +124,9 @@ export class Game {
     this.ui.updateSpeedButtons(1);
     this.ui.updateHUD();
     this.ui.showBetweenWaves();
+    this.audio.stopMusic();
+    this.audio.stopSfx();
+    this.audio.setSpeed(1);
     this.audio.init();
     this.audio.playTrack('gameplay');
     this.ui.setMuteIcon(this.audio.muted);
@@ -245,6 +254,7 @@ export class Game {
 
   setSpeed(speed) {
     this.speedMultiplier = speed;
+    this.audio.setSpeed(speed);
     this.ui.updateSpeedButtons(speed, true);
   }
 
@@ -252,6 +262,7 @@ export class Game {
   returnToMenu() {
     this.state = 'MENU';
     this.audio.stopMusic();
+    this.audio.stopSfx();
     this.input.clearCarry();
     this.ui.showMenu();
   }
@@ -262,6 +273,7 @@ export class Game {
       this.state = 'PAUSED';
       this.input.clearCarry();
       this.audio.stopMusic();
+      this.audio.stopSfx();
       this.ui.showPause();
     } else if (this.state === 'PAUSED') {
       this.state = this._prevState || 'PLAYING';
@@ -508,6 +520,7 @@ export class Game {
     this.state = 'GAME_OVER';
     this.input.clearCarry();
     this.audio.stopMusic();
+    this.audio.stopSfx();
     this.audio.playSfx('gameover');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, false);
   }
@@ -517,6 +530,7 @@ export class Game {
     this.state = 'GAME_OVER';
     this.input.clearCarry();
     this.audio.stopMusic();
+    this.audio.stopSfx();
     this.audio.playSfx('wave');
     this.ui.showGameOver(this.scoreTracker.score, this.waveManager.currentWave, true);
   }

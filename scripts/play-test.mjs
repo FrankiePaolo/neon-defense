@@ -1771,6 +1771,189 @@ scenario('A leaking boss costs 5 lives', { layouts: ['desktop'] }, async (g) => 
   assert(after === lives - 5, `lives ${lives} -> ${after}`);
 });
 
+// Observe the real scheduler and Web Audio nodes while playing fresh runs.
+scenario('Audio tempo follows game speed', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  await g.eval(() => {
+    const audio = window.game.audio;
+    window.audioSteps = [];
+    const play = audio._playStep.bind(audio);
+    audio._playStep = (...args) => {
+      window.audioSteps.push({ time: args[3], duration: args[4], now: audio.ctx.currentTime });
+      play(...args);
+    };
+  });
+  for (const boss of [false, true]) {
+    if (boss) await g.eval(() => window.game.startNewGame());
+    const [tile] = await g.buildable();
+    assert(await g.placeAt('blaster', tile.x, tile.y), 'cannot place tower');
+    await g.eval(boss => {
+      if (boss) window.game.waveManager.currentWave = 4;
+      window.game.startNextWave();
+    }, boss);
+    for (const speed of [1, 2, 3, 1]) {
+      if (speed !== 1 || await g.eval(() => window.game.speedMultiplier) !== 1) await g.press('#speed-btn');
+      await g.eval(() => { window.audioSteps = []; });
+      await sleep(450);
+      const steps = await g.eval(() => window.audioSteps);
+      const expected = 60 / (boss ? 160 : 140) / 4 / speed;
+      assert(steps.length >= 2, 'music scheduler stopped');
+      assert(steps.every(s => Math.abs(s.duration - expected) < 0.0001), `audio tempo does not match ${speed}x: ${steps[0].duration}`);
+      assert(steps.every(s => s.time >= s.now - 0.025), 'music scheduled in the past');
+      assert(steps.slice(1).every((s, i) => Math.abs(s.time - steps[i].time - expected) < 0.0001), 'uneven beat spacing');
+    }
+  }
+  await g.eval(() => {
+    window.game.setSpeed(3);
+    window.game.audio.playSfx('gameover');
+    window.game.startNewGame();
+  });
+  assert(await g.eval(() => window.game.audio.speed === 1), 'restart keeps old audio speed');
+  assert(await g.eval(() => window.game.audio.sfxSources.size === 0), 'old effects survive restart');
+});
+
+scenario('Audio skips missed beats after a stall', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  await g.eval(() => {
+    const audio = window.game.audio;
+    window.audioSteps = [];
+    const play = audio._playStep.bind(audio);
+    audio._playStep = (...args) => {
+      window.audioSteps.push({ time: args[3], now: audio.ctx.currentTime });
+      play(...args);
+    };
+    const until = performance.now() + 700;
+    while (performance.now() < until) { /* Simulate a busy main thread. */ }
+  });
+  await sleep(150);
+  const steps = await g.eval(() => window.audioSteps);
+  assert(steps.length > 0, 'music did not recover');
+  assert(steps.every(s => s.time >= s.now - 0.025), `replayed overdue notes: ${JSON.stringify(steps)}`);
+});
+
+scenario('Audio cancels notes on pause and track changes', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  const result = await g.eval(async () => {
+    const game = window.game;
+    const audio = game.audio;
+    const nodes = [];
+    for (const method of ['createOscillator', 'createBufferSource']) {
+      const create = audio.ctx[method].bind(audio.ctx);
+      audio.ctx[method] = (...args) => {
+        const node = create(...args);
+        const record = { stop: Infinity };
+        const stop = node.stop.bind(node);
+        node.stop = (time = 0) => { record.stop = time; stop(time); };
+        nodes.push(record);
+        return node;
+      };
+    }
+    // A long audible note makes a tail measurable without depending on the song position.
+    audio._playTone(440, audio.ctx.currentTime, 2, 'sine', 0.1);
+    game.togglePause();
+    const pausedAt = audio.ctx.currentTime;
+    const pauseSilent = nodes.every(n => n.stop <= pausedAt);
+    game.togglePause();
+    audio._playTone(440, audio.ctx.currentTime + 0.05, 2, 'sine', 0.1);
+    const previous = [...nodes];
+    audio.playTrack('boss');
+    const changedAt = audio.ctx.currentTime;
+    const oldTrackSilent = previous.every(n => n.stop <= changedAt);
+    game.returnToMenu();
+    return { pauseSilent, oldTrackSilent };
+  });
+  assert(result.pauseSilent, 'scheduled music continues after pause');
+  assert(result.oldTrackSilent, 'old track overlaps new track');
+});
+
+scenario('Audio mute before initialization', { layouts: ['desktop'] }, async (g) => {
+  await g.eval(() => window.game.audio.toggleMute());
+  await g.startGame();
+  assert(await g.eval(() => window.game.audio.masterGain.gain.value === 0), 'first run ignores mute');
+});
+
+scenario('Audio effects follow speed and release nodes', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  const result = await g.eval(async () => {
+    const audio = window.game.audio;
+    audio.stopMusic();
+    audio.stopSfx();
+    const tones = [];
+    const play = audio._sfxTone.bind(audio);
+    audio._sfxTone = (...args) => { tones.push(args); play(...args); };
+    const results = [];
+    for (const speed of [1, 2, 3]) {
+      window.game.setSpeed(speed);
+      tones.length = 0;
+      for (const name of ['place', 'upgrade', 'sell', 'death', 'wave', 'damage', 'gameover']) audio.playSfx(name);
+      results.push({ speed, duration: tones[0][2], spacing: tones[1][1] - tones[0][1], pitch: tones[0][0], count: tones.length });
+      await new Promise(r => setTimeout(r, 1050 / speed));
+      if (audio.sfxSources.size !== 0) throw new Error('finished effects retained audio sources');
+    }
+    return results;
+  });
+  for (const r of result) {
+    assert(r.count === 21, `missing effect tones: ${r.count}`);
+    assert(Math.abs(r.duration - 0.05 / r.speed) < 0.0001, 'effect duration ignores speed');
+    assert(Math.abs(r.spacing - 0.05 / r.speed) < 0.0001, 'effect notes ignore speed');
+    assert(r.pitch === 440, 'speed changed effect pitch');
+  }
+});
+
+scenario('Audio output mutes pauses and resumes', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  const output = await g.eval(async () => {
+    const game = window.game;
+    const audio = game.audio;
+    await audio.ctx.resume();
+    const analyser = audio.ctx.createAnalyser();
+    analyser.fftSize = 512;
+    audio.masterGain.connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    const level = async () => {
+      await new Promise(r => setTimeout(r, 150));
+      analyser.getFloatTimeDomainData(samples);
+      return Math.max(...samples.map(Math.abs));
+    };
+    audio._playTone(440, audio.ctx.currentTime, 3, 'sine', 0.1);
+    const playing = await level();
+    audio.toggleMute();
+    const muted = await level();
+    await audio.ctx.suspend();
+    audio.toggleMute();
+    const unmuted = await level();
+    audio.playSfx('gameover');
+    game.togglePause();
+    const paused = await level();
+    game.togglePause();
+    audio._playTone(440, audio.ctx.currentTime, 3, 'sine', 0.1);
+    const resumed = await level();
+    game.returnToMenu();
+    const menu = await level();
+    audio.masterGain.disconnect(analyser);
+    analyser.disconnect();
+    return { playing, muted, unmuted, paused, resumed, menu };
+  });
+  assert(output.playing > 0.001 && output.unmuted > 0.001 && output.resumed > 0.001, `missing output: ${JSON.stringify(output)}`);
+  assert(output.muted < 0.00001 && output.paused < 0.00001 && output.menu < 0.00001, `audio leaks: ${JSON.stringify(output)}`);
+});
+
+scenario('Audio stops when the game tab is hidden', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await g.page.bringToFront();
+  const other = await g.context.newPage();
+  try {
+    await other.bringToFront();
+    await g.page.waitForFunction(() => document.hidden && window.game.state === 'PAUSED', { timeout: 3000 });
+    assert(await g.eval(() => window.game.audio.currentTrack === null && window.game.audio.musicSources.size === 0), 'hidden tab still plays music');
+  } finally {
+    await other.close();
+    await g.page.bringToFront();
+  }
+  await g.press('#resume-btn');
+  assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'music did not resume after returning');
+});
+
 scenario('Boss music after a pause', { layouts: ['desktop'] }, async (g) => {
   await g.startGame();
   await clearWave(g);
