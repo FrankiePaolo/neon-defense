@@ -168,7 +168,7 @@ export class Tower {
 
   // ── Main render ──
 
-  render(ctx, isSelected, isHovered, compact = false) {
+  render(ctx, isSelected, isHovered, compact = false, showRange = isSelected || isHovered) {
     const upgrades = this.upgradesA + this.upgradesB;
     const size = CONFIG.TILE_SIZE * 0.35 + upgrades;
     const color = this.def.color;
@@ -176,7 +176,7 @@ export class Tower {
     const pulse = 0.85 + 0.15 * Math.sin(t * 2.5);
     const hasTarget = !!(this.target && this.target.active);
 
-    if (isSelected || isHovered) {
+    if (showRange) {
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;

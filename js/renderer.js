@@ -177,12 +177,16 @@ export class Renderer {
     }
 
     const moving = game.input && game.input.movingTower;
+    const showPlacementRanges = game.state === 'BETWEEN_WAVES' &&
+      game.input && (game.input.placingType || moving);
     for (const tower of game.towers) {
       if (tower === moving) { this._tileCorners(ctx, tower.gx, tower.gy, tower.def.color, 0.35); continue; }
       const isSelected = game.input && game.input.selectedTower === tower;
       const isHovered = game.input && game.input.hoveredCell &&
         tower.gx === game.input.hoveredCell.x && tower.gy === game.input.hoveredCell.y;
-      tower.render(ctx, isSelected, isHovered);
+      const showRange = game.state === 'BETWEEN_WAVES' &&
+        !!(showPlacementRanges || isSelected || isHovered);
+      tower.render(ctx, isSelected, isHovered, false, showRange);
     }
     if (game.input) this._renderCarry(ctx, game);
 
