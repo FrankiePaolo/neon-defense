@@ -387,7 +387,6 @@ canvas {
 .tower-unlocked-pulse { animation: unlock-card-pulse 0.7s ease-out; }
 @keyframes unlock-card-pulse { 50% { box-shadow: 0 0 18px var(--tower-color); } }
 @media (prefers-reduced-motion: reduce) { .tower-unlocked-pulse { animation: none; } }
-#game-over-screen h2.victory { color: #00ff66; text-shadow: 0 0 20px rgba(0,255,102,0.5); }
 .tower-btn.tower-can-unlock .tower-unlock-req { color: #c77dff; }
 
 #unlock-notification {
@@ -897,271 +896,205 @@ canvas {
    of equal buttons, each in its own colour. Resume is the main action and
    the only filled one; the colours warm up as the choice costs more of the
    run, from tutorial (gold) to restart (orange) to main menu (red). */
-#pause-overlay {
+/* Run screens: a clear primary action, with optional actions below. */
+#pause-overlay,
+#game-over-screen {
   position: absolute;
   inset: 0;
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(10, 10, 10, 0.85);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  z-index: 50;
+  padding: 24px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
-
-#pause-overlay h2 {
-  font-family: var(--font-brand);
-  color: #00ffff;
-  font-size: 36px;
-  letter-spacing: 8px;
-  margin-right: -8px;
-  text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-}
-
-#pause-overlay p {
-  color: var(--text-3);
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-#pause-overlay .menu-btn {
-  width: min(280px, 100%);
-  min-height: 48px;
-  margin: 10px 0 0;
-  padding: 10px 16px;
-  font-size: 16px;
-  font-weight: bold;
-  color: rgb(var(--accent));
-  border-color: rgba(var(--accent), 0.6);
-  background: rgba(var(--accent), 0.05);
-}
-
-@media (hover: hover) {
-  #pause-overlay .menu-btn:hover { background: rgba(var(--accent), 0.15); }
-}
-#pause-overlay .menu-btn.touching { background: rgba(var(--accent), 0.15); }
-
-#pause-overlay #resume-btn {
-  min-height: 60px;
-  margin-top: 28px;
-  font-size: 22px;
-  color: #0a0a0a;
-  border-color: #00ffff;
-  background: #00ffff;
-  box-shadow: 0 0 18px rgba(0, 255, 255, 0.45);
-}
-
-@media (hover: hover) {
-  #pause-overlay #resume-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
-}
-#pause-overlay #resume-btn.touching { background: #66ffff; }
-
-#pause-overlay #replay-tutorial-btn { --accent: 255, 215, 0; }
-#pause-overlay #restart-btn { --accent: 255, 136, 0; }
-#pause-overlay #main-menu-btn { --accent: 255, 85, 85; }
-
-/* Game Over and victory: the run card (score, wave, rank, time and the
-   challenge pitch) with its share button, the cores, saving, then one column
-   of actions styled like the pause screen. Play again is the only filled
-   button. The spacers centre the column and give way to scrolling on short
-   screens, as on the menu. */
+#pause-overlay::before,
+#pause-overlay::after,
+#game-over-screen::before,
+#game-over-screen::after { content: ''; flex: 1 0 0; }
+#pause-overlay > *, #game-over-screen > * { flex-shrink: 0; }
+#pause-overlay { background: rgba(5, 9, 16, 0.88); z-index: 50; }
 #game-over-screen {
   --result-accent: 255, 110, 110;
-  position: absolute;
-  inset: 0;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 16px;
-  gap: 0;
-  overflow-y: auto;
-  background: radial-gradient(ellipse at 50% 20%, rgba(var(--result-accent), 0.09), transparent 60%), rgba(7, 10, 17, 0.96);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  background: radial-gradient(ellipse at 50% 10%, rgba(var(--result-accent), 0.1), transparent 65%), rgba(7, 10, 17, 0.97);
   z-index: 100;
 }
-
 #game-over-screen.victory { --result-accent: 0, 255, 153; }
-#game-over-screen > * { flex-shrink: 0; }
 
+.pause-card,
+.result-layout {
+  width: min(760px, 100%);
+  padding: 28px;
+  border: 1px solid #2a3b50;
+  border-radius: var(--radius-card);
+  background: linear-gradient(140deg, #131e2d, #0c121d 65%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+.pause-card { width: min(420px, 100%); border-top-color: #3c8c99; }
+.pause-overview { text-align: center; }
+.pause-emblem,
 .result-emblem {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 12px;
-  border: 1px solid rgba(var(--result-accent), 0.45);
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: var(--radius-panel);
-  color: rgb(var(--result-accent));
-  background: rgba(var(--result-accent), 0.08);
-  box-shadow: 0 0 32px rgba(var(--result-accent), 0.1);
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.06);
 }
-.result-emblem .icon { width: 24px; height: 24px; margin: 0; }
-
-#game-over-screen::before,
-#game-over-screen::after { content: ''; flex: 1 0 0; }
-
+.pause-emblem { margin: 0 auto 12px; }
+.pause-emblem .icon, .result-emblem .icon { width: 22px; height: 22px; margin: 0; }
+#pause-overlay h2,
 #game-over-screen h2 {
   font-family: var(--font-brand);
-  color: rgb(var(--result-accent));
-  font-size: 44px;
-  text-align: center;
-  letter-spacing: 0.08em;
-  margin-right: -0.08em;
-  line-height: 1;
-  text-shadow: 0 0 24px rgba(var(--result-accent), 0.25);
-}
-
-#run-card {
-  width: min(360px, 100%);
-  margin-top: 16px;
-  padding: 22px 20px 16px;
-  border: 1px solid rgba(143, 180, 210, 0.22);
-  border-top-color: rgba(0, 255, 255, 0.65);
-  border-radius: var(--radius-card);
-  background: radial-gradient(ellipse at 50% 0%, rgba(0, 255, 255, 0.09), transparent 70%), #0d1420;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
-  text-align: center;
-  animation: menu-in 0.3s ease-out both;
-}
-
-.result-score-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #9baebf;
-  margin-bottom: 6px;
-}
-
-#final-wave { color: var(--text-2); font-size: 15px; margin-top: 4px; }
-
-#final-stats {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 18px 0;
-}
-
-#share-cta {
-  padding: 14px 0 0;
-  border-top: 1px solid rgba(143, 180, 210, 0.16);
-}
-#share-cta-title { color: #fff; font-size: 17px; font-weight: 600; }
-#share-cta-sub { color: #9db4ff; font-size: 13px; margin-top: 4px; }
-
-.final-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  padding: 12px 8px;
-  border: 1px solid rgba(143, 180, 210, 0.12);
-  border-radius: var(--radius-control);
-  background: rgba(0, 0, 0, 0.16);
-  line-height: 1.25;
-}
-
-#final-score {
-  color: #fff;
-  font-family: var(--font-brand);
-  font-size: clamp(44px, 16vw, 64px);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-size: 38px;
+  letter-spacing: 0.06em;
   line-height: 1.1;
 }
+#pause-overlay h2 { color: #00ffff; }
+#pause-description, #result-description {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+#pause-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 8px;
+  padding: 16px 0;
+  margin: 16px 0 0;
+  border-top: 1px solid #293749;
+}
+#pause-summary > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+#pause-summary > div > :first-child { color: #f0f5fc; font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+#pause-summary > div > :last-child { color: var(--text-2); font-size: 12px; }
+#pause-hint { color: #9aabbf; font-size: 12px; margin-bottom: 16px; }
+.pause-actions { display: grid; gap: 10px; }
+.pause-exit-actions { display: grid; gap: 10px; margin-top: 6px; padding-top: 16px; border-top: 1px solid #293749; }
 
-#final-rank,
-#final-time {
-  color: #00ffff;
-  font-size: 20px;
+#pause-overlay .menu-btn,
+#game-over-screen .menu-btn {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: rgb(var(--accent));
+  border-color: #35465a;
+  background: rgba(18, 31, 46, 0.65);
 }
-.final-label { font-size: 13px; color: var(--text-2); margin-top: 2px; }
-
-#game-over-screen p { color: var(--text-2); font-size: 14px; text-align: center; }
-#game-over-screen #cores-earned { color: #c77dff; font-size: 16px; font-weight: 600; margin-top: 14px; }
-#game-over-screen #next-unlock-hint { margin-top: 6px; }
-#game-over-screen #challenge-result { font-size: 16px; font-weight: bold; margin-top: 12px; }
-
-/* Name and save on one row */
-#save-row {
-  display: flex;
-  width: min(360px, 100%);
-  margin-top: 16px;
+#pause-overlay .screen-action,
+#game-over-screen .screen-action { display: flex; align-items: center; gap: 14px; text-align: left; }
+.screen-action > .icon { width: 22px; height: 22px; margin: 0; flex-shrink: 0; }
+.action-copy { display: flex; flex-direction: column; gap: 4px; }
+.action-copy small { color: #aebed0; font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.4; }
+#pause-overlay #resume-btn,
+#game-over-screen #retry-map-btn {
+  color: #06151a;
+  background: #00e8e8;
+  border-color: #00ffff;
+  box-shadow: 0 0 22px rgba(0, 255, 255, 0.1);
+}
+#resume-btn .action-copy small, #retry-map-btn .action-copy small { color: #16464e; }
+#pause-overlay #restart-btn { --accent: 255, 190, 116; }
+#pause-overlay #main-menu-btn,
+#game-over-screen #end-menu-btn { --accent: 191, 203, 219; background: transparent; border-color: transparent; }
+@media (hover: hover) {
+  #pause-overlay .menu-btn:hover, #game-over-screen .menu-btn:hover { background: #24374b; border-color: rgb(var(--accent)); }
+  #pause-overlay #resume-btn:hover, #game-over-screen #retry-map-btn:hover { background: #7affff; }
+}
+#pause-overlay .menu-btn.touching, #game-over-screen .menu-btn.touching { filter: brightness(1.2); }
+#pause-overlay .menu-btn:focus-visible, #game-over-screen .menu-btn:focus-visible, #player-name:focus-visible {
+  outline: 2px solid #d2ffff;
+  outline-offset: 3px;
 }
 
+.result-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.result-heading { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; }
+.result-emblem { flex-shrink: 0; color: rgb(var(--result-accent)); border-color: rgba(var(--result-accent), 0.4); background: rgba(var(--result-accent), 0.07); }
+#game-over-screen h2 { color: rgb(var(--result-accent)); }
+#challenge-result { grid-column: 1 / -1; padding: 12px; border: 1px solid #34465c; border-radius: var(--radius-control); font-size: 14px; line-height: 1.5; }
+.result-summary, .result-actions, .result-save, #share-cta { min-width: 0; }
+#run-card {
+  padding: 20px;
+  border: 1px solid #2d4659;
+  border-radius: var(--radius-panel);
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 255, 255, 0.08), transparent 75%), #0a121e;
+  text-align: center;
+}
+#result-difficulty { display: inline-block; margin-bottom: 16px; padding: 4px 9px; border: 1px solid #35495d; border-radius: 4px; color: #b2c7db; font-size: 11px; letter-spacing: 0.1em; }
+.result-score-label, .screen-label { color: #a8bbcf; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+#final-score { color: #fff; font-family: var(--font-brand); font-size: clamp(38px, 10vw, 58px); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 4px; overflow-wrap: anywhere; }
+#final-wave { color: #c1cedb; font-size: 14px; margin-top: 6px; }
+#final-stats { display: flex; justify-content: center; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #293749; }
+.final-stat { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 4px; line-height: 1.25; }
+#final-rank, #final-time { color: #8ae7ed; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.final-label { font-size: 12px; color: var(--text-2); }
+#game-over-screen #cores-earned { color: #d19dff; font-size: 14px; font-weight: 600; margin-top: 14px; }
+#next-unlock-hint { color: var(--text-2); font-size: 12px; line-height: 1.5; margin-top: 6px; }
+.result-actions { display: flex; flex-direction: column; gap: 10px; }
+#replay-label { margin-bottom: 2px; }
+#game-over-screen #end-menu-btn { margin-top: auto; }
+.result-save, #share-cta { padding-top: 20px; border-top: 1px solid #293749; }
+#save-score-label { display: block; line-height: 1.5; }
+#save-row { display: flex; margin-top: 10px; }
 #player-name {
   flex: 1 1 0;
   min-width: 0;
   min-height: 48px;
-  background: #111;
-  border: 1px solid #444;
+  background: #080f19;
+  border: 1px solid #40536a;
   border-right: none;
   border-radius: var(--radius-control) 0 0 var(--radius-control);
   color: #fff;
   padding: 0 12px;
   font-family: var(--font-ui);
   font-size: 16px;
-  text-align: center;
   outline: none;
 }
-
 #player-name:focus { border-color: #00ffff; }
+#player-name::placeholder { color: #9aabbf; }
+#game-over-screen #save-score-btn { width: auto; padding: 0 12px; font-size: 12px; letter-spacing: 0; white-space: nowrap; border-color: #40536a; border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+#game-over-screen #name-taken-warn { color: #ff9898; font-size: 12px; line-height: 1.5; margin-top: 8px; }
+#share-cta-title { color: #dce6f1; font-size: 14px; font-weight: 600; }
+#share-cta-sub { color: #aebed0; font-size: 12px; line-height: 1.5; margin-top: 5px; }
+#game-over-screen #share-score-btn { --accent: 126, 234, 180; margin-top: 10px; }
 
-#game-over-screen .menu-btn {
-  width: min(360px, 100%);
-  min-height: 48px;
-  margin: 10px 0 0;
-  padding: 10px 16px;
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  color: rgb(var(--accent));
-  border-color: rgba(var(--accent), 0.6);
-  background: rgba(var(--accent), 0.05);
-  border-radius: var(--radius-control);
+@media (max-width: 600px) {
+  #pause-overlay, #game-over-screen { padding: 16px 12px; }
+  .pause-card, .result-layout { padding: 20px; }
+  .result-layout { max-width: 420px; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .result-heading { gap: 12px; }
+  #result-description { font-size: 13px; }
+  #run-card { padding: 16px; }
+  #result-difficulty { margin-bottom: 10px; }
+  #final-stats { margin-top: 14px; padding-top: 12px; }
+  #game-over-screen #cores-earned { margin-top: 10px; }
+  .result-save, #share-cta { padding-top: 16px; }
 }
-
-@media (hover: hover) {
-  #game-over-screen .menu-btn:hover { background: rgba(var(--accent), 0.15); }
+@media (max-width: 320px) {
+  .pause-card, .result-layout { padding: 16px; }
+  #game-over-screen h2 { font-size: 30px; letter-spacing: 0.03em; }
+  .result-emblem { width: 36px; height: 36px; }
+  .result-heading { gap: 10px; }
+  #run-card { padding: 14px 10px; }
 }
-#game-over-screen .menu-btn.touching { background: rgba(var(--accent), 0.15); }
-
-#game-over-screen #save-score-btn {
-  width: auto;
-  margin: 0;
-  padding: 0 16px;
-  font-size: 14px;
-  border-color: #00ffff;
-  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+@media (max-height: 500px) and (min-width: 601px) {
+  #pause-overlay, #game-over-screen { padding: 16px; }
+  .pause-card { width: min(720px, 100%); display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; padding: 20px; }
+  .pause-overview { align-self: center; }
+  .pause-emblem { display: none; }
+  #pause-summary { margin-top: 12px; }
+  .pause-exit-actions { padding-top: 10px; margin-top: 0; }
 }
-
-#game-over-screen #name-taken-warn { color: #ff6666; font-size: 12px; margin-top: 4px; }
-
-#game-over-screen #retry-map-btn {
-  min-height: 60px;
-  margin-top: 12px;
-  font-size: 22px;
-  color: #0a0a0a;
-  border-color: #00ffff;
-  background: #00ffff;
-  box-shadow: 0 0 18px rgba(0, 255, 255, 0.45);
-}
-
-@media (hover: hover) {
-  #game-over-screen #retry-map-btn:hover { background: #66ffff; box-shadow: 0 0 28px rgba(0, 255, 255, 0.6); }
-}
-#game-over-screen #retry-map-btn.touching { background: #66ffff; }
-
-#game-over-screen #share-score-btn { --accent: 0, 255, 102; }
-#game-over-screen #end-menu-btn { --accent: 170, 170, 170; }
-
-@media (prefers-reduced-motion: reduce) { #run-card { animation: none; } }
 
 .menu-btn:disabled {
   opacity: 0.3;
@@ -1413,7 +1346,6 @@ canvas {
     min-height: 48px;
   }
 
-  #game-over-screen h2 { font-size: 38px; }
   #pause-overlay h2 { font-size: 28px; }
 }
 
@@ -1824,7 +1756,7 @@ canvas {
   #start-wave-btn { min-height: 48px; }
   #cancel-place-btn,
   #repair-btn { min-height: 44px; }
-  #pause-overlay p { display: none; }
+  #pause-hint { display: none; }
 }
 
 /* Challenge banner on menu */
@@ -2009,43 +1941,74 @@ canvas {
       </div>
     </div>
 
-    <div id="pause-overlay">
-      <h2>PAUSED</h2>
-      <p>Press SPACE or ESC to resume</p>
-      <button class="menu-btn" id="resume-btn">RESUME</button>
-      <button class="menu-btn" id="replay-tutorial-btn">REPLAY TUTORIAL</button>
-      <button class="menu-btn" id="restart-btn">RESTART</button>
-      <button class="menu-btn" id="main-menu-btn">MAIN MENU</button>
+    <div id="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+      <div class="pause-card">
+        <div class="pause-overview">
+          <div class="pause-emblem" aria-hidden="true"></div>
+          <h2 id="pause-title">PAUSED</h2>
+          <p id="pause-description"></p>
+          <div id="pause-summary">
+            <div><span id="pause-wave-value"></span><span id="pause-wave-label"></span></div>
+            <div><span id="pause-lives-value"></span><span id="pause-lives-label"></span></div>
+            <div><span id="pause-score-value"></span><span id="pause-score-label"></span></div>
+          </div>
+          <p id="pause-hint">Press SPACE or ESC to resume</p>
+        </div>
+        <div class="pause-actions">
+          <button class="menu-btn screen-action" id="resume-btn">RESUME</button>
+          <button class="menu-btn screen-action" id="replay-tutorial-btn">REPLAY TUTORIAL</button>
+          <div class="pause-exit-actions">
+            <button class="menu-btn screen-action" id="restart-btn">NEW MAP</button>
+            <button class="menu-btn screen-action" id="main-menu-btn">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div id="game-over-screen">
-      <div class="result-emblem" aria-hidden="true"></div>
-      <h2>GAME OVER</h2>
-      <p id="challenge-result" style="display:none;"></p>
-      <div id="run-card">
-        <div id="final-score-label" class="result-score-label">Score</div>
-        <div id="final-score">0</div>
-        <div id="final-wave"></div>
-        <div id="final-stats">
-          <div class="final-stat" id="final-rank-stat" style="display:none;"><span id="final-rank"></span><span class="final-label" id="final-rank-label">Rank</span></div>
-          <div class="final-stat"><span id="final-time">00:00</span><span class="final-label" id="final-time-label">Survival</span></div>
+    <div id="game-over-screen" role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <div class="result-layout">
+        <div class="result-heading">
+          <div class="result-emblem" aria-hidden="true"></div>
+          <div>
+            <h2 id="result-title">GAME OVER</h2>
+            <p id="result-description"></p>
+          </div>
+        </div>
+        <p id="challenge-result" style="display:none;" aria-live="polite"></p>
+        <div class="result-summary">
+          <div id="run-card">
+            <div id="result-difficulty"></div>
+            <div id="final-score-label" class="result-score-label">Score</div>
+            <div id="final-score">0</div>
+            <div id="final-wave"></div>
+            <div id="final-stats">
+              <div class="final-stat" id="final-rank-stat" style="display:none;"><span id="final-rank"></span><span class="final-label" id="final-rank-label">Rank</span></div>
+              <div class="final-stat"><span id="final-time">00:00</span><span class="final-label" id="final-time-label">Run time</span></div>
+            </div>
+          </div>
+          <p id="cores-earned"></p>
+          <p id="next-unlock-hint" style="display:none;"></p>
+        </div>
+        <div class="result-actions">
+          <div id="replay-label" class="screen-label"></div>
+          <button class="menu-btn screen-action" id="retry-map-btn">RETRY MAP</button>
+          <button class="menu-btn screen-action" id="play-again-btn">NEW MAP</button>
+          <button class="menu-btn screen-action" id="end-menu-btn">MAIN MENU</button>
+        </div>
+        <div class="result-save">
+          <label id="save-score-label" class="screen-label" for="player-name"></label>
+          <div id="save-row">
+            <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off" aria-describedby="name-taken-warn">
+            <button class="menu-btn" id="save-score-btn">SAVE &amp; EXIT</button>
+          </div>
+          <p id="name-taken-warn" style="display:none;" role="status"></p>
         </div>
         <div id="share-cta">
           <div id="share-cta-title">Can you beat my score?</div>
-          <div id="share-cta-sub">Same challenge. Same starting conditions.</div>
+          <div id="share-cta-sub">Same map and waves. Share your score.</div>
+          <button class="menu-btn" id="share-score-btn">CHALLENGE A FRIEND</button>
         </div>
       </div>
-      <button class="menu-btn" id="share-score-btn">CHALLENGE A FRIEND</button>
-      <p id="cores-earned"></p>
-      <p id="next-unlock-hint" style="display:none;"></p>
-      <div id="save-row">
-        <input id="player-name" placeholder="Enter name" maxlength="12" autocomplete="off">
-        <button class="menu-btn" id="save-score-btn">SAVE SCORE</button>
-      </div>
-      <p id="name-taken-warn" style="visibility:hidden;">&nbsp;</p>
-      <button class="menu-btn" id="retry-map-btn">RETRY MAP</button>
-      <button class="menu-btn" id="play-again-btn">NEW MAP</button>
-      <button class="menu-btn" id="end-menu-btn">MAIN MENU</button>
     </div>
   </div>
 

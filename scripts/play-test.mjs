@@ -468,6 +468,8 @@ scenario('Last wave cleared', { layouts: PLACE_LAYOUTS, langs: ['en', 'it'] }, a
   assert(await heading() === want, `heading reads "${await heading()}"`);
   await g.eval(() => window.game.ui.applyLanguage());
   assert(await heading() === want, 'heading lost after applyLanguage');
+  const cleared = g.lang === 'it' ? 'Tutte le 35 ondate superate' : 'Cleared all 35 waves';
+  assert(await g.eval(() => document.getElementById('final-wave').textContent) === cleared, 'victory reads like an unfinished wave');
   assert(await g.visible('#save-score-btn') && await g.visible('#share-score-btn') && await g.visible('#retry-map-btn') && await g.visible('#play-again-btn') && await g.visible('#end-menu-btn'), 'end actions missing');
 });
 
@@ -528,6 +530,55 @@ scenario('End screen fits a landscape phone', { layouts: ['landscape'] }, async 
   const r = await g.rect('#end-menu-btn');
   const h = await g.eval(() => innerHeight);
   assert(r.height >= 44 && r.bottom <= h, `main menu button at ${JSON.stringify(r)}, viewport ${h}`);
+});
+
+scenario('Run screens keep their actions reachable', {
+  layouts: ['phone', 'phoneShort', 'phoneNarrow', 'landscape', 'landscapeShort', 'desktopShort'],
+  langs: ['en', 'it'],
+}, async (g) => {
+  await g.startGame();
+  await g.press('#pause-btn');
+  assert(await g.eval(() => document.activeElement.id) === 'resume-btn', 'resume is not focused');
+  assert(await g.eval(() => document.getElementById('pause-wave-value').textContent) === '0 / 35', 'pause wave is stale');
+  const reachable = async (overlay, selectors) => {
+    for (const selector of selectors) {
+      await g.eval(selector => document.querySelector(selector).scrollIntoView({ block: 'nearest' }), selector);
+      const r = await g.rect(selector);
+      const viewport = await g.eval(() => ({ w: innerWidth, h: innerHeight }));
+      assert(r.height >= 44 && r.top >= 0 && r.bottom <= viewport.h + 1 && r.left >= 0 && r.right <= viewport.w + 1,
+        `${selector} outside viewport: ${JSON.stringify(r)}`);
+    }
+    assert(await g.eval(selector => {
+      const el = document.querySelector(selector);
+      return el.scrollWidth <= el.clientWidth + 1;
+    }, overlay), `${overlay} scrolls sideways`);
+  };
+  await reachable('#pause-overlay', ['#resume-btn', '#replay-tutorial-btn', '#restart-btn', '#main-menu-btn']);
+  await g.press('#resume-btn');
+  await loseGame(g);
+  const retry = await g.rect('#retry-map-btn');
+  assert(retry.bottom <= await g.eval(() => innerHeight), 'retry requires scrolling past optional actions');
+  assert(await g.eval(() => document.activeElement.id) === 'retry-map-btn', 'retry is not focused');
+  await reachable('#game-over-screen', ['#retry-map-btn', '#play-again-btn', '#end-menu-btn', '#save-score-btn', '#share-score-btn']);
+});
+
+scenario('Run screens contain keyboard focus', { layouts: ['desktop'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  await g.press('#pause-btn');
+  await g.page.keyboard.down('Shift');
+  await g.page.keyboard.press('Tab');
+  await g.page.keyboard.up('Shift');
+  assert(await g.eval(() => document.activeElement.id) === 'main-menu-btn', 'pause focus escaped backwards');
+  await g.page.keyboard.press('Tab');
+  assert(await g.eval(() => document.activeElement.id) === 'resume-btn', 'pause focus escaped forwards');
+  await g.page.keyboard.press('Escape');
+  await loseGame(g);
+  await g.page.keyboard.down('Shift');
+  await g.page.keyboard.press('Tab');
+  await g.page.keyboard.up('Shift');
+  assert(await g.eval(() => document.activeElement.id) === 'share-score-btn', 'end screen focus escaped backwards');
+  await g.page.keyboard.press('Tab');
+  assert(await g.eval(() => document.activeElement.id) === 'retry-map-btn', 'end screen focus escaped forwards');
 });
 
 // ── Challenges ──
@@ -594,6 +645,8 @@ scenario('Accepting a challenge link', { layouts: ['phone', 'desktop'], open: { 
     time: document.getElementById('final-time').textContent,
   }));
   assert(card.rank === 'TOP 100%' && /^\d\d:\d\d$/.test(card.time), `card: ${JSON.stringify(card)}`);
+  assert(await inViewport(g, await g.rect('#retry-map-btn')), 'retry button outside the viewport');
+  await g.eval(() => document.getElementById('share-score-btn').scrollIntoView({ block: 'nearest' }));
   assert(await inViewport(g, await g.rect('#share-score-btn')), 'share button outside the viewport');
 
   // Sharing back passes the same seed on with this run's score

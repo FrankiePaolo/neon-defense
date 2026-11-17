@@ -196,11 +196,16 @@ export class UIController {
 
     // Pause
     document.querySelector('#pause-overlay h2').textContent = t('game.paused');
-    document.querySelector('#pause-overlay p').textContent = t('game.pauseHint');
-    document.getElementById('resume-btn').textContent = t('game.resume');
-    document.getElementById('restart-btn').textContent = t('game.restart');
-    document.getElementById('main-menu-btn').textContent = t('game.mainMenu');
-    document.getElementById('replay-tutorial-btn').textContent = t('game.replayTutorial');
+    document.getElementById('pause-hint').textContent = t('game.pauseHint');
+    document.getElementById('pause-description').textContent = t('game.pauseDescription');
+    document.querySelector('.pause-emblem').innerHTML = ICONS.pause;
+    for (const name of ['wave', 'lives', 'score']) {
+      document.getElementById(`pause-${name}-label`).textContent = t(`hud.${name}`);
+    }
+    this._screenAction('resume-btn', 'play', 'game.resume', 'game.resumeHint');
+    this._screenAction('main-menu-btn', 'home', 'game.mainMenu', 'game.leaveHint');
+    this._screenAction('replay-tutorial-btn', 'book', 'game.replayTutorial', 'game.tutorialHint');
+    this._fillPauseSummary();
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
@@ -209,14 +214,17 @@ export class UIController {
     document.getElementById('final-time-label').textContent = t('game.survival');
     document.getElementById('share-cta-title').textContent = t('share.cta.title');
     document.getElementById('share-cta-sub').textContent = t('share.cta.sub');
-    if (this._lastWave !== undefined) this.elements.finalWave.textContent = t('game.waveReached').replace('{n}', this._lastWave);
+    this._fillResultDetails();
     if (this._linkChallenge) this.showChallengeBanner(this._linkChallenge);
     /** @type {HTMLInputElement} */ (document.getElementById('player-name')).placeholder = t('game.enterName');
+    document.getElementById('player-name').setAttribute('aria-label', t('game.enterName'));
     document.getElementById('save-score-btn').textContent = t('game.saveScore');
     document.getElementById('share-score-btn').textContent = t('share.button');
-    document.getElementById('retry-map-btn').textContent = t('game.retryMap');
-    document.getElementById('play-again-btn').textContent = t('game.newMap');
-    document.getElementById('end-menu-btn').textContent = t('game.mainMenu');
+    this._screenAction('retry-map-btn', 'restart', 'game.retryMap', 'game.retryHint');
+    this._screenAction('play-again-btn', 'map', 'game.newMap', 'game.newMapHint');
+    this._screenAction('end-menu-btn', 'home', 'game.mainMenu');
+    document.getElementById('replay-label').textContent = t('game.playAgain');
+    document.getElementById('save-score-label').textContent = t('game.saveLabel');
     if (this._won !== undefined) this._fillCoreProgress();
     this._trackerKey = null;
 
@@ -429,6 +437,23 @@ export class UIController {
     document.getElementById('end-menu-btn').addEventListener('click', () => {
       this.game.returnToMenu();
     });
+
+    for (const overlay of [this.elements.pauseOverlay, this.elements.gameOverScreen]) {
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const controls = [...overlay.querySelectorAll('button:not(:disabled), input')]
+          .filter(el => el.getClientRects().length > 0);
+        const first = /** @type {HTMLElement} */ (controls[0]);
+        const last = /** @type {HTMLElement} */ (controls[controls.length - 1]);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      });
+    }
 
     document.getElementById('share-score-btn').addEventListener('click', () => {
       this._shareScore();
@@ -912,12 +937,36 @@ export class UIController {
   }
 
   showPause() {
+    this._fillPauseSummary();
     this.elements.pauseOverlay.style.display = 'flex';
+    this.elements.pauseOverlay.scrollTop = 0;
+    document.getElementById('resume-btn').focus({ preventScroll: true });
     document.getElementById('tower-panel').style.display = 'none';
   }
   hidePause() {
+    const hadFocus = this.elements.pauseOverlay.contains(document.activeElement);
     this.elements.pauseOverlay.style.display = 'none';
     document.getElementById('tower-panel').style.display = '';
+    if (hadFocus) document.getElementById('pause-btn').focus({ preventScroll: true });
+  }
+
+  _screenAction(id, icon, label, hint = null) {
+    document.getElementById(id).innerHTML = `${ICONS[icon]}<span class="action-copy"><span>${t(label)}</span>${hint ? `<small>${t(hint)}</small>` : ''}</span>`;
+  }
+
+  _fillPauseSummary() {
+    document.getElementById('pause-wave-value').textContent = `${this.game.waveManager.currentWave} / ${CONFIG.MAX_WAVES}`;
+    document.getElementById('pause-lives-value').textContent = String(this.game.lives ?? CONFIG.BASE_LIVES);
+    document.getElementById('pause-score-value').textContent = shortNumber(this.game.scoreTracker.score);
+    this._screenAction('restart-btn', 'map', 'game.restart', this.game.challenge ? 'game.restartChallengeHint' : 'game.restartHint');
+  }
+
+  _fillResultDetails() {
+    document.getElementById('result-description').textContent = t(this._won ? 'game.victoryDescription' : 'game.defeatDescription').replace('{n}', CONFIG.MAX_WAVES);
+    document.getElementById('result-difficulty').textContent = t(`menu.${this.game.difficulty || 'normal'}`);
+    if (this._lastWave !== undefined) {
+      this.elements.finalWave.textContent = t(this._won ? 'game.wavesCleared' : 'game.waveReached').replace('{n}', this._lastWave);
+    }
   }
 
   showMenu() {
@@ -939,7 +988,7 @@ export class UIController {
     this._lastScore = score;
     this._lastWave = wave;
     this.elements.finalScore.textContent = score.toLocaleString();
-    this.elements.finalWave.textContent = t('game.waveReached').replace('{n}', wave);
+    this._fillResultDetails();
     document.getElementById('final-time').textContent = formatTime(this.game.runTime);
     this._fillRank(score);
 
@@ -972,6 +1021,8 @@ export class UIController {
     document.getElementById('share-score-btn').textContent = t('share.button');
 
     this.elements.gameOverScreen.style.display = 'flex';
+    this.elements.gameOverScreen.scrollTop = 0;
+    document.getElementById('retry-map-btn').focus({ preventScroll: true });
     this.elements.towerPanel.style.display = 'none';
   }
 
