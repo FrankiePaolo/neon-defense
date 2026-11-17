@@ -469,6 +469,8 @@ export class Game {
   }
 
   _onWaveComplete() {
+    const goldBefore = this.economy.gold;
+    const scoreBefore = this.scoreTracker.score;
     this.scoreTracker.addWaveBonus(this.waveManager.currentWave);
     if (this.livesLostThisWave === 0) {
       this.scoreTracker.addPerfectWaveBonus(this.waveManager.currentWave);
@@ -489,7 +491,7 @@ export class Game {
     if (this.progressTracker.getNextUnlock()) {
       this.floatingTexts.push({
         // Above the wave banner, clear of the START tag on the top row
-        x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 50,
+        x: CONFIG.CANVAS_WIDTH / 2, y: CONFIG.CANVAS_HEIGHT / 2 - 85,
         text: `+${cores(earned)}`, color: '#c77dff',
         life: 1.5, maxLife: 1.5, large: true,
       });
@@ -505,6 +507,9 @@ export class Game {
     const perfect = this.livesLostThisWave === 0;
     this.waveBanner = {
       text: t(perfect ? 'banner.perfect' : 'banner.cleared').replace('{n}', wave),
+      detail: t('banner.rewards')
+        .replace('{gold}', (this.economy.gold - goldBefore).toLocaleString())
+        .replace('{score}', (this.scoreTracker.score - scoreBefore).toLocaleString()),
       color: perfect ? '#00ff66' : '#00ccff',
       timer: 2.5,
       duration: 2.5,

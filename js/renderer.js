@@ -284,7 +284,7 @@ export class Renderer {
   _renderEndpointLabel(ctx, x, y, color, text) {
     const ts = CONFIG.TILE_SIZE;
     ctx.save();
-    ctx.font = `bold ${Math.round(ts * 0.32)}px monospace`;
+    ctx.font = `bold ${Math.round(ts * 0.32)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const w = ctx.measureText(text).width + 8;
@@ -496,12 +496,12 @@ export class Renderer {
       const alpha = ft.life / ft.maxLife;
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = ft.large ? 'bold 18px Courier New' : 'bold 12px Courier New';
+      ctx.font = ft.large ? '700 18px Inter, sans-serif' : '700 12px Inter, sans-serif';
       ctx.textAlign = 'center';
       let x = ft.x;
       if (ft.boxed) {
         // Message on a dark pill, kept inside the board
-        ctx.font = 'bold 13px Courier New';
+        ctx.font = '700 13px Inter, sans-serif';
         ctx.textBaseline = 'middle';
         const w = ctx.measureText(ft.text).width + 12;
         x = Math.max(w / 2 + 2, Math.min(this.width - w / 2 - 2, x));
@@ -526,7 +526,7 @@ export class Renderer {
     if (game.killStreak < 8 || game.killStreakTimer <= 0) return;
     ctx.save();
     ctx.globalAlpha = Math.min(1, game.killStreakTimer * 2);
-    ctx.font = 'bold 22px Courier New';
+    ctx.font = '700 26px "Barlow Condensed", sans-serif';
     ctx.fillStyle = '#ff8800';
     ctx.shadowBlur = 14 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = '#ff8800';
@@ -547,29 +547,39 @@ export class Renderer {
     else if (progress > 0.7) alpha = (1 - progress) / 0.3;
     else alpha = 1;
 
-    // Slide in from left, settle at center
-    const slideT = Math.min(1, progress / 0.2);
-    const ease = 1 - Math.pow(1 - slideT, 3); // ease-out cubic
-    const x = -200 + (this.width / 2 + 200) * ease;
+    const x = this.width / 2;
     const y = this.height / 2;
+    const width = Math.min(this.width - 32, 500);
+    const height = b.detail ? 112 : 76;
 
-    // Background bar
-    ctx.save();
-    ctx.globalAlpha = alpha * 0.3;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, y - 25, this.width, 50);
-    ctx.restore();
-
-    // Text
+    // A compact card keeps the board visible around the announcement.
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = 'bold 28px Courier New';
+    ctx.fillStyle = 'rgba(7, 14, 23, 0.96)';
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x - width / 2, y - height / 2, width, height, 12);
+    ctx.fill();
+    ctx.globalAlpha = alpha * 0.45;
+    ctx.stroke();
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = b.color;
-    ctx.shadowBlur = 20 * SHADOW_BLUR_SCALE;
+    ctx.fillRect(x - 24, y - height / 2, 48, 2);
+
+    ctx.font = '700 34px "Barlow Condensed", sans-serif';
+    ctx.fillStyle = b.color;
+    ctx.shadowBlur = 10 * SHADOW_BLUR_SCALE;
     ctx.shadowColor = b.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(b.text, x, y);
+    ctx.fillText(b.text, x, b.detail ? y - 14 : y, width - 32);
+    if (b.detail) {
+      ctx.shadowBlur = 0;
+      ctx.font = '500 14px Inter, sans-serif';
+      ctx.fillStyle = '#c1cddb';
+      ctx.fillText(b.detail, x, y + 23, width - 32);
+    }
     ctx.restore();
   }
 

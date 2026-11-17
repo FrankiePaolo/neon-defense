@@ -79,6 +79,7 @@ const STRINGS = {
     'banner.boss': 'WAVE {n}: BOSS',
     'banner.cleared': 'WAVE {n} CLEARED',
     'banner.perfect': 'WAVE {n} PERFECT!',
+    'banner.rewards': '+{gold} gold  ·  +{score} score',
     'banner.combo': '{n}x COMBO',
 
     // Scores
@@ -311,6 +312,7 @@ const STRINGS = {
     'banner.boss': 'ONDATA {n}: BOSS',
     'banner.cleared': 'ONDATA {n} COMPLETATA',
     'banner.perfect': 'ONDATA {n} PERFETTA!',
+    'banner.rewards': '+{gold} oro  ·  +{score} punti',
     'banner.combo': 'COMBO {n}x',
 
     // Scores

@@ -1,8 +1,10 @@
-const CACHE_NAME = 'neon-defense-v35';
+const CACHE_NAME = 'neon-defense-v36';
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/fonts/inter-latin.woff2',
+  '/fonts/barlow-condensed-bold.woff2',
   '/js/main.js',
   '/js/game.js',
   '/js/ui.js',

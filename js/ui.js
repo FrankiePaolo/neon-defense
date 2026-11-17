@@ -162,6 +162,7 @@ export class UIController {
 
     // Game over
     document.querySelector('#game-over-screen h2').textContent = t(this._won ? 'game.victory' : 'game.gameOver');
+    document.getElementById('final-score-label').textContent = t('hud.score');
     document.getElementById('final-rank-label').textContent = t('game.rank');
     document.getElementById('final-time-label').textContent = t('game.survival');
     document.getElementById('share-cta-title').textContent = t('share.cta.title');
@@ -875,6 +876,8 @@ export class UIController {
 
   showGameOver(score, wave, won) {
     this._won = won;
+    this.elements.gameOverScreen.classList.toggle('victory', won);
+    document.querySelector('.result-emblem').innerHTML = won ? ICONS.star : ICONS.wave;
     document.querySelector('#game-over-screen h2').textContent = t(won ? 'game.victory' : 'game.gameOver');
     document.querySelector('#game-over-screen h2').classList.toggle('victory', won);
     this.hideUnlockTracker();
@@ -1128,7 +1131,7 @@ export class UIController {
       ctx.textAlign = 'center';
 
       // Title
-      ctx.font = 'bold 22px "Courier New", monospace';
+      ctx.font = '700 28px "Barlow Condensed", sans-serif';
       ctx.fillStyle = '#00ffff';
       ctx.shadowColor = '#00ffff';
       ctx.shadowBlur = 15;
@@ -1137,13 +1140,13 @@ export class UIController {
 
       // Player name
       if (playerName) {
-        ctx.font = '14px "Courier New", monospace';
+        ctx.font = '14px Inter, sans-serif';
         ctx.fillStyle = '#888';
         ctx.fillText(playerName, W / 2, 64);
       }
 
       // Score
-      ctx.font = 'bold 64px "Courier New", monospace';
+      ctx.font = '700 72px "Barlow Condensed", sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = '#ffffff';
       ctx.shadowBlur = 25;
@@ -1151,14 +1154,14 @@ export class UIController {
       ctx.shadowBlur = 0;
 
       // POINTS label
-      ctx.font = '14px "Courier New", monospace';
+      ctx.font = '14px Inter, sans-serif';
       ctx.fillStyle = '#666';
       ctx.fillText(this._rank ? `POINTS  ·  TOP ${this._rank}%` : 'POINTS', W / 2, 168);
 
       // Stats row
       const diffLabels = { hard: 'SHORT PATH', normal: 'MEDIUM PATH', easy: 'LONG PATH' };
       const diff = this.game.difficulty || 'normal';
-      ctx.font = 'bold 16px "Courier New", monospace';
+      ctx.font = 'bold 16px Inter, sans-serif';
       ctx.fillStyle = '#ffd700';
       ctx.shadowColor = '#ffd700';
       ctx.shadowBlur = 8;
@@ -1174,7 +1177,7 @@ export class UIController {
       ctx.stroke();
 
       // CTA
-      ctx.font = 'bold 18px "Courier New", monospace';
+      ctx.font = 'bold 18px Inter, sans-serif';
       ctx.fillStyle = '#ff8800';
       ctx.shadowColor = '#ff8800';
       ctx.shadowBlur = 10;
@@ -1182,7 +1185,7 @@ export class UIController {
       ctx.shadowBlur = 0;
 
       // URL
-      ctx.font = '12px "Courier New", monospace';
+      ctx.font = '12px Inter, sans-serif';
       ctx.fillStyle = '#555';
       ctx.fillText(window.location.hostname || 'neondefense.netlify.app', W / 2, 300);
 

@@ -11,13 +11,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NEON DEFENSE">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/barlow-condensed-bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-bold.woff2') format('woff2');
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Game-screen type and text colours. Greys stay at 4.5:1 or more on #0a0a0a. */
 :root {
-  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-brand: 'Courier New', monospace;
+  --font-ui: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-brand: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --text-1: #f0f0f0;
   --text-2: #b8b8c0;
   --text-3: #8c8c96;
@@ -27,6 +43,8 @@ body {
   background: #0a0a0a;
   color: #e0e0e0;
   font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
   overflow: hidden;
   user-select: none;
   touch-action: none;
@@ -679,7 +697,8 @@ canvas {
   color: #00ffff;
   border: 1px solid #00ffff;
   padding: 14px 48px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-brand);
+  font-weight: 700;
   font-size: 24px;
   cursor: pointer;
   margin: 8px;
@@ -737,10 +756,11 @@ canvas {
 
 #difficulty-label {
   color: var(--text-3);
-  font-family: var(--font-brand);
-  font-size: 13px;
-  letter-spacing: 0.3em;
-  margin: 0 -0.3em 12px 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin: 0 -0.16em 12px 0;
   text-align: center;
 }
 
@@ -772,11 +792,12 @@ canvas {
 
 .difficulty-btn .diff-sub {
   display: block;
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: normal;
   color: var(--text-2);
   margin-top: 4px;
-  letter-spacing: 1px;
+  letter-spacing: 0.02em;
   text-transform: lowercase;
 }
 
@@ -871,40 +892,72 @@ canvas {
    button. The spacers centre the column and give way to scrolling on short
    screens, as on the menu. */
 #game-over-screen {
+  --result-accent: 255, 110, 110;
   position: absolute;
   inset: 0;
   display: none;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
+  padding: 24px 16px;
+  gap: 0;
   overflow-y: auto;
-  background: rgba(10, 10, 10, 0.92);
+  background: radial-gradient(ellipse at 50% 20%, rgba(var(--result-accent), 0.09), transparent 60%), rgba(7, 10, 17, 0.96);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 100;
 }
+
+#game-over-screen.victory { --result-accent: 0, 255, 153; }
+#game-over-screen > * { flex-shrink: 0; }
+
+.result-emblem {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(var(--result-accent), 0.45);
+  border-radius: 14px;
+  color: rgb(var(--result-accent));
+  background: rgba(var(--result-accent), 0.08);
+  box-shadow: 0 0 32px rgba(var(--result-accent), 0.1);
+}
+.result-emblem .icon { width: 24px; height: 24px; margin: 0; }
 
 #game-over-screen::before,
 #game-over-screen::after { content: ''; flex: 1 0 0; }
 
 #game-over-screen h2 {
   font-family: var(--font-brand);
-  color: #ff4444;
-  font-size: 36px;
+  color: rgb(var(--result-accent));
+  font-size: 44px;
   text-align: center;
-  letter-spacing: 6px;
-  margin-right: -6px;
-  text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+  letter-spacing: 0.08em;
+  margin-right: -0.08em;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(var(--result-accent), 0.25);
 }
 
 #run-card {
-  width: min(320px, 100%);
+  width: min(360px, 100%);
   margin-top: 16px;
-  padding: 16px;
-  border: 1px solid rgba(0, 255, 255, 0.35);
-  border-radius: 12px;
-  background: #0b1120;
+  padding: 22px 20px 16px;
+  border: 1px solid rgba(143, 180, 210, 0.22);
+  border-top-color: rgba(0, 255, 255, 0.65);
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 255, 255, 0.09), transparent 70%), #0d1420;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
   text-align: center;
+  animation: menu-in 0.3s ease-out both;
+}
+
+.result-score-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9baebf;
+  margin-bottom: 6px;
 }
 
 #final-wave { color: var(--text-2); font-size: 15px; margin-top: 4px; }
@@ -912,14 +965,13 @@ canvas {
 #final-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  margin: 14px 0;
+  gap: 10px;
+  margin: 18px 0;
 }
 
 #share-cta {
-  padding: 12px;
-  border-radius: 8px;
-  background: rgba(0, 255, 255, 0.08);
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(143, 180, 210, 0.16);
 }
 #share-cta-title { color: #fff; font-size: 17px; font-weight: 600; }
 #share-cta-sub { color: #9db4ff; font-size: 13px; margin-top: 4px; }
@@ -928,12 +980,18 @@ canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.1;
+  flex: 1;
+  padding: 12px 8px;
+  border: 1px solid rgba(143, 180, 210, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+  line-height: 1.25;
 }
 
 #final-score {
   color: #fff;
-  font-size: 40px;
+  font-family: var(--font-brand);
+  font-size: clamp(44px, 16vw, 64px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
@@ -956,8 +1014,8 @@ canvas {
 /* Name and save on one row */
 #save-row {
   display: flex;
-  width: min(320px, 100%);
-  margin-top: 20px;
+  width: min(360px, 100%);
+  margin-top: 16px;
 }
 
 #player-name {
@@ -967,6 +1025,7 @@ canvas {
   background: #111;
   border: 1px solid #444;
   border-right: none;
+  border-radius: 8px 0 0 8px;
   color: #fff;
   padding: 0 12px;
   font-family: var(--font-ui);
@@ -978,7 +1037,7 @@ canvas {
 #player-name:focus { border-color: #00ffff; }
 
 #game-over-screen .menu-btn {
-  width: min(320px, 100%);
+  width: min(360px, 100%);
   min-height: 48px;
   margin: 10px 0 0;
   padding: 10px 16px;
@@ -989,6 +1048,7 @@ canvas {
   color: rgb(var(--accent));
   border-color: rgba(var(--accent), 0.6);
   background: rgba(var(--accent), 0.05);
+  border-radius: 8px;
 }
 
 @media (hover: hover) {
@@ -1002,6 +1062,7 @@ canvas {
   padding: 0 16px;
   font-size: 14px;
   border-color: #00ffff;
+  border-radius: 0 8px 8px 0;
 }
 
 #game-over-screen #name-taken-warn { color: #ff6666; font-size: 12px; margin-top: 4px; }
@@ -1023,6 +1084,8 @@ canvas {
 
 #game-over-screen #share-score-btn { --accent: 0, 255, 102; }
 #game-over-screen #end-menu-btn { --accent: 170, 170, 170; }
+
+@media (prefers-reduced-motion: reduce) { #run-card { animation: none; } }
 
 .menu-btn:disabled {
   opacity: 0.3;
@@ -1064,7 +1127,7 @@ canvas {
   background: transparent;
   color: #888;
   border: 1px solid #333;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: 1px;
   cursor: pointer;
@@ -1269,7 +1332,7 @@ canvas {
     min-height: 48px;
   }
 
-  #game-over-screen h2 { font-size: 28px; }
+  #game-over-screen h2 { font-size: 38px; }
   #pause-overlay h2 { font-size: 28px; }
 }
 
@@ -1474,7 +1537,7 @@ canvas {
    row fits */
 @media (max-width: 340px) {
   #unlock-tracker .hud-label { display: none; }
-  #wave-controls { grid-template-columns: minmax(80px, 1fr) auto auto; }
+  #wave-controls { grid-template-columns: minmax(80px, 1fr) auto auto; column-gap: 4px; }
   .wp-label { display: none; }
   #start-wave-btn { padding: 6px 10px; }
   #repair-btn { padding: 8px 6px; gap: 2px; font-size: 13px; }
@@ -1702,7 +1765,7 @@ canvas {
   color: #00ff66;
   padding: 10px 24px;
   border-radius: 6px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 14px;
   z-index: 200;
   transition: opacity 0.3s;
@@ -1724,7 +1787,7 @@ canvas {
   color: #ccc;
   padding: 12px 40px 12px 16px;
   border-radius: 8px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
   font-size: 13px;
   z-index: 300;
   max-width: 90vw;
@@ -1742,7 +1805,7 @@ canvas {
   color: #666;
   font-size: 20px;
   cursor: pointer;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
 }
 @keyframes pwa-slide-up {
   from { transform: translateX(-50%) translateY(100%); opacity: 0; }
@@ -1824,9 +1887,11 @@ canvas {
     </div>
 
     <div id="game-over-screen">
+      <div class="result-emblem" aria-hidden="true"></div>
       <h2>GAME OVER</h2>
       <p id="challenge-result" style="display:none;"></p>
       <div id="run-card">
+        <div id="final-score-label" class="result-score-label">Score</div>
         <div id="final-score">0</div>
         <div id="final-wave"></div>
         <div id="final-stats">
