@@ -1796,7 +1796,8 @@ scenario('Audio tempo follows game speed', { layouts: ['phone', 'desktop'] }, as
       await g.eval(() => { window.audioSteps = []; });
       await sleep(450);
       const steps = await g.eval(() => window.audioSteps);
-      const expected = 60 / (boss ? 160 : 140) / 4 / speed;
+      const audioRate = { 1: 0.6, 2: 0.8, 3: 1 }[speed];
+      const expected = 60 / (boss ? 160 : 140) / 4 / audioRate;
       assert(steps.length >= 2, 'music scheduler stopped');
       assert(steps.every(s => Math.abs(s.duration - expected) < 0.0001), `audio tempo does not match ${speed}x: ${steps[0].duration}`);
       assert(steps.every(s => s.time >= s.now - 0.025), 'music scheduled in the past');
@@ -1887,15 +1888,17 @@ scenario('Audio effects follow speed and release nodes', { layouts: ['phone', 'd
       tones.length = 0;
       for (const name of ['place', 'upgrade', 'sell', 'death', 'wave', 'damage', 'gameover']) audio.playSfx(name);
       results.push({ speed, duration: tones[0][2], spacing: tones[1][1] - tones[0][1], pitch: tones[0][0], count: tones.length });
-      await new Promise(r => setTimeout(r, 1050 / speed));
+      const audioRate = { 1: 0.6, 2: 0.8, 3: 1 }[speed];
+      await new Promise(r => setTimeout(r, 1050 / audioRate));
       if (audio.sfxSources.size !== 0) throw new Error('finished effects retained audio sources');
     }
     return results;
   });
   for (const r of result) {
     assert(r.count === 21, `missing effect tones: ${r.count}`);
-    assert(Math.abs(r.duration - 0.05 / r.speed) < 0.0001, 'effect duration ignores speed');
-    assert(Math.abs(r.spacing - 0.05 / r.speed) < 0.0001, 'effect notes ignore speed');
+    const audioRate = { 1: 0.6, 2: 0.8, 3: 1 }[r.speed];
+    assert(Math.abs(r.duration - 0.05 / audioRate) < 0.0001, 'effect duration ignores audio rate');
+    assert(Math.abs(r.spacing - 0.05 / audioRate) < 0.0001, 'effect notes ignore audio rate');
     assert(r.pitch === 440, 'speed changed effect pitch');
   }
 });

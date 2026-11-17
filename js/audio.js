@@ -144,6 +144,11 @@ export class AudioEngine {
     }
   }
 
+  get playbackSpeed() {
+    // Keep x1 relaxed, x2 moderate, and x3 at the original tempo.
+    return 0.6 + (this.speed - 1) * 0.2;
+  }
+
   setSpeed(speed) {
     if (this.speed === speed) return;
     this.speed = speed;
@@ -204,7 +209,7 @@ export class AudioEngine {
       if (!this.currentTrack || this.ctx.state !== 'running') return;
       const track = TRACKS[this.currentTrack];
       if (!track) return;
-      const stepDur = 60 / track.bpm / 4 / this.speed;
+      const stepDur = 60 / track.bpm / 4 / this.playbackSpeed;
       const now = this.ctx.currentTime;
       // A stalled tab must skip missed beats, never play a backlog at once.
       if (this.nextStepTime < now) {
@@ -258,7 +263,7 @@ export class AudioEngine {
   }
 
   _playKick(time, vol) {
-    const duration = 1 / this.speed;
+    const duration = 1 / this.playbackSpeed;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
@@ -298,7 +303,7 @@ export class AudioEngine {
     const t = this.ctx.currentTime;
     /** @param {OscillatorType} [wave] */
     const tone = (freq, offset, dur, wave = 'square') =>
-      this._sfxTone(freq, t + offset / this.speed, dur / this.speed, wave);
+      this._sfxTone(freq, t + offset / this.playbackSpeed, dur / this.playbackSpeed, wave);
     switch (name) {
       case 'place':  tone(440, 0, 0.05); tone(660, 0.05, 0.05); tone(880, 0.1, 0.08); break;
       case 'upgrade': [660, 880, 1320].forEach((f, i) => tone(f, i * 0.06, 0.12, 'triangle')); break;
