@@ -179,10 +179,11 @@ export class Tower {
     if (showRange) {
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.2;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.65;
       this._circle(ctx, this.x, this.y, this.currentStats.range * CONFIG.TILE_SIZE);
       ctx.stroke();
+      ctx.globalAlpha = 0.2;
       ctx.fillStyle = COLORS.TOWER_RANGE;
       ctx.fill();
       ctx.restore();
