@@ -186,6 +186,50 @@ export class Enemy {
     ctx.arc(x, y, r, 0, Math.PI * 2);
   }
 
+  _hull(ctx, shape) {
+    const { x, y, size } = this;
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#080e18';
+    drawShape(ctx, shape, x, y + 1.5, size + 0.5);
+    ctx.fill();
+    const armor = ctx.createLinearGradient(x - size, y - size, x + size, y + size);
+    armor.addColorStop(0, '#b5bfce');
+    armor.addColorStop(0.18, this.color);
+    armor.addColorStop(1, '#192332');
+    ctx.fillStyle = armor;
+    drawShape(ctx, shape, x, y, size);
+    ctx.fill();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 3 * SHADOW_BLUR_SCALE;
+    ctx.shadowColor = this.color;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#111b2a';
+    drawShape(ctx, shape, x, y, size * 0.65);
+    ctx.fill();
+    ctx.strokeStyle = '#9aadc4';
+    ctx.lineWidth = 0.5;
+    ctx.globalAlpha *= 0.45;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  _core(ctx, x, y, radius, pulse = 1) {
+    ctx.save();
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 4 * SHADOW_BLUR_SCALE * pulse;
+    this._circle(ctx, x, y, radius);
+    ctx.fill();
+    ctx.fillStyle = '#fff1e8';
+    ctx.globalAlpha *= 0.8 * pulse;
+    this._circle(ctx, x - radius * 0.2, y - radius * 0.2, radius * 0.45);
+    ctx.fill();
+    ctx.restore();
+  }
+
   _hpBar(ctx) {
     if (this.hp >= this.maxHp) return;
     const barW = this.size * 2.5, barH = 3;
@@ -273,27 +317,16 @@ export class Enemy {
 
   // ── Type-specific renders ──
 
-  // Drone: pulsing core, outline, trailing dot
+  // Drone: armored shell and a pulsing sensor.
   _renderBasic(ctx, t, SB) {
     const s = this.size;
     const pulse = 0.8 + 0.2 * Math.sin(t * 4);
 
     ctx.save();
-    ctx.shadowBlur = 8 * SB * pulse;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    this._circle(ctx, this.x, this.y, s);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.6;
-    ctx.globalAlpha = 0.3;
-    this._circle(ctx, this.x, this.y, s);
-    ctx.stroke();
-    // Core
-    ctx.globalAlpha = 0.5 * pulse;
-    ctx.fillStyle = '#fff';
-    this._circle(ctx, this.x, this.y, s * 0.35);
-    ctx.fill();
+    this._hull(ctx, 'circle');
+    ctx.fillStyle = '#080e18';
+    ctx.fillRect(this.x - s * 0.8, this.y - 1.5, s * 1.6, 3);
+    this._core(ctx, this.x, this.y, s * 0.3, pulse);
     ctx.restore();
   }
 
@@ -303,7 +336,7 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(angle);
-    ctx.shadowBlur = 10 * SB;
+    ctx.shadowBlur = 3 * SB;
     ctx.shadowColor = this.color;
     ctx.fillStyle = this.color;
     // Pointed triangle facing right
@@ -314,6 +347,20 @@ export class Enemy {
     ctx.lineTo(-s * 0.7, s * 0.7);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#ffd3ac';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#182332';
+    ctx.beginPath();
+    ctx.moveTo(s * 0.65, 0);
+    ctx.lineTo(-s * 0.45, -s * 0.38);
+    ctx.lineTo(-s * 0.1, 0);
+    ctx.lineTo(-s * 0.45, s * 0.38);
+    ctx.closePath();
+    ctx.fill();
+    this._core(ctx, -s * 0.4, -s * 0.45, 1, 0.85 + 0.15 * Math.sin(t * 8));
+    this._core(ctx, -s * 0.4, s * 0.45, 1, 0.85 + 0.15 * Math.sin(t * 8));
     // Speed lines
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 1;
@@ -333,18 +380,16 @@ export class Enemy {
   _renderTank(ctx, t, SB) {
     const s = this.size;
     ctx.save();
-    ctx.shadowBlur = 8 * SB;
-    ctx.shadowColor = this.color;
+    this._hull(ctx, 'square');
+    // Heavy side plates and recessed vents.
+    ctx.fillStyle = '#283247';
+    for (const side of [-1, 1]) {
+      ctx.fillRect(this.x + side * s * 0.78 - 2, this.y - s * 0.65, 4, s * 1.3);
+    }
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x - s, this.y - s, s * 2, s * 2);
-    // Inner plate
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(this.x - s * 0.65, this.y - s * 0.65, s * 1.3, s * 1.3);
-    // Outline
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.25;
-    ctx.strokeRect(this.x - s, this.y - s, s * 2, s * 2);
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(this.x - s * 0.35, this.y - 3 + i * 3, s * 0.7, 1.2);
+    }
     // Corner bolts
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#fff';
@@ -359,11 +404,14 @@ export class Enemy {
   _renderArmored(ctx, t, SB) {
     const s = this.size;
     ctx.save();
-    ctx.shadowBlur = 6 * SB;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    drawShape(ctx, 'pentagon', this.x, this.y, s);
-    ctx.fill();
+    this._hull(ctx, 'pentagon');
+    ctx.strokeStyle = '#e2e9f2';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(this.x - s * 0.35, this.y - s * 0.15);
+    ctx.lineTo(this.x, this.y + s * 0.3);
+    ctx.lineTo(this.x + s * 0.35, this.y - s * 0.15);
+    ctx.stroke();
     // Armor ring
     ctx.strokeStyle = '#bbb';
     ctx.lineWidth = 1.5;
@@ -397,14 +445,10 @@ export class Enemy {
     ctx.restore();
 
     ctx.save();
-    ctx.shadowBlur = 12 * SB * pulse;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    drawShape(ctx, 'cross', this.x, this.y, s);
-    ctx.fill();
+    this._hull(ctx, 'cross');
     // White cross highlight
     ctx.fillStyle = '#fff';
-    ctx.globalAlpha = 0.3 * pulse;
+    ctx.globalAlpha = 0.85 * pulse;
     drawShape(ctx, 'cross', this.x, this.y, s * 0.5);
     ctx.fill();
     ctx.restore();
@@ -414,36 +458,24 @@ export class Enemy {
   _renderSplitter(ctx, t, SB) {
     const s = this.size;
     ctx.save();
-    ctx.shadowBlur = 10 * SB;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    drawShape(ctx, 'diamond', this.x, this.y, s);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.6;
-    ctx.globalAlpha = 0.3;
-    drawShape(ctx, 'diamond', this.x, this.y, s);
-    ctx.stroke();
+    this._hull(ctx, 'diamond');
     // Fracture lines from center
     ctx.globalAlpha = 0.4;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 0.8;
     ctx.beginPath();
     ctx.moveTo(this.x, this.y - s * 0.15);
-    ctx.lineTo(this.x - s * 0.5, this.y - s * 0.8);
+    ctx.lineTo(this.x - s * 0.35, this.y - s * 0.6);
     ctx.moveTo(this.x, this.y + s * 0.15);
-    ctx.lineTo(this.x + s * 0.5, this.y + s * 0.8);
+    ctx.lineTo(this.x + s * 0.35, this.y + s * 0.6);
     ctx.moveTo(this.x, this.y);
     ctx.lineTo(this.x, this.y - s * 0.3);
     ctx.lineTo(this.x, this.y + s * 0.3);
     ctx.stroke();
-    // Twin inner diamonds
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = '#fff';
-    drawShape(ctx, 'diamond', this.x - 2, this.y, s * 0.3);
-    ctx.fill();
-    drawShape(ctx, 'diamond', this.x + 2, this.y, s * 0.3);
-    ctx.fill();
+    // Twin cores hint at the two drones released on death.
+    ctx.globalAlpha = 1;
+    this._core(ctx, this.x - s * 0.25, this.y, s * 0.18);
+    this._core(ctx, this.x + s * 0.25, this.y, s * 0.18);
     ctx.restore();
   }
 
@@ -473,19 +505,23 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(angle);
-    ctx.shadowBlur = 12 * SB;
+    ctx.shadowBlur = 4 * SB;
     ctx.shadowColor = this.color;
     // Outer ghost layer
     ctx.fillStyle = this.color;
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.6;
     ctx.beginPath();
     ctx.moveTo(s, 0);
     ctx.lineTo(-s * 0.7, -s * 0.7);
     ctx.lineTo(-s * 0.7, s * 0.7);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#ffc2ff';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
     // Inner solid
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#261d37';
     ctx.beginPath();
     ctx.moveTo(s * 0.7, 0);
     ctx.lineTo(-s * 0.4, -s * 0.45);
@@ -533,20 +569,21 @@ export class Enemy {
 
     // Body
     ctx.save();
-    ctx.shadowBlur = 15 * SB * pulse;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    drawShape(ctx, 'hexagon', this.x, this.y, s);
-    ctx.fill();
-    // Dark inner
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    drawShape(ctx, 'hexagon', this.x, this.y, s * 0.7);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.2;
-    drawShape(ctx, 'hexagon', this.x, this.y, s);
+    this._hull(ctx, 'hexagon');
+    ctx.strokeStyle = '#ff9788';
+    ctx.lineWidth = 1.2;
+    drawShape(ctx, 'hexagon', this.x, this.y, s * 0.48);
     ctx.stroke();
+    // Six armored segments surrounding the reactor.
+    ctx.strokeStyle = '#141c2a';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      ctx.beginPath();
+      ctx.moveTo(this.x + Math.cos(a) * s * 0.7, this.y + Math.sin(a) * s * 0.7);
+      ctx.lineTo(this.x + Math.cos(a) * s * 0.87, this.y + Math.sin(a) * s * 0.87);
+      ctx.stroke();
+    }
 
     // Inner eye
     ctx.globalAlpha = 0.8 * pulse;
@@ -578,13 +615,10 @@ export class Enemy {
     ctx.fill();
     // Main body
     ctx.globalAlpha = 0.6 * flicker;
-    this._circle(ctx, this.x, this.y, s);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.5;
-    ctx.globalAlpha = 0.2 * flicker;
-    this._circle(ctx, this.x, this.y, s);
-    ctx.stroke();
+    this._hull(ctx, 'circle');
+    ctx.globalAlpha = flicker;
+    ctx.fillStyle = '#c7deef';
+    ctx.fillRect(this.x - s * 0.55 + glitchX * 0.3, this.y - 0.6, s * 1.1, 1.2);
     ctx.restore();
   }
 
@@ -595,15 +629,17 @@ export class Enemy {
 
     // Body
     ctx.save();
-    ctx.shadowBlur = 8 * SB;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    drawShape(ctx, 'octagon', this.x, this.y, s);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.6;
-    ctx.globalAlpha = 0.3;
-    drawShape(ctx, 'octagon', this.x, this.y, s);
+    this._hull(ctx, 'octagon');
+    // Shield emblem stays visible when the outer barrier is depleted.
+    ctx.strokeStyle = '#bfdbff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(this.x - s * 0.3, this.y - s * 0.35);
+    ctx.lineTo(this.x + s * 0.3, this.y - s * 0.35);
+    ctx.lineTo(this.x + s * 0.25, this.y + s * 0.15);
+    ctx.lineTo(this.x, this.y + s * 0.4);
+    ctx.lineTo(this.x - s * 0.25, this.y + s * 0.15);
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
 
