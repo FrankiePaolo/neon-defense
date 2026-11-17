@@ -533,7 +533,7 @@ scenario('End screen fits a landscape phone', { layouts: ['landscape'] }, async 
 });
 
 scenario('Run screens keep their actions reachable', {
-  layouts: ['phone', 'phoneShort', 'phoneNarrow', 'landscape', 'landscapeShort', 'desktopShort'],
+  layouts: ['phone', 'phoneShort', 'phoneNarrow', 'landscape', 'landscapeShort', 'desktopShort', 'desktop', 'desktopBig'],
   langs: ['en', 'it'],
 }, async (g) => {
   await g.startGame();

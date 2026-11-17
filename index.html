@@ -1068,6 +1068,25 @@ canvas {
 #share-cta-sub { color: #aebed0; font-size: 12px; line-height: 1.5; margin-top: 5px; }
 #game-over-screen #share-score-btn { --accent: 126, 234, 180; margin-top: 10px; }
 
+@media (min-width: 769px) and (min-height: 501px) {
+  .pause-card, .result-layout { width: min(820px, 100%); padding: 32px; }
+  .pause-card { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; }
+  .pause-overview { align-self: center; padding-right: 32px; border-right: 1px solid #293749; }
+  #pause-overlay h2, #game-over-screen h2 { font-size: 42px; }
+  #pause-description, #result-description { font-size: 15px; }
+  #pause-summary > div > :first-child { font-size: 22px; }
+  #pause-summary > div > :last-child, #pause-hint, .final-label { font-size: 13px; }
+  #pause-hint { margin-bottom: 0; }
+  #pause-overlay .menu-btn, #game-over-screen .menu-btn { font-size: 15px; }
+  .action-copy small, #next-unlock-hint, #share-cta-sub { font-size: 14px; }
+  .result-score-label, .screen-label, #result-difficulty { font-size: 12px; }
+  #final-rank, #final-time { font-size: 20px; }
+  .result-actions { align-self: start; }
+  #game-over-screen #end-menu-btn { margin-top: 4px; border-top-color: #293749; }
+  #game-over-screen #save-score-btn { font-size: 13px; }
+  #share-cta-title { font-size: 15px; }
+}
+
 @media (max-width: 600px) {
   #pause-overlay, #game-over-screen { padding: 16px 12px; }
   .pause-card, .result-layout { padding: 20px; }
