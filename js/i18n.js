@@ -129,7 +129,7 @@ const STRINGS = {
 
     // Tower descriptions
     'tower.blaster.desc': 'Balanced all-rounder',
-    'tower.frost.desc': 'Slows enemies',
+    'tower.frost.desc': 'Slows a whole group',
     'tower.lightning.desc': 'Zaps several enemies at once',
     'tower.cannon.desc': 'Hits a whole group',
     'tower.sniper.desc': 'Extreme range, high damage',
@@ -375,7 +375,7 @@ const STRINGS = {
 
     // Tower descriptions
     'tower.blaster.desc': 'Bilanciato e versatile',
-    'tower.frost.desc': 'Rallenta i nemici',
+    'tower.frost.desc': 'Rallenta un intero gruppo',
     'tower.lightning.desc': 'Fulmina più nemici insieme',
     'tower.cannon.desc': 'Colpisce un intero gruppo',
     'tower.sniper.desc': 'Gittata estrema, danno elevato',

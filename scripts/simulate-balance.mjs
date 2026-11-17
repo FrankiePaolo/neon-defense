@@ -3,17 +3,19 @@
 // wave-scaling, tower-balance and difficulty-levels specs.
 //
 //   npm run balance                       all grids, difficulties and players, then the checks
-//   node scripts/simulate-balance.mjs --grid mobile|portrait|desktop --difficulty normal --player sensible [--seed 1] [--seeds 5]
+//   node scripts/simulate-balance.mjs --grid mobile|portrait|desktop --difficulty normal --player naive|sensible|upgrader [--without frost,support] [--seed 1] [--seeds 9]
 //
-// Each grid, difficulty and player runs on --seeds maps (seeds --seed, --seed+1, ...).
-// Checks use the median run by wave reached; tower value pools all runs.
+// Each grid, difficulty and player runs on --seeds maps (seeds --seed, --seed+1, ...),
+// the same maps for every player. Difficulty and tower-choice checks use the
+// mean wave reached (a win counts as MAX_WAVES + 1): one map can swing the
+// sensible player by 10 waves, which flips a median. Tower value pools all runs.
 
 globalThis.window = {};
 Object.defineProperty(globalThis, 'navigator', { value: { maxTouchPoints: 0 }, configurable: true });
 
 const args = parseArgs(process.argv.slice(2));
 const SEED = Number(args.seed ?? 1);
-const SEEDS = Number(args.seeds ?? 5);
+const SEEDS = Number(args.seeds ?? 9);
 const TRACE = 'trace' in args;   // --trace 1 prints every purchase
 
 // Seeded Math.random (mulberry32) before any map or wave is generated
@@ -46,6 +48,12 @@ const PLAYERS = ['naive', 'sensible'];
 const DT = 1 / 60;
 const ATTACKERS = ['blaster', 'frost', 'lightning', 'cannon', 'sniper'];
 const UNLOCK_TARGETS = { frost: 2, lightning: 4, cannon: 7, support: 9, sniper: 11 };
+// Towers that work through others: the sensible player keeps one of each,
+// bought once it owns HELPER_AFTER attackers
+const HELPERS = ['frost', 'support'];
+const HELPER_AFTER = 3;
+// An upgrade is bought before a new tower while it costs at most this many new towers
+const UPGRADE_BUDGET = 2;
 
 // ── Damage attribution ──
 // Every point of HP or shield removed is credited to one tower. Damage dealt
@@ -92,11 +100,12 @@ function hitWithAttribution(proj, ctx) {
   currentSource = proj.tower;
   resolveHit(proj, ctx);
   currentSource = null;
-  const t = proj.target;
-  if (proj.slowAmount > 0 && t) {
-    const slow = t.effects.get('slow');
-    if (slow && slow.magnitude === proj.slowAmount) t.slowedBy = proj.tower;
-  }
+}
+
+// The Frost whose slow an enemy carries gets the slow share of later damage
+function markSlow(enemy, proj) {
+  const slow = enemy.effects.get('slow');
+  if (slow && slow.magnitude === proj.slowAmount) enemy.slowedBy = proj.tower;
 }
 
 // Auras do not stack, so the boost is credited to the strongest Support in range
@@ -147,7 +156,7 @@ function makeMap(gridName, difficulty, seed) {
   setGrid(gridName);
   reseed(seed);
   const grid = new Grid();
-  grid.generate(CONFIG.DIFFICULTY[difficulty]);
+  grid.generate(CONFIG.DIFFICULTY[difficulty], Math.random, CONFIG.ROAD_MAX[difficulty]);
   return grid;
 }
 
@@ -176,17 +185,27 @@ function rankTiles(grid, range, tieTo = 'exit') {
 // ── One run ──
 
 class Run {
-  constructor({ gridName, difficulty, player, seed = SEED, maxWaves = CONFIG.MAX_WAVES, tieTo = 'exit' }) {
+  // player: 'naive', 'sensible', or 'upgrader' (the sensible rules with Heavy
+  // Rounds Blasters only). without: tower types, comma separated, the sensible player never buys.
+  // measure: false skips the stress tests that feed the tower value table.
+  constructor({ gridName, difficulty, player, seed = SEED, maxWaves = CONFIG.MAX_WAVES, tieTo = 'exit', without = null, measure = true }) {
     this.grid = makeMap(gridName, difficulty, seed);
     this.gridName = gridName;
     this.difficulty = difficulty;
     this.player = player;
+    this.seed = seed;
+    const excluded = without ? without.split(',') : [];
+    this.allowed = new Set(player === 'upgrader' ? ['blaster'] : Object.keys(TOWER_DEFS).filter(t => !excluded.includes(t)));
+    this.without = without;
+    this.measure = measure;
     this.tieTo = tieTo;
     this.maxWaves = maxWaves;
     this.pixelPath = this.grid.path.map(p => gridToPixel(p.x, p.y));
     this.spatialHash = new FastSpatialHash(80);
-    this.ctx = { spatialHash: this.spatialHash };
-    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[difficulty], CONFIG.DIFFICULTY_REWARD[difficulty]);
+    this.ctx = { spatialHash: this.spatialHash, onSlow: markSlow };
+    // Waves draw from the run seed as in the game, so a seed meets the same
+    // waves on every board
+    this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[difficulty], CONFIG.DIFFICULTY_REWARD[difficulty], seed);
     this.towers = [];
     this.enemies = [];
     this.projectiles = [];
@@ -207,7 +226,7 @@ class Run {
 
   earn(n) { this.gold += n; this.totalEarned += n; }
 
-  isUnlocked(type) { return this.unlocked.has(type); }
+  isUnlocked(type) { return this.unlocked.has(type) && this.allowed.has(type); }
 
   // Unlocks the towers in UNLOCK_TARGETS order while the cores cover the next one
   spendCores() {
@@ -234,10 +253,37 @@ class Run {
     return rankTiles(this.grid, TOWER_DEFS[type].range, this.tieTo)[0] || null;
   }
 
+  // Free tile whose Support aura reaches the most gold of other towers, or
+  // the best road tile when no tower is in reach
+  supportTile() {
+    const reach = TOWER_DEFS.support.buffRange ** 2;
+    let best = null;
+    for (const tile of rankTiles(this.grid, TOWER_DEFS.support.range, this.tieTo)) {
+      const value = this.towers.filter(t => t.type !== 'support' && (t.gx - tile.x) ** 2 + (t.gy - tile.y) ** 2 <= reach)
+        .reduce((s, t) => s + t.totalInvested, 0);
+      if (!best || value > best.value) best = { ...tile, value };
+    }
+    return best && best.value > 0 ? best : this.bestTile('support');
+  }
+
+  // Free tile whose Frost range covers the road tiles that the most other
+  // towers reach, so the slow lands in the kill zone
+  frostTile() {
+    const r2 = TOWER_DEFS.frost.range ** 2;
+    const reach = this.grid.path.map(p => this.towers.filter(t => t.type !== 'support'
+      && (p.x - t.gx) ** 2 + (p.y - t.gy) ** 2 <= t.currentStats.range ** 2).length);
+    let best = null;
+    for (const tile of rankTiles(this.grid, TOWER_DEFS.frost.range, this.tieTo)) {
+      const value = this.grid.path.reduce((s, p, i) => s + ((p.x - tile.x) ** 2 + (p.y - tile.y) ** 2 <= r2 ? reach[i] : 0), 0);
+      if (!best || value > best.value) best = { ...tile, value };
+    }
+    return best;
+  }
+
   tryBuy(type) {
     const cost = TOWER_DEFS[type].cost;
     if (this.gold < cost || !this.isUnlocked(type)) return false;
-    const tile = this.bestTile(type);
+    const tile = type === 'support' ? this.supportTile() : type === 'frost' ? this.frostTile() : this.bestTile(type);
     if (!tile) return false;
     this.place(type, tile);
     return true;
@@ -245,7 +291,7 @@ class Run {
 
   act() {
     if (this.player === 'naive') this.actNaive();
-    else this.actSensible();
+    else this.actSensible();   // the upgrader plays the same rules with Blasters only
   }
 
   // Buys a Blaster whenever it can afford one, never upgrades
@@ -253,13 +299,16 @@ class Run {
     while (this.tryBuy('blaster')) { /* keep buying */ }
   }
 
-  // Spends cores on the next unlock, buys the cheapest type it owns the fewest of, places Frost and Support
-  // first on the first turn it can afford them after they unlock, upgrades
-  // its oldest tower when that costs less than a new tower, then buys back
-  // lives with the gold left over
+  // Spends cores on the next unlock, places one Frost and one Support on the
+  // first turn it can afford each once it owns HELPER_AFTER attackers (the
+  // Frost in the kill zone, the Support where its aura reaches the most
+  // towers), upgrades the tower that sees the most road
+  // while the upgrade costs at most UPGRADE_BUDGET new towers, otherwise buys
+  // the cheapest attacker it owns the fewest of, and buys back lives once
+  // half are gone
   actSensible() {
     this.shop();
-    while (this.lives < CONFIG.BASE_LIVES && this.gold >= repairCost(this.repairs)) {
+    while (this.lives <= CONFIG.BASE_LIVES / 2 && this.gold >= repairCost(this.repairs)) {
       this.gold -= repairCost(this.repairs);
       this.repairs++;
       this.lives++;
@@ -273,33 +322,45 @@ class Run {
       const owned = (type) => this.towers.filter(t => t.type === type).length;
       const unlocked = Object.keys(TOWER_DEFS).filter(t => this.isUnlocked(t));
 
-      const priority = ['frost', 'support'].find(t => unlocked.includes(t) && owned(t) === 0);
-      if (priority && this.tryBuy(priority)) continue;
+      const attackers = this.towers.filter(t => !HELPERS.includes(t.type)).length;
+      const helper = attackers >= HELPER_AFTER && HELPERS.find(t => unlocked.includes(t) && owned(t) === 0);
+      if (helper && this.tryBuy(helper)) continue;
 
-      const next = unlocked.slice().sort((a, b) =>
+      const next = unlocked.filter(t => !HELPERS.includes(t)).sort((a, b) =>
         owned(a) - owned(b) || TOWER_DEFS[a].cost - TOWER_DEFS[b].cost)[0];
-      const newCost = TOWER_DEFS[next].cost;
+      const budget = UPGRADE_BUDGET * TOWER_DEFS[next].cost;
 
-      const oldest = this.towers.find(t => this.upgradePath(t) !== null);
-      if (oldest) {
-        const path = this.upgradePath(oldest);
-        const cost = oldest.getUpgradeCost(path);
-        if (cost < newCost) {
-          if (this.gold < cost) return;
-          this.gold -= cost;
-          oldest.upgrade(path);
-          if (TRACE) console.log(`  before wave ${this.waveManager.currentWave + 1}: upgrade ${oldest.type} ${path}${path === 'A' ? oldest.upgradesA : oldest.upgradesB}`);
-          continue;
-        }
+      const best = this.towers
+        .filter(t => { const p = this.upgradePath(t); return p !== null && t.getUpgradeCost(p) <= budget; })
+        .sort((a, b) => this.roadInRange(b) - this.roadInRange(a))[0];
+      if (best) {
+        const path = this.upgradePath(best);
+        const cost = best.getUpgradeCost(path);
+        if (this.gold < cost) return;
+        this.gold -= cost;
+        best.upgrade(path);
+        if (TRACE) console.log(`  before wave ${this.waveManager.currentWave + 1}: upgrade ${best.type} ${path}${path === 'A' ? best.upgradesA : best.upgradesB}`);
+        continue;
       }
       if (!this.tryBuy(next)) return;
     }
   }
 
-  // Alternates paths between towers of the same type so both get used
+  roadInRange(tower) {
+    const r2 = tower.currentStats.range ** 2;
+    return this.grid.path.filter(p => (p.x - tower.gx) ** 2 + (p.y - tower.gy) ** 2 <= r2).length;
+  }
+
+  // Alternates attacker paths between towers of the same type so both get
+  // used. The one Frost takes path A on odd maps and B on even ones; the
+  // Support takes Command, placed for its aura (Economy is income, checked by
+  // its repayment, and no sensible buy while the defense leaks). The
+  // upgrader takes Heavy Rounds.
   upgradePath(tower) {
     const index = this.towers.filter(t => t.type === tower.type).indexOf(tower);
-    const path = index % 2 === 0 ? 'B' : 'A';
+    const path = tower.type === 'support' ? 'A'
+      : tower.type === 'frost' ? (this.seed % 2 ? 'A' : 'B')
+      : this.player === 'upgrader' || index % 2 === 0 ? 'B' : 'A';
     return tower.getUpgradeCost(path) === null ? null : path;
   }
 
@@ -373,7 +434,7 @@ class Run {
     }
     this.projectiles = [];
     if (TRACE && livesLost) console.log(`  wave ${wave} leaked: ${Object.entries(leaked).map(([t, n]) => `${n} ${t}`).join(', ')}`);
-    if (this.lives > 0 && STRESS_WAVES.includes(wave)) this.stress(wave + 1);
+    if (this.measure && this.lives > 0 && STRESS_WAVES.includes(wave)) this.stress(wave + 1);
 
     if (this.lives > 0) {
       this.score += wave * 100;
@@ -468,6 +529,8 @@ function runMedian(opts) {
   const sorted = all.slice().sort((a, b) => a.reached - b.reached);
   const median = sorted[Math.floor(sorted.length / 2)];
   median.seeds = all;
+  median.meanReached = all.reduce((s, r) => s + r.reached, 0) / all.length;
+  median.wins = all.filter(r => r.won).length;
   return median;
 }
 
@@ -491,20 +554,25 @@ const pathValue = (runs) => pooled(runs, true);
 
 // ── Buyable over needed DPS (the headless model) ──
 // Buyable: gold earned up to the end of the wave spent on the most
-// gold-efficient Blaster Heavy Rounds tier, on target 60% of the time.
+// gold-efficient single-target tier of any attacker, on target 60% of the time.
 // Needed: the wave's effective HP (armor and shields counted, Hydra children
 // included) over its exposure (spawn time plus one traversal of the Normal
 // path at the wave's mean speed), averaged over generated waves.
 
 function bestDpsPerGold() {
-  const def = TOWER_DEFS.blaster;
-  let stats = { damage: def.damage, fireRate: def.fireRate };
-  let cost = def.cost;
-  let best = stats.damage * stats.fireRate / cost;
-  for (const level of def.upgrades.pathB.levels) {
-    stats = { ...stats, ...level.stats };
-    cost += level.cost;
-    best = Math.max(best, stats.damage * stats.fireRate / cost);
+  let best = 0;
+  for (const type of ATTACKERS) {
+    const def = TOWER_DEFS[type];
+    for (const path of ['pathA', 'pathB']) {
+      let stats = { damage: def.damage, fireRate: def.fireRate };
+      let cost = def.cost;
+      best = Math.max(best, stats.damage * stats.fireRate / cost);
+      for (const level of def.upgrades[path].levels) {
+        stats = { ...stats, ...level.stats };
+        cost += level.cost;
+        best = Math.max(best, stats.damage * stats.fireRate / cost);
+      }
+    }
   }
   return best;
 }
@@ -592,7 +660,7 @@ function playFixed(grid, towers, waves, toughness) {
   markBuffs(towers);
   const pixelPath = grid.path.map(p => gridToPixel(p.x, p.y));
   const hash = new FastSpatialHash(80);
-  const ctx = { spatialHash: hash };
+  const ctx = { spatialHash: hash, onSlow: markSlow };
   for (const w of waves) {
     reseed(1000 + w);
     const wm = new WaveManager();
@@ -652,7 +720,7 @@ function fallbackShare(gridName, difficulty, runs = 300) {
   let fallbacks = 0;
   const real = Grid.prototype._fallbackPath;
   Grid.prototype._fallbackPath = function (...a) { fallbacks++; return real.apply(this, a); };
-  for (let i = 0; i < runs; i++) new Grid().generate(CONFIG.DIFFICULTY[difficulty]);
+  for (let i = 0; i < runs; i++) new Grid().generate(CONFIG.DIFFICULTY[difficulty], Math.random, CONFIG.ROAD_MAX[difficulty]);
   Grid.prototype._fallbackPath = real;
   return fallbacks / runs;
 }
@@ -662,7 +730,7 @@ function fallbackShare(gridName, difficulty, runs = 300) {
 const fmt = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
 
 function printRun(run) {
-  console.log(`\n== ${run.gridName} ${run.difficulty} ${run.player}: ${run.won ? 'WON' : `lost on wave ${run.waveReached}`} (median of seeds ${run.seeds.map(r => outcome(r)).join(' ')})`);
+  console.log(`\n== ${run.gridName} ${run.difficulty} ${run.player}${run.without ? ` without ${run.without}` : ''}: ${run.won ? 'WON' : `lost on wave ${run.waveReached}`} (median of seeds ${run.seeds.map(r => outcome(r)).join(' ')}; mean ${run.meanReached.toFixed(1)}, ${run.wins} wins)`);
   console.log('wave  lost  lives    gold  towers  upg      score  ratio');
   for (const r of run.rows) {
     console.log(`${String(r.wave).padStart(4)}  ${String(r.livesLost).padStart(4)}  ${String(r.lives).padStart(5)}  ${String(Math.floor(r.gold)).padStart(6)}  ${String(r.towers).padStart(6)}  ${String(r.upgrades).padStart(3)}  ${String(r.score).padStart(9)}  ${r.ratio.toFixed(2).padStart(5)}`);
@@ -731,6 +799,17 @@ function waveChecks() {
   check('boss has at least 3x a Brute\'s HP on every boss wave', bossRatioMin >= 3, `min ${bossRatioMin.toFixed(2)}x`);
   check('each boss wave is the peak of its block', peakOk, peakDetail.length ? `not the peak: ${peakDetail.join(', ')}` : '');
 
+  // Waves fill an HP budget: two seeds of the same wave differ little
+  let spreadMax = 0, spreadWave = 0;
+  for (let w = 8; w <= CONFIG.MAX_WAVES; w++) {
+    const hp = [];
+    for (let seed = 1; seed <= 200; seed++) hp.push(new WaveManager(1, 1, seed).generateWave(w).reduce((t, e) => t + effectiveHp(e.type, e.waveMult), 0));
+    hp.sort((a, b) => a - b);
+    const spread = hp[179] / hp[20];
+    if (spread > spreadMax) { spreadMax = spread; spreadWave = w; }
+  }
+  check('wave HP spread (90th over 10th percentile) stays at or below 1.2 from wave 8', spreadMax <= 1.2, `max ${spreadMax.toFixed(2)} on wave ${spreadWave}`);
+
   const expected = [[1, 'basic'], [3, 'fast'], [5, 'tank'], [7, 'armored'], [10, 'healer'], [12, 'splitter'], [15, 'flying'], [18, 'stealth'], [22, 'shielded']];
   check('enemy types unlock at the fixed waves',
     JSON.stringify(ENEMY_UNLOCK.map(u => [u.wave, u.type])) === JSON.stringify(expected));
@@ -753,32 +832,29 @@ function towerChecks(runs) {
   check('start gold covers a Blaster', CONFIG.START_GOLD >= TOWER_DEFS.blaster.cost);
 
   for (const run of runs.filter(r => r.difficulty === 'normal' && r.player === 'sensible')) {
-    const value = pooledValue(run.seeds);
-    const blaster = value.blaster?.perGold;
-    for (const type of ATTACKERS.filter(t => t !== 'blaster')) {
-      const v = value[type];
-      const rel = v && blaster ? v.perGold / blaster : 0;
-      check(`${type} damage per gold within 0.75x-1.25x of Blaster (${run.gridName})`,
-        rel >= 0.75 && rel <= 1.25, v ? `${rel.toFixed(2)}x` : 'never bought');
-    }
-    for (const [type, target] of Object.entries(UNLOCK_TARGETS)) {
+    for (const [type, wave] of Object.entries(UNLOCK_TARGETS)) {
       const at = run.unlockWave[type];
-      check(`${type} unlocks by wave ${target} (${run.gridName})`, at !== undefined && at <= target, at ? `wave ${at}` : 'never');
+      check(`${type} unlocks by wave ${wave} (${run.gridName})`, at !== undefined && at <= wave, at ? `wave ${at}` : 'never');
     }
   }
 
   // Fully upgraded paths, measured in the sensible Normal runs on the phone
-  // grid, where range and time on target count
+  // grid, where range and time on target count. Specialist paths stay close
+  // to their median; the Blaster, the starter, stays below it without being
+  // useless. Frost and Support work through other towers, which the damage
+  // credit cannot price, so the tower-choice ablation targets value them.
   const phone = runs.find(r => r.gridName === 'mobile' && r.difficulty === 'normal' && r.player === 'sensible');
   const paths = pathValue(phone.seeds);
-  const reference = paths['blaster B']?.perGold;
-  for (const type of Object.keys(TOWER_DEFS)) {
+  const specialists = ['lightning', 'cannon', 'sniper'];
+  const values = specialists.flatMap(t => ['A', 'B'].map(p => paths[`${t} ${p}`]?.perGold || 0)).sort((a, b) => a - b);
+  const median = (values[2] + values[3]) / 2;
+  for (const type of ['blaster', ...specialists]) {
+    const [lo, hi] = type === 'blaster' ? [0.5, 0.9] : [0.75, 1.33];
     for (const path of ['A', 'B']) {
-      if (type === 'support' && path === 'B') continue; // Economy pays gold, checked by repayment
       const v = paths[`${type} ${path}`];
       const name = TOWER_DEFS[type].upgrades[`path${path}`].name;
-      check(`${type} ${name} is within 0.75x-1.5x of Blaster Heavy Rounds`, v && reference && v.perGold / reference >= 0.75 && v.perGold / reference <= 1.5,
-        v ? `${(v.perGold / reference).toFixed(2)}x` : 'no tower reached level 3');
+      check(`${type} ${name} is within ${lo}x-${hi}x of the specialist median`, v && v.perGold / median >= lo && v.perGold / median <= hi,
+        v ? `${(v.perGold / median).toFixed(2)}x` : 'no tower reached level 3');
     }
   }
 
@@ -847,21 +923,21 @@ function difficultyChecks(runs) {
   check('Normal enemy HP is unscaled, Easy not above it, Hard not below it', hp.normal === 1 && hp.easy <= 1 && hp.hard >= 1);
 
   const get = (g, diff, p) => runs.find(r => r.gridName === g && r.difficulty === diff && r.player === p);
+  const wave = (n) => `wave ${n.toFixed(1)}`;
   for (const g of Object.keys(GRIDS)) {
-    const reached = (diff, p) => get(g, diff, p).reached;
-    check(`naive player on Easy reaches wave 20 (${g})`, reached('easy', 'naive') >= 20, `wave ${reached('easy', 'naive')}`);
-    const n = get(g, 'normal', 'naive');
-    check(`naive player on Normal ends between wave 12 and 20 (${g})`, !n.won && n.waveReached >= 12 && n.waveReached <= 20, n.won ? 'won' : `wave ${n.waveReached}`);
-    check(`naive player on Hard ends before wave 14 (${g})`, reached('hard', 'naive') < 14, `wave ${reached('hard', 'naive')}`);
+    const reached = (diff, p) => get(g, diff, p).meanReached;
+    check(`naive player on Easy reaches wave 20 (${g})`, reached('easy', 'naive') >= 20, wave(reached('easy', 'naive')));
+    check(`naive player on Normal ends between wave 12 and 20 (${g})`, reached('normal', 'naive') >= 12 && reached('normal', 'naive') <= 20, wave(reached('normal', 'naive')));
+    check(`naive player on Hard ends before wave 14 (${g})`, reached('hard', 'naive') < 14, wave(reached('hard', 'naive')));
     check(`naive outcomes ordered Easy > Normal > Hard (${g})`,
       reached('easy', 'naive') > reached('normal', 'naive') && reached('normal', 'naive') > reached('hard', 'naive'));
-    check(`sensible player on Hard reaches wave 25 (${g})`, reached('hard', 'sensible') >= 25, `wave ${reached('hard', 'sensible')}`);
+    check(`sensible player on Hard reaches wave 25 (${g})`, reached('hard', 'sensible') >= 25, wave(reached('hard', 'sensible')));
   }
   for (const diff of DIFFICULTIES) {
     for (const p of PLAYERS) {
       for (const [ga, gb, label] of [['mobile', 'desktop', 'phone and desktop'], ['portrait', 'desktop', 'portrait phone and desktop'], ['portrait', 'mobile', 'portrait and landscape phone']]) {
-        const wa = get(ga, diff, p).reached, wb = get(gb, diff, p).reached;
-        check(`${label} within 3 waves (${diff} ${p})`, Math.abs(wa - wb) <= 3, `${wa} vs ${wb}`);
+        const wa = get(ga, diff, p).meanReached, wb = get(gb, diff, p).meanReached;
+        check(`${label} within 3 waves (${diff} ${p})`, Math.abs(wa - wb) <= 3, `${wa.toFixed(1)} vs ${wb.toFixed(1)}`);
       }
     }
   }
@@ -881,6 +957,69 @@ function difficultyChecks(runs) {
       const share = fallbackShare(g, diff);
       check(`map generates without fallback 90% of the time (${g} ${diff})`, share <= 0.10, `${(share * 100).toFixed(1)}% fallback`);
     }
+  }
+}
+
+// ── Tower choice ──
+// The Blaster upgrader, and the sensible player without one tower type (or
+// without both helpers), on the same maps as the sensible player. Choosing
+// towers should beat upgrading Blasters, and every tower type should earn
+// its place on every setup.
+
+const CHOICE_SETUPS = [['portrait', 'normal'], ['portrait', 'hard'], ['desktop', 'hard']];
+const REMOVALS = ['frost', 'lightning', 'cannon', 'sniper', 'support', 'frost,support'];
+const CHOICE_MARGIN = 3;   // waves the sensible player should gain over the upgrader
+const REMOVAL_NOISE = 1;   // waves of mean gain a removal may show on 9 maps before it counts
+
+function choiceRuns() {
+  const upgrader = CHOICE_SETUPS.map(([gridName, difficulty]) =>
+    runMedian({ gridName, difficulty, player: 'upgrader', measure: false }));
+  const without = CHOICE_SETUPS.flatMap(([gridName, difficulty]) => REMOVALS.map(t =>
+    runMedian({ gridName, difficulty, player: 'sensible', without: t, measure: false })));
+  return { upgrader, without };
+}
+
+function printChoice(runs, choice) {
+  const sensible = (g, d) => runs.find(r => r.gridName === g && r.difficulty === d && r.player === 'sensible');
+  console.log(`\n== tower choice: mean wave on the same ${SEEDS} maps (a win counts as ${CONFIG.MAX_WAVES + 1}), wins in brackets`);
+  console.log('setup               sensible      upgrader   margin');
+  for (const u of choice.upgrader) {
+    const s = sensible(u.gridName, u.difficulty);
+    console.log(`${`${u.gridName} ${u.difficulty}`.padEnd(16)} ${s.meanReached.toFixed(1).padStart(6)} (${s.wins})  ${u.meanReached.toFixed(1).padStart(8)} (${u.wins})  ${(s.meanReached - u.meanReached).toFixed(1).padStart(7)}`);
+  }
+  for (const [g, d] of CHOICE_SETUPS) {
+    const all = sensible(g, d);
+    console.log(`sensible player without a tower type (${g} ${d}, all types: ${all.meanReached.toFixed(1)} (${all.wins}))`);
+    for (const w of choice.without.filter(r => r.gridName === g && r.difficulty === d)) {
+      console.log(`  without ${w.without.padEnd(14)} ${w.meanReached.toFixed(1).padStart(5)} (${w.wins})  ${(w.meanReached - all.meanReached).toFixed(1).padStart(6)}`);
+    }
+  }
+}
+
+function choiceChecks(runs, choice) {
+  const sensible = (g, d) => runs.find(r => r.gridName === g && r.difficulty === d && r.player === 'sensible');
+  for (const u of choice.upgrader) {
+    const s = sensible(u.gridName, u.difficulty);
+    if (u.gridName === 'desktop') {
+      check(`Blaster upgrader wins fewer than half the maps (${u.gridName} ${u.difficulty})`, u.wins < SEEDS / 2, `${u.wins} of ${SEEDS}`);
+    } else {
+      check(`sensible player beats the Blaster upgrader by ${CHOICE_MARGIN} waves (${u.gridName} ${u.difficulty})`,
+        s.meanReached - u.meanReached >= CHOICE_MARGIN, `${s.meanReached.toFixed(1)} vs ${u.meanReached.toFixed(1)}`);
+    }
+  }
+  // No removal raises the mean by more than REMOVAL_NOISE: one map flipping
+  // moves a 9-map mean by up to 2 waves. On Hard, paired by map, a removal
+  // must also lower at least as many maps as it raises: a win caps a map at
+  // MAX_WAVES + 1, so the mean alone hides a tower that helps wherever the
+  // player does not win anyway. Normal is won too often to show a cost.
+  for (const w of choice.without) {
+    const all = sensible(w.gridName, w.difficulty);
+    const lower = w.seeds.filter((r, i) => r.reached < all.seeds[i].reached).length;
+    const higher = w.seeds.filter((r, i) => r.reached > all.seeds[i].reached).length;
+    const paired = w.difficulty === 'hard';
+    check(`removing ${w.without} does not help the sensible player (${w.gridName} ${w.difficulty})`,
+      (!paired || lower >= higher) && w.meanReached <= all.meanReached + REMOVAL_NOISE,
+      `lower on ${lower} maps, higher on ${higher}; mean ${all.meanReached.toFixed(1)} with, ${w.meanReached.toFixed(1)} without`);
   }
 }
 
@@ -956,16 +1095,20 @@ const runs = [];
 for (const gridName of args.grid ? [args.grid] : Object.keys(GRIDS)) {
   for (const difficulty of args.difficulty ? [args.difficulty] : DIFFICULTIES) {
     for (const player of args.player ? [args.player] : PLAYERS) {
-      const run = runMedian({ gridName, difficulty, player });
+      const run = runMedian({ gridName, difficulty, player, without: args.without ?? null });
       runs.push(run);
       printRun(run);
     }
   }
 }
 
+const choice = single ? null : choiceRuns();
+if (choice) printChoice(runs, choice);
+const scored = choice ? [...runs, ...choice.upgrader, ...choice.without] : runs;
+
 console.log('\n== top score per wave (cap = leaderboard plausibility cap)');
 console.log('wave       top score         cap  cap/top');
-for (const [wave, score] of topScores(runs)) {
+for (const [wave, score] of topScores(scored)) {
   console.log(`${String(wave).padStart(4)}  ${fmt(score).padStart(14)}  ${fmt(maxPlausibleScore(wave)).padStart(10)}  ${(maxPlausibleScore(wave) / score).toFixed(2).padStart(7)}`);
 }
 
@@ -978,7 +1121,8 @@ waveChecks();
 ratioChecks(runs);
 towerChecks(runs);
 difficultyChecks(runs);
-scoreChecks(runs);
+choiceChecks(runs, choice);
+scoreChecks(scored);
 
 console.log('\n== checks');
 for (const r of results) console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `: ${r.detail}` : ''}`);

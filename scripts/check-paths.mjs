@@ -30,7 +30,7 @@ for (const [gridName, [cols, rows]] of Object.entries(GRIDS)) {
 
     for (let i = 0; i < RUNS; i++) {
       const grid = new Grid();
-      grid.generate(minLength);
+      grid.generate(minLength, Math.random, CONFIG.ROAD_MAX[diff]);
       if (touchesItself(grid.path)) touching++;
       if (rows > cols && !(grid.path[0].y === 0 && grid.path.at(-1).y === rows - 1)) offEdge++;
     }

@@ -30,6 +30,12 @@ export const WAVE = {
   BOSS_REWARD_MULT: 1,    // boss reward on top of the wave reward multiplier
 };
 
+// Base HP an enemy brings, shield and Hydra children included
+function unitHp(type) {
+  const d = ENEMY_DEFS[type];
+  return d.hp + (d.shield || 0) + (d.splitCount ? d.splitCount * ENEMY_DEFS[d.splitType].hp : 0);
+}
+
 // Only these types take the per-wave armor bonus
 const ARMORED_TYPES = new Set(['armored', 'shielded', 'boss']);
 
@@ -80,18 +86,21 @@ export class WaveManager {
     const queue = [];
     const rng = this.seed === null ? Math.random : mulberry32(this.seed ^ Math.imul(waveNum, 0x9E3779B1));
 
-    let remaining = scale.count;
-    while (remaining > 0) {
+    // The wave fills an HP budget, its count times the mean HP of the types
+    // it can draw, so a run of heavy types brings fewer enemies
+    const budget = scale.count * available.reduce((s, t) => s + unitHp(t), 0) / available.length;
+    let hp = 0;
+    while (hp < budget) {
       const type = choose(available, rng);
-      const count = Math.min(remaining, randInt(2, 5, rng));
-      for (let i = 0; i < count; i++) {
+      const count = randInt(2, 5, rng);
+      for (let i = 0; i < count && hp < budget; i++) {
         queue.push({
           type,
           interval: type === 'fast' ? 0.3 : type === 'tank' ? 1.0 : 0.6,
           waveMult: waveMult(type),
         });
+        hp += unitHp(type);
       }
-      remaining -= count;
     }
 
     if (isBoss) {

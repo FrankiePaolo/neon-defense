@@ -58,6 +58,7 @@ export class Game {
       spatialHash: this.spatialHash,
       onHit: (target, proj) => this.particles.emit(target.x, target.y, proj.color, 'hit'),
       onSplash: (target, proj) => this.particles.emit(target.x, target.y, proj.color, 'explosion'),
+      onSlow: (enemy, proj) => this.particles.emit(enemy.x, enemy.y, proj.color, 'frost'),
       onChain: (from, to) => {
         this._lightningChains.push({
           from: { x: from.x, y: from.y },
@@ -92,7 +93,8 @@ export class Game {
     // The board shape follows how the device is held now; the grid and the
     // board size pick it up from CONFIG
     this.board = chooseGridShape(challenge?.board ?? replay?.board);
-    this.grid.generate(CONFIG.DIFFICULTY[difficulty] || CONFIG.DIFFICULTY.normal, mulberry32(this.seed));
+    const level = CONFIG.DIFFICULTY[difficulty] ? difficulty : 'normal';
+    this.grid.generate(CONFIG.DIFFICULTY[level], mulberry32(this.seed), CONFIG.ROAD_MAX[level]);
     this.ui.fitBoard();
     this.renderer.markDirty();
     this.towers = [];

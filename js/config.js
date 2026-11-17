@@ -19,10 +19,13 @@ export const CONFIG = {
   SYNERGY_RANGE: 3,
   // Minimum path length in tiles per difficulty, same on every grid
   DIFFICULTY: { easy: 46, normal: 32, hard: 21 },
+  // Maximum path length per difficulty: the longest road a phone board makes,
+  // so a wide desktop board cannot lay a much longer, easier road
+  ROAD_MAX: { easy: 54, normal: 49, hard: 37 },
   // Enemy HP multiplier per difficulty, on top of the wave curve
   DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1 },
   // Kill reward multiplier per difficulty, on top of the wave curve
-  DIFFICULTY_REWARD: { easy: 1, normal: 1, hard: 0.95 },
+  DIFFICULTY_REWARD: { easy: 1, normal: 1, hard: 0.8 },
 };
 
 // Board shape for the next game: 9x12 on a phone-sized screen held upright,
@@ -60,6 +63,7 @@ export const COLORS = {
  * @property {number} [fireRate]
  * @property {number} [slowAmount]
  * @property {number} [slowDuration]
+ * @property {number} [chillRadius]
  * @property {number} [chainCount]
  * @property {number} [chainRange]
  * @property {number} [chainDecay]
@@ -98,16 +102,16 @@ export const TOWER_DEFS = {
         name: 'Rapid Fire',
         levels: [
           { cost: 100, stats: { fireRate: 3.8 } },
-          { cost: 130, stats: { fireRate: 4.6, damage: 17 } },
-          { cost: 160, stats: { fireRate: 6.0, damage: 27 } },
+          { cost: 130, stats: { fireRate: 4.4, damage: 15 } },
+          { cost: 160, stats: { fireRate: 5.0, damage: 20 } },
         ]
       },
       pathB: {
         name: 'Heavy Rounds',
         levels: [
           { cost: 100, stats: { damage: 25 } },
-          { cost: 130, stats: { damage: 53 } },
-          { cost: 160, stats: { damage: 107, range: 4.0 } },
+          { cost: 130, stats: { damage: 45 } },
+          { cost: 160, stats: { damage: 67, range: 4.0 } },
         ]
       }
     }
@@ -116,8 +120,8 @@ export const TOWER_DEFS = {
     name: 'Frost', cost: 130, color: '#88ccff', glowColor: '#4488ff',
     shape: 'hexagon', range: 3.0, damage: 5, fireRate: 1.0,
     projectileSpeed: 300, targeting: 'first',
-    slowAmount: 0.2, slowDuration: 1.2,
-    description: 'Slows enemies',
+    slowAmount: 0.2, slowDuration: 1.2, chillRadius: 1.2,
+    description: 'Slows a whole group',
     unlockCost: 1,
     upgrades: {
       pathA: {
@@ -192,7 +196,7 @@ export const TOWER_DEFS = {
   },
   sniper: {
     name: 'Sniper', cost: 260, color: '#00ff66', glowColor: '#00cc44',
-    shape: 'octagon', range: 6.0, damage: 100, fireRate: 0.3,
+    shape: 'octagon', range: 6.0, damage: 120, fireRate: 0.3,
     projectileSpeed: 800, targeting: 'strongest',
     description: 'Extreme range, high damage',
     unlockCost: 25,
@@ -200,17 +204,17 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Marksman',
         levels: [
-          { cost: 165, stats: { range: 7.5, damage: 165 } },
-          { cost: 200, stats: { range: 9.0, damage: 290 } },
-          { cost: 250, stats: { range: 12.0, damage: 640 } },
+          { cost: 165, stats: { range: 7.5, damage: 200 } },
+          { cost: 200, stats: { range: 9.0, damage: 350 } },
+          { cost: 250, stats: { range: 12.0, damage: 820 } },
         ]
       },
       pathB: {
         name: 'Assassin',
         levels: [
-          { cost: 165, stats: { damage: 175 } },
-          { cost: 200, stats: { damage: 350 } },
-          { cost: 250, stats: { damage: 720 } },
+          { cost: 165, stats: { damage: 220 } },
+          { cost: 200, stats: { damage: 420 } },
+          { cost: 250, stats: { damage: 870 } },
         ]
       }
     }

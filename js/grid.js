@@ -36,18 +36,21 @@ export class Grid {
   // A board taller than wide is the wide board generated with cols and rows
   // swapped, then turned: the road runs top to bottom with the same lengths.
   // A seeded rng gives the same road on every board of the same class.
-  generate(minLength = 25, rng = Math.random) {
+  generate(minLength = 25, rng = Math.random, maxLength = Infinity) {
     this.rng = rng;
     this.init();
     const tall = this.rows > this.cols;
     if (tall) this.init(this.rows, this.cols);
-    this._generateWide(minLength);
+    this._generateWide(minLength, maxLength);
     if (tall) this._transpose();
     this._markNearRoad();
     return true;
   }
 
-  _generateWide(minLength) {
+  // A walk that comes out longer than maxLength is retried with a shorter
+  // meander target: a wide board crosses more columns before it can turn
+  _generateWide(minLength, maxLength) {
+    let target = minLength;
     for (let attempt = 0; attempt < 400; attempt++) {
       this.init(this.cols, this.rows);
       const entryY = randInt(2, this.rows - 3, this.rng);
@@ -55,7 +58,8 @@ export class Grid {
       this.entry = { x: 0, y: entryY };
       this.exit = { x: this.cols - 1, y: exitY };
 
-      const path = this._randomWalk(minLength);
+      const path = this._randomWalk(target);
+      if (path && path.length > maxLength) { target = Math.max(1, target - 1); continue; }
       if (path && path.length >= minLength) {
         for (const p of path) {
           this.cells[p.y][p.x] = CELL_PATH;

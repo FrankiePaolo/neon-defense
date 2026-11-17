@@ -1,6 +1,6 @@
 // Combat resolution shared by the game and the balance simulator.
 // No DOM: visual effects go through the ctx callbacks.
-//   ctx = { spatialHash, onHit(target, proj), onSplash(target, proj), onChain(from, to) }
+//   ctx = { spatialHash, onHit(target, proj), onSplash(target, proj), onChain(from, to), onSlow(enemy, proj) }
 import { CONFIG } from './config.js';
 import { distance } from './utils.js';
 
@@ -11,8 +11,14 @@ export function resolveHit(proj, ctx) {
 
   target.takeDamage(proj.damage, proj.towerType);
 
+  // A slow reaches every enemy within the chill radius of the target
   if (proj.slowAmount > 0) {
-    target.applyEffect('slow', proj.slowDuration, proj.slowAmount);
+    const radius = proj.chillRadius * CONFIG.TILE_SIZE;
+    const others = radius > 0 ? ctx.spatialHash.query(target.x, target.y, radius).filter(e => e !== target && e.active) : [];
+    for (const e of [target, ...others]) {
+      e.applyEffect('slow', proj.slowDuration, proj.slowAmount);
+      ctx.onSlow?.(e, proj);
+    }
   }
 
   if (proj.splashRadius > 0) {

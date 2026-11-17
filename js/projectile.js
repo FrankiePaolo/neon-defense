@@ -18,6 +18,7 @@ export class Projectile {
 
     this.slowAmount = tower.currentStats.slowAmount || 0;
     this.slowDuration = tower.currentStats.slowDuration || 0;
+    this.chillRadius = tower.currentStats.chillRadius || 0;
     this.splashRadius = tower.currentStats.splashRadius || 0;
     this.splashDecay = tower.currentStats.splashDecay || 0.5;
     this.chainCount = tower.currentStats.chainCount || 0;
