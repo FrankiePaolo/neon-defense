@@ -975,8 +975,7 @@ export class UIController {
     btn.classList.toggle('active', !muted);
   }
 
-  // The wallet row, laid out like the counters above it: the core balance,
-  // kept out of sight once every tower is unlocked and cores buy nothing
+  // Core balance beside the tower heading, hidden once every tower is unlocked
   updateUnlockTracker() {
     const el = document.getElementById('unlock-tracker');
     if (!el) return;

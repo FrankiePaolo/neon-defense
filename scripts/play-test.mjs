@@ -1160,6 +1160,7 @@ scenario('Late-game controls fit', { layouts: ['phoneNarrow', 'phoneShort', 'pho
     els.forEach((a, i) => {
       if (a.r.left < -0.5 || a.r.top < -0.5 || a.r.right > innerWidth + 0.5 || a.r.bottom > innerHeight + 0.5) issues.push(`${name(a.el)} off screen`);
       for (const b of els.slice(i + 1)) {
+        if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
         const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
         const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
         if (w > 1 && h > 1) issues.push(`${name(a.el)} over ${name(b.el)}`);

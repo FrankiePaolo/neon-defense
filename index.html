@@ -56,6 +56,7 @@ body {
    visible viewport; the safe-area padding keeps everything off the notch,
    the home indicator and the side cut-outs */
 #game-container {
+  --counter-size: 22px;
   display: flex;
   width: 100vw;
   height: 100vh;
@@ -96,7 +97,7 @@ canvas {
   outline-offset: -1px;
 }
 
-/* HUD: row 1 has the counters, row 2 the next-unlock progress and the controls */
+/* HUD: counters above the speed, pause and sound controls */
 #hud {
   position: absolute;
   top: 0;
@@ -115,7 +116,7 @@ canvas {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   justify-items: center;
-  font-size: 22px;
+  font-size: var(--counter-size);
 }
 
 .hud-item {
@@ -161,7 +162,7 @@ canvas {
 #hud-row2 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -177,15 +178,13 @@ canvas {
 
 #unlock-tracker.hidden { display: flex !important; visibility: hidden; }
 
-/* Core balance: the persistent unlock currency, as one line of text on the
-   controls row, with no box so it does not read as a button */
+/* Persistent currency beside the towers it unlocks */
 #unlock-tracker .unlock-cores {
   flex-direction: row;
   align-items: baseline;
   gap: 6px;
-  padding-left: 4px;
   color: #c77dff;
-  font-size: 1.3em;
+  font-size: var(--counter-size);
 }
 #unlock-tracker .unlock-cores.hud-pulse { animation: hud-pulse 0.35s ease-out; }
 
@@ -254,13 +253,12 @@ canvas {
   pointer-events: none;
 }
 
-/* Heading and mid-wave note share one row, so the panel height never changes */
+/* Reserve the note's row so starting a wave never moves the tower cards */
 #panel-head {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: center;
-  column-gap: 12px;
+  gap: 2px 8px;
   margin-bottom: 4px;
 }
 
@@ -583,6 +581,7 @@ canvas {
 #game-container[data-phase="wave"] #start-wave-btn { display: none; }
 
 #build-note {
+  grid-column: 1 / -1;
   visibility: hidden;
   font-size: 13px;
   font-weight: 600;
@@ -1278,6 +1277,7 @@ canvas {
 /* Portrait phones */
 @media (max-width: 768px) {
   #game-container {
+    --counter-size: min(20px, 5vw);
     flex-direction: column;
   }
 
@@ -1285,7 +1285,7 @@ canvas {
   #canvas-wrapper { min-height: 0; }
 
   /* Columns as wide as their counters, so a long one borrows from a short one */
-  #ui-overlay { font-size: min(20px, 5vw); grid-template-columns: repeat(4, auto); justify-content: space-around; }
+  #ui-overlay { grid-template-columns: repeat(4, auto); justify-content: space-around; }
 
   #unlock-tracker { font-size: 12px; }
 
@@ -1511,7 +1511,7 @@ canvas {
   #start-wave-btn { grid-column: 3; grid-row: 1 / 3; }
 
   /* Fixed height, so the mid-wave note never changes the tray's height */
-  #panel-head { justify-content: space-between; flex-wrap: nowrap; height: 20px; padding: 0 2px; }
+  #panel-head { min-height: 36px; padding: 0 2px; }
 
   /* Height a full-width board cannot use (tall screens) goes to the tray:
      taller buttons, bigger pictures. 262px is the HUD, the wave controls and
@@ -1590,6 +1590,7 @@ canvas {
    the board, and the tray as a column on the right. Nothing covers the board. */
 @media (max-height: 500px) {
   #game-container {
+    --counter-size: 18px;
     flex-direction: row;
   }
 
@@ -1645,7 +1646,8 @@ canvas {
   }
 
   #tower-panel h3 { font-size: 14px; }
-  #panel-head { min-height: 36px; align-content: center; text-align: center; }
+  #panel-head { min-height: 36px; align-content: center; }
+  #unlock-tracker .hud-label { display: none; }
 
   #tower-list {
     display: grid;
@@ -1659,7 +1661,7 @@ canvas {
   #menu-screen { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
 
   /* Counters in a 2x2 block */
-  #ui-overlay { grid-template-columns: repeat(2, 1fr); row-gap: 4px; font-size: 18px; }
+  #ui-overlay { grid-template-columns: repeat(2, 1fr); row-gap: 4px; }
   #start-wave-btn { padding: 8px 18px; font-size: 15px; }
 }
 
@@ -1825,7 +1827,6 @@ canvas {
         <div id="hud-score" class="hud-item"><span id="score-value">0</span></div>
       </div>
       <div id="hud-row2">
-        <div id="unlock-tracker" class="hidden"></div>
         <div id="speed-controls">
           <button class="speed-btn" id="speed-btn">1x</button>
           <button class="speed-btn" id="pause-btn"></button>
@@ -1920,6 +1921,7 @@ canvas {
   <div id="tower-panel" class="panel-hidden">
     <div id="panel-head">
       <h3>TOWERS</h3>
+      <div id="unlock-tracker" class="hidden"></div>
       <div id="build-note"></div>
     </div>
     <div id="tower-list"></div>
