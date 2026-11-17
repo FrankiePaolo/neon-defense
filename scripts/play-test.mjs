@@ -867,6 +867,40 @@ scenario('Drag tower details card', { layouts: ['phone', 'landscape'] }, async (
   assert(!(await g.visible('#tower-stats-tooltip')), 'details card stayed open after PLACE');
 });
 
+scenario('Phone upgrade controls stay reachable while scrolling', { layouts: ['phone', 'phoneShort', 'phoneNarrow', 'landscape'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  await selectPlacedTower(g);
+  const header = await g.rect('#upgrade-panel .up-header');
+  const footer = await g.rect('#upgrade-panel .up-footer');
+  const body = await g.rect('#upgrade-panel .up-body');
+  const x = body.left + body.width / 2, y = body.bottom - 10;
+  const session = await g.page.createCDPSession();
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 10; i++) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y - Math.min(140, body.height - 20) * i / 10 }] });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
+  await sleep(150);
+  assert(await g.eval(() => document.querySelector('#upgrade-panel .up-body').scrollTop > 0), 'upgrade list did not scroll with touch');
+  assert(JSON.stringify(await g.rect('#upgrade-panel .up-header')) === JSON.stringify(header), 'header moved while scrolling');
+  assert(JSON.stringify(await g.rect('#upgrade-panel .up-footer')) === JSON.stringify(footer), 'actions moved while scrolling');
+  assert(await inViewport(g, await g.rect('#upgrade-panel .up-close')), 'close button outside viewport');
+  for (const sel of ['.move-btn', '.sell-btn']) assert(await inViewport(g, await g.rect('#upgrade-panel ' + sel)), `${sel} outside viewport`);
+  await g.press('#upgrade-panel .up-close');
+  assert(!(await g.visible('#upgrade-panel')), 'could not close the scrolled panel');
+});
+
+scenario('Phone tower details close button', { layouts: ['phone', 'phoneNarrow', 'landscape'] }, async (g) => {
+  await g.startGame();
+  await g.press('.tower-btn[data-tower-type="blaster"]');
+  await g.press('#tower-stats-tooltip .ttp-close');
+  assert(!(await g.visible('#tower-stats-tooltip')), 'details card did not close');
+  assert(await g.eval(() => !window.game.input.placingType), 'close started placement');
+  await g.press('.tower-btn[data-tower-type="blaster"]');
+  assert(await g.visible('#tower-stats-tooltip'), 'details card did not reopen');
+});
+
 const noPageScroll = (g) => g.eval(() => document.documentElement.scrollHeight === innerHeight &&
   document.documentElement.scrollWidth === innerWidth);
 
@@ -1352,6 +1386,17 @@ scenario('Portrait tray', { layouts: ['phone', 'phoneShort'], langs: ['en', 'it'
   const tray = await g.rect('#tower-panel');
   await startWave(g);
   assert(JSON.stringify(await g.rect('#tower-panel')) === JSON.stringify(tray), 'tray changed when the wave started');
+});
+
+scenario('Narrow phone tower targets', { layouts: ['phoneNarrow'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  const targets = await g.eval(() => [...document.querySelectorAll('.tower-btn')].map(b => {
+    const r = b.getBoundingClientRect();
+    return { width: r.width, height: r.height, top: r.top };
+  }));
+  assert(targets.every(r => r.width >= 44 && r.height >= 44), 'tower target smaller than 44px');
+  assert(new Set(targets.map(r => r.top)).size === 2, 'narrow tray should use two rows');
+  assert(await noPageScroll(g), 'narrow phone page scrolls');
 });
 
 scenario('Reading costs mid-wave on a phone', { layouts: ['phone'], langs: ['en', 'it'] }, async (g) => {

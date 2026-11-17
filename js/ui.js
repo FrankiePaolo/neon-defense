@@ -530,8 +530,8 @@ export class UIController {
     const game = this.game;
 
     const canModify = game.state === 'BETWEEN_WAVES';
-    let html = `<button class="up-close" aria-label="${t('ctrl.close')}">&times;</button>`;
-    html += `<div class="up-title panel-handle" style="color:${def.color}">${spriteImg(towerSprite(type, tower.upgradesB ? 'B' : 'A', Math.max(tower.upgradesA, tower.upgradesB)), 'up-pic')}${t('tower.' + type)}</div>`;
+    let html = `<div class="up-header"><button class="up-close" aria-label="${t('ctrl.close')}">&times;</button>`;
+    html += `<div class="up-title panel-handle" style="color:${def.color}">${spriteImg(towerSprite(type, tower.upgradesB ? 'B' : 'A', Math.max(tower.upgradesA, tower.upgradesB)), 'up-pic')}${t('tower.' + type)}</div></div><div class="up-body">`;
 
     // Current stats summary
     const s = tower.currentStats;
@@ -582,19 +582,21 @@ export class UIController {
       }
     }
 
+    html += `</div>`;
     if (canModify) {
       const canSell = game.canSell(tower);
-      html += `<div class="up-actions">
+      html += `<div class="up-footer"><div class="up-actions">
         <button type="button" class="tower-action move-btn"><span class="action-icon">${ICONS.move}</span><span class="action-label">${t('towers.move')}</span></button>
         <button type="button" class="tower-action sell-btn${canSell ? '' : ' sell-blocked'}" ${canSell ? '' : 'disabled aria-describedby="sell-blocked-note"'}>
           <span class="action-icon">${canSell ? ICONS.sell : ICONS.lock}</span><span class="action-copy"><span class="action-label" aria-live="polite">${t('towers.sell')}</span><span class="action-value">${ICONS.coin}+${tower.getSellValue()}</span></span>
         </button>
       </div>`;
       if (!canSell) html += `<div id="sell-blocked-note" class="up-need">${t('towers.lastTower')}</div>`;
+      html += `</div>`;
     }
 
     panel.innerHTML = html;
-    panel.style.display = 'block';
+    panel.style.display = 'flex';
 
     if (panel.classList.contains('panel-floating')) {
       const rect = panel.getBoundingClientRect();
@@ -696,7 +698,7 @@ export class UIController {
   _fitSheet() {
     const panel = this.elements.upgradePanel;
     const tower = this.game.input.selectedTower;
-    if (panel.style.display !== 'block' || panel.classList.contains('panel-floating') || !isPhoneLayout() || !tower) return;
+    if (panel.style.display !== 'flex' || panel.classList.contains('panel-floating') || !isPhoneLayout() || !tower) return;
     const board = this.game.renderer.canvas.getBoundingClientRect();
     const ts = CONFIG.TILE_SIZE * board.width / CONFIG.CANVAS_WIDTH;
     const left = board.left + tower.gx * ts, top = board.top + tower.gy * ts, gap = 8;
@@ -707,7 +709,7 @@ export class UIController {
       panel.style.maxHeight = '';
     } else {
       side = top + ts / 2 < board.top + board.height / 2 ? 'bottom' : 'top';
-      panel.style.maxHeight = (side === 'bottom' ? window.innerHeight - top - ts : top) - gap + 'px';
+      panel.style.maxHeight = Math.min((side === 'bottom' ? window.innerHeight - top - ts : top) - gap, window.innerHeight * 0.65) + 'px';
       panel.style.maxWidth = '';
     }
     panel.classList.toggle('sheet-top', side === 'top');
@@ -734,7 +736,9 @@ export class UIController {
     const canAfford = unlocked && this.game.economy.canAfford(def.cost);
     const color = unlocked ? def.color : '#8c8c96';
 
-    let html = `<div class="ttp-title${isMobile ? ' panel-handle' : ''}" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
+    let html = `<div class="ttp-header"><div class="ttp-title${isMobile ? ' panel-handle' : ''}" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
+    if (isMobile) html += `<button class="ttp-close" aria-label="${t('ctrl.close')}">&times;</button>`;
+    html += `</div>`;
     html += `<div class="ttp-desc">${t('tower.' + type + '.desc')}</div>`;
 
     html += `<div class="ttp-stats">`;
@@ -787,6 +791,7 @@ export class UIController {
     this.hideUpgradePanel();
     tooltip.innerHTML = this._buildStatsTooltipHTML(type, true);
     tooltip.style.borderColor = TOWER_DEFS[type].color;
+    tooltip.querySelector('.ttp-close').addEventListener('click', () => this._hideTooltip());
 
     if (!isPhoneLayout()) {
       // Touch screen with the desktop layout: position left of the panel
@@ -1013,7 +1018,8 @@ export class UIController {
   updateSpeedButtons(speed, pop = false) {
     const btn = document.getElementById('speed-btn');
     btn.dataset.speed = speed;
-    btn.innerHTML = `${t('ctrl.speed')} <span class="speed-x">${speed}x</span>`;
+    btn.innerHTML = `<span class="speed-label">${t('ctrl.speed')}</span><span class="speed-icon">${ICONS.speed}</span><span class="speed-x">${speed}x</span>`;
+    btn.setAttribute('aria-label', `${t('ctrl.speed')} ${speed}x`);
     if (pop) this._restartAnimation(btn.querySelector('.speed-x'), 'speed-pop');
   }
 

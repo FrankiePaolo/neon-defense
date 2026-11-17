@@ -25,4 +25,5 @@ export const ICONS = {
   move: svg('<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>'),
   sell: svg('<path d="M3 12l9-9h7l2 2v7l-9 9z"/><circle cx="16.5" cy="7.5" r="1"/>'),
   check: svg('<path d="M5 12l4 4L19 6"/>'),
+  speed: svg('<path d="M4 5l8 7-8 7zM13 5l8 7-8 7z"/>'),
 };
