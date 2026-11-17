@@ -1954,15 +1954,28 @@ scenario('Audio stops when the game tab is hidden', { layouts: ['desktop'] }, as
   assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'music did not resume after returning');
 });
 
-scenario('Boss music after a pause', { layouts: ['desktop'] }, async (g) => {
+scenario('Boss music lasts through pauses and returns to normal after clearing', { layouts: ['desktop'] }, async (g) => {
   await g.startGame();
   await clearWave(g);
+  assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'normal wave without gameplay music');
   await g.eval(() => { window.game.waveManager.currentWave = 4; window.game.waveManager.nextWaveQueue = null; window.game.startNextWave(); });
   assert(await g.eval(() => window.game.audio.currentTrack === 'boss'), 'boss wave without boss music');
   await g.press('#pause-btn');
   await g.press('#resume-btn');
   const music = await g.eval(() => window.game.audio.currentTrack);
   assert(music === 'boss', `music after resume: ${music}`);
+  await g.eval(() => {
+    window.game.waveManager.spawnQueue = [];
+    window.game.enemies = [];
+    window.game._update(1);
+  });
+  assert(await g.eval(() => window.game.state === 'BETWEEN_WAVES'), 'boss wave did not clear');
+  assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'boss music continues after clearing');
+  await g.press('#pause-btn');
+  await g.press('#resume-btn');
+  assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'boss music returns between waves');
+  await g.eval(() => window.game.startNextWave());
+  assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'next normal wave has boss music');
 });
 
 scenario('Visual unlock states refresh after spending', { layouts: ['phone', 'desktop'], langs: ['en', 'it'], open: { storage: { neon_td_cores: '5' } } }, async (g) => {

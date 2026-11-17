@@ -512,6 +512,7 @@ export class Game {
     this.killStreak = 0;
     this.killStreakTimer = 0;
     this.state = 'BETWEEN_WAVES';
+    this.audio.playTrack('gameplay');
     this.ui.showBetweenWaves();
     this.ui.updateHUD();
   }

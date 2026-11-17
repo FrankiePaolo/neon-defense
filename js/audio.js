@@ -1,9 +1,11 @@
-// Note frequencies (A minor pentatonic scale)
+// Note frequencies (A minor, with harmonic minor tension for boss battles)
 const _ = 0;
+const F2 = 87.31;
 const A2 = 110, C3 = 130.81, D3 = 146.83, E3 = 164.81, G3 = 196;
 const A3 = 220, C4 = 261.63, D4 = 293.66, E4 = 329.63, G4 = 392;
 const A4 = 440, C5 = 523.25, D5 = 587.33, E5 = 659.26, G5 = 784;
 const A5 = 880;
+const B4 = 493.88, F4 = 349.23, GS4 = 415.30;
 
 const TRACKS = {
   menu: {
@@ -54,18 +56,25 @@ const TRACKS = {
     bpm: 160,
     channels: [
       { wave: 'square', vol: 0.10, sustain: 0.6, patterns: [
-        [E5, E5, _, D5, C5, _, A4, _, G4, A4, _, C5, D5, _, E5, _],
-        [G5, _, E5, _, D5, D5, C5, _, A4, _, C5, _, A4, G4, A4, _],
+        [A4, _, _, E4, A4, _, B4, C5, B4, _, A4, _, E4, _, _, _],
+        [F4, _, _, E4, F4, _, A4, _, C5, _, B4, A4, F4, _, E4, _],
+        [D5, _, _, A4, D5, _, C5, B4, A4, _, F4, _, E4, _, D4, _],
+        [E4, _, GS4, _, B4, _, E5, _, D5, C5, B4, GS4, A4, _, _, _],
       ]},
       { wave: 'triangle', vol: 0.18, sustain: 0.4, patterns: [
-        [A2, _, A2, _, A2, _, A2, _, E3, _, E3, _, E3, _, E3, _],
-        [D3, _, D3, _, D3, _, D3, _, A2, _, A2, _, E3, _, E3, _],
+        [A2, A2, _, A2, _, _, A2, _, A2, A2, _, A2, _, _, E3, _],
+        [F2, F2, _, F2, _, _, F2, _, F2, F2, _, F2, _, _, C3, _],
+        [D3, D3, _, D3, _, _, D3, _, D3, D3, _, D3, _, _, A2, _],
+        [E3, E3, _, E3, _, _, E3, _, E3, E3, _, E3, E3, _, E3, _],
       ]},
-      { wave: 'sawtooth', vol: 0.025, sustain: 0.2, patterns: [
-        [E5, A4, E5, A5, E5, A4, E5, A5, D5, A4, D5, A5, D5, A4, D5, A5],
+      { wave: 'sawtooth', vol: 0.025, sustain: 0.4, patterns: [
+        [A3, _, E4, _, A4, _, E4, _, A3, _, E4, _, A4, _, E4, _],
+        [C4, _, F4, _, A4, _, F4, _, C4, _, F4, _, A4, _, F4, _],
+        [D4, _, F4, _, A4, _, F4, _, D4, _, F4, _, A4, _, F4, _],
+        [E4, _, GS4, _, B4, _, GS4, _, E4, _, GS4, _, B4, GS4, E4, _],
       ]},
       { type: 'kick', vol: 0.25, patterns: [
-        [1, _, 1, _, 1, _, 1, _, 1, _, 1, _, 1, _, 1, _],
+        [1, _, _, 1, _, _, 1, _, 1, _, _, 1, _, _, 1, _],
       ]},
       { type: 'noise', freq: 8000, vol: 0.06, sustain: 0.08, patterns: [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
