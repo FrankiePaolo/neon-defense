@@ -124,31 +124,99 @@ export class Tower {
   }
 
   _body(ctx, shape, size) {
-    ctx.fillStyle = this.def.color;
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#080e18';
+    drawShape(ctx, shape, 0, 2, size + 0.8);
+    ctx.fill();
+
+    const armor = ctx.createLinearGradient(-size, -size, size, size);
+    armor.addColorStop(0, '#526179');
+    armor.addColorStop(0.45, '#29374b');
+    armor.addColorStop(1, '#101927');
+    ctx.fillStyle = armor;
     drawShape(ctx, shape, 0, 0, size);
     ctx.fill();
+    ctx.strokeStyle = this.def.color;
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 3 * SB;
+    ctx.shadowColor = this.def.glowColor;
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#090f1b';
+    ctx.lineWidth = 1.5;
+    drawShape(ctx, shape, 0, 0, size * 0.78);
+    ctx.stroke();
+    ctx.strokeStyle = this.def.color;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+
+    if (this.type === 'frost') {
+      // Faceted crystal panels around the central emitter.
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3 - Math.PI / 6;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * size * 0.94, Math.sin(a) * size * 0.94);
+        ctx.lineTo(Math.cos(a + Math.PI / 3) * size * 0.94, Math.sin(a + Math.PI / 3) * size * 0.94);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 ? '#5ab8e8' : '#b9ecff';
+        ctx.globalAlpha = i % 2 ? 0.25 : 0.45;
+        ctx.fill();
+      }
+    } else if (this.type === 'lightning') {
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < 3; i++) {
+        const a = i * Math.PI * 2 / 3 - Math.PI / 2;
+        const x = Math.cos(a) * size * 0.72;
+        const y = Math.sin(a) * size * 0.72;
+        ctx.fillStyle = '#141a25';
+        this._circle(ctx, x, y, 2.8);
+        ctx.fill();
+        ctx.fillStyle = '#fff2b0';
+        this._circle(ctx, x, y, 1.3);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   _outline(ctx, shape, size, alpha = 0.35) {
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 0.8;
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = alpha * 0.45;
+    ctx.shadowBlur = 0;
     drawShape(ctx, shape, 0, 0, size);
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
 
   _barrel(ctx, size, { length = size + 5, width = 2, offset = 0 } = {}) {
-    ctx.strokeStyle = this.def.color;
-    ctx.lineWidth = width;
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#0a111d';
+    ctx.lineWidth = width + 3;
     ctx.beginPath();
-    ctx.moveTo(2, offset);
+    ctx.moveTo(size * 0.25, offset);
     ctx.lineTo(length, offset);
     ctx.stroke();
+    ctx.strokeStyle = '#72869c';
+    ctx.lineWidth = width + 1;
+    ctx.stroke();
+    ctx.strokeStyle = this.def.color;
+    ctx.lineWidth = Math.max(0.7, width * 0.45);
+    ctx.stroke();
+    ctx.fillStyle = '#111c2b';
+    ctx.fillRect(length - 3, offset - width / 2 - 1.5, 3.5, width + 3);
+    ctx.fillStyle = this.def.color;
+    ctx.fillRect(length - 0.5, offset - width / 2, 1, width);
+    ctx.restore();
   }
 
   _barrelStyle(ctx, hasTarget) {
-    ctx.globalAlpha = hasTarget ? 0.9 : 0.5;
+    ctx.globalAlpha = hasTarget ? 1 : 0.85;
     ctx.shadowBlur = hasTarget ? 6 * SB : 0;
     ctx.shadowColor = this.def.glowColor;
   }
@@ -200,14 +268,28 @@ export class Tower {
       ctx.restore();
     }
 
-    // Base platform
+    // Raised foundation, with a fixed rim beneath the rotating turret.
     ctx.save();
-    ctx.fillStyle = '#151520';
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(0, 4, size + 5, size + 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#101725';
+    ctx.strokeStyle = '#394559';
     ctx.lineWidth = 1;
-    this._circle(ctx, this.x, this.y, size + 3);
+    drawShape(ctx, 'octagon', 0, 1, size + 3);
     ctx.fill();
     ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = hasTarget || isSelected || isHovered ? 0.85 : 0.4;
+    for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI / 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, size + 1.5, a + 0.2, a + 0.65);
+      ctx.stroke();
+    }
     ctx.restore();
 
     const tier = Math.max(this.upgradesA, this.upgradesB);
@@ -639,15 +721,18 @@ export class Tower {
     this._rotated(ctx, (c) => {
       this._glow(c, pulse, hasTarget);
 
-      // Body — square with dark inner
-      c.fillStyle = this.def.color;
-      c.fillRect(-size, -size, size * 2, size * 2);
-      c.fillStyle = 'rgba(0,0,0,0.3)';
-      c.fillRect(-size * 0.6, -size * 0.6, size * 1.2, size * 1.2);
-      c.strokeStyle = '#fff';
-      c.lineWidth = 1;
-      c.globalAlpha = 0.3;
-      c.strokeRect(-size, -size, size * 2, size * 2);
+      this._body(c, 'square', size * 0.82);
+      this._outline(c, 'square', size * 0.82);
+      c.shadowBlur = 0;
+      c.fillStyle = '#0b1320';
+      for (const side of [-1, 1]) {
+        c.fillRect(-size * 0.7, side * size * 0.82 - 2, size * 1.25, 4);
+        c.fillStyle = this.def.color;
+        for (let i = 0; i < 3; i++) {
+          c.fillRect(-size * 0.5 + i * 4, side * size * 0.82 - 1, 2, 2);
+        }
+        c.fillStyle = '#0b1320';
+      }
 
       if (pathB && tier >= 2) {
         // Demolisher: extra armor plates
@@ -667,9 +752,14 @@ export class Tower {
       }
 
       // Barrel
-      c.globalAlpha = hasTarget ? 1 : 0.6;
-      c.fillStyle = this.def.color;
-      c.shadowBlur = hasTarget ? 8 * SB : 0;
+      c.globalAlpha = 1;
+      const barrelMetal = c.createLinearGradient(0, -6, 0, 6);
+      barrelMetal.addColorStop(0, '#c0c8d0');
+      barrelMetal.addColorStop(0.25, this.def.color);
+      barrelMetal.addColorStop(0.6, '#59404a');
+      barrelMetal.addColorStop(1, '#1a202d');
+      c.fillStyle = barrelMetal;
+      c.shadowBlur = hasTarget ? 3 * SB : 0;
 
       if (pathA) {
         // Bombardment: flared/widening barrel
@@ -725,6 +815,13 @@ export class Tower {
         c.fillStyle = '#fff';
         c.fillRect(bLen - 3, -6, 3, 12);
       }
+
+      const muzzleX = size + (pathA ? 7 + tier : pathB ? 8 + tier : 7);
+      const muzzleWidth = pathA ? 4 + tier * 1.5 : pathB ? 4 + tier * 0.8 : 3.5;
+      c.shadowBlur = 0;
+      c.globalAlpha = 1;
+      c.fillStyle = '#090f19';
+      c.fillRect(muzzleX - 1.5, -muzzleWidth * 0.65, 1.8, muzzleWidth * 1.3);
     });
   }
 
@@ -913,22 +1010,24 @@ export class Tower {
 
     }
 
-    // Body — glowing orb
+    // Relay housing and four illuminated terminals.
     ctx.save();
-    ctx.shadowBlur = (15 + tier * 5) * SB * pulse;
+    ctx.translate(this.x, this.y);
+    this._body(ctx, 'circle', size);
+    ctx.translate(-this.x, -this.y);
+    ctx.shadowBlur = (5 + tier * 2) * SB * pulse;
     ctx.shadowColor = glow;
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.15 + tier * 0.03;
-    this._circle(ctx, this.x, this.y, size + 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.9;
-    this._circle(ctx, this.x, this.y, size);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.4;
-    this._circle(ctx, this.x, this.y, size);
-    ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI / 2;
+      const x = this.x + Math.cos(a) * size * 0.8;
+      const y = this.y + Math.sin(a) * size * 0.8;
+      ctx.fillStyle = '#0a111e';
+      this._circle(ctx, x, y, 2.8);
+      ctx.fill();
+      ctx.fillStyle = color;
+      this._circle(ctx, x, y, 1.5);
+      ctx.fill();
+    }
 
     // Dark centre gives each support symbol contrast.
     ctx.fillStyle = '#202034';
