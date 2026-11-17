@@ -430,6 +430,9 @@ canvas {
 }
 
 #upgrade-panel .up-title { font-weight: bold; margin-bottom: 4px; font-size: 16px; padding-right: 36px; }
+.panel-handle { cursor: grab; touch-action: none; min-height: 32px; }
+.panel-handle::after { content: '\2807'; color: var(--text-2); margin-left: 8px; }
+.panel-dragging .panel-handle { cursor: grabbing; }
 #upgrade-panel .up-close {
   position: absolute; top: 2px; right: 2px;
   width: 44px; height: 44px;
@@ -485,10 +488,51 @@ canvas {
 #upgrade-panel .up-unaffordable .up-desc { color: var(--text-1); }
 #upgrade-panel .up-locked .up-cost,
 #upgrade-panel .up-locked .up-desc { color: var(--text-3); }
-#upgrade-panel .up-actions { margin-top: 8px; display: flex; gap: 12px; }
-#upgrade-panel .move-btn { font-size: 14px; color: #33bbff; cursor: pointer; }
-#upgrade-panel .sell-btn { font-size: 14px; color: #ff6666; cursor: pointer; }
-#upgrade-panel .sell-btn.sell-blocked { color: var(--text-3); cursor: default; }
+#upgrade-panel .up-actions { margin-top: 12px; padding-top: 10px; border-top: 1px solid #1a1a2e; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#upgrade-panel .tower-action {
+  --action-color: 51, 187, 255;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px;
+  border: 1px solid rgba(var(--action-color), 0.45);
+  border-radius: 6px;
+  background: rgba(var(--action-color), 0.07);
+  color: rgb(var(--action-color));
+  font: 600 14px var(--font-ui);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+#upgrade-panel .sell-btn { --action-color: 255, 118, 118; }
+#upgrade-panel .action-icon { display: flex; flex-shrink: 0; }
+#upgrade-panel .action-icon .icon { width: 20px; height: 20px; margin: 0; transition: transform 150ms ease; }
+#upgrade-panel .action-copy { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+#upgrade-panel .action-value { display: inline-flex; align-items: center; gap: 3px; color: #ffd700; font-size: 12px; font-variant-numeric: tabular-nums; }
+#upgrade-panel .action-value .icon { margin: 0; }
+@media (hover: hover) {
+  #upgrade-panel .tower-action:hover:not(:disabled) { background: rgba(var(--action-color), 0.16); border-color: rgb(var(--action-color)); box-shadow: 0 0 12px rgba(var(--action-color), 0.15); transform: translateY(-1px); }
+  #upgrade-panel .move-btn:hover .action-icon .icon { transform: translate(2px, -2px); }
+}
+#upgrade-panel .tower-action:active:not(:disabled) { transform: scale(0.97); background: rgba(var(--action-color), 0.24); }
+#upgrade-panel .tower-action:focus-visible { outline: 2px solid rgb(var(--action-color)); outline-offset: 3px; }
+#upgrade-panel .sell-btn[data-armed] { border-color: #ff7676; background: rgba(255, 118, 118, 0.2); animation: sell-confirm 220ms ease-out; }
+#upgrade-panel .sell-btn:disabled { color: var(--text-2); background: rgba(255, 255, 255, 0.03); border-color: #333; cursor: not-allowed; }
+#upgrade-panel .sell-btn:disabled .action-value { color: var(--text-2); }
+@keyframes sell-confirm {
+  from { box-shadow: 0 0 0 3px rgba(255, 118, 118, 0.4); }
+  to { box-shadow: 0 0 0 0 rgba(255, 118, 118, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #upgrade-panel .tower-action,
+  #upgrade-panel .action-icon .icon { transition: none; }
+  #upgrade-panel .tower-action:hover:not(:disabled),
+  #upgrade-panel .tower-action:active:not(:disabled),
+  #upgrade-panel .move-btn:hover .action-icon .icon { transform: none; }
+  #upgrade-panel .sell-btn[data-armed] { animation: none; }
+}
 
 /* Tower Stats Tooltip */
 #tower-stats-tooltip {
@@ -1398,9 +1442,7 @@ canvas {
   #upgrade-panel .up-desc { font-size: 14px; }
   #upgrade-panel .up-changes { font-size: 12px; }
   #upgrade-panel .up-check { font-size: 15px; min-width: 56px; }
-  #upgrade-panel .up-actions { margin-top: 12px; gap: 20px; }
-  #upgrade-panel .move-btn { font-size: 15px; padding: 8px 0; }
-  #upgrade-panel .sell-btn { font-size: 15px; padding: 8px 0; }
+  #upgrade-panel .tower-action { font-size: 15px; }
 
 
   #tower-stats-tooltip {
@@ -1812,6 +1854,24 @@ canvas {
 @keyframes pwa-slide-up {
   from { transform: translateX(-50%) translateY(100%); opacity: 0; }
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+/* Dragged panels use viewport coordinates instead of their initial dock. */
+#upgrade-panel.panel-floating,
+#tower-stats-tooltip.panel-floating {
+  position: fixed;
+  left: var(--panel-left) !important;
+  top: var(--panel-top) !important;
+  right: auto;
+  bottom: auto;
+  min-width: 0;
+  width: min(var(--panel-width), calc(100vw - 16px));
+  max-width: none !important;
+  max-height: min(var(--panel-height), calc(100dvh - 16px)) !important;
+  overflow-y: auto;
+  transform: none;
+  transition: none;
+  border: 1px solid #333;
+  border-radius: 8px;
 }
 </style>
 </head>

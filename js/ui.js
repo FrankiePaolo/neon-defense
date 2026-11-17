@@ -90,12 +90,54 @@ export class UIController {
 
     this._buildTowerPanel();
     this._bindButtons();
+    this._bindPanelDrag(this.elements.upgradePanel);
+    this._bindPanelDrag(this.elements.towerStatsTooltip);
     this._placeCancelButton();
     window.matchMedia(PHONE_LAYOUT).addEventListener('change', () => this._placeCancelButton());
     window.addEventListener('resize', () => this._fitSheet());
     new ResizeObserver(() => this.fitBoard()).observe(document.getElementById('board-slot'));
     window.visualViewport?.addEventListener('resize', () => this.fitBoard());
     this.applyLanguage();
+  }
+
+  _bindPanelDrag(panel) {
+    let drag = null;
+    panel.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || !e.isPrimary || !e.target.closest('.panel-handle')) return;
+      e.preventDefault();
+      const rect = panel.getBoundingClientRect();
+      drag = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+      panel.setPointerCapture(e.pointerId);
+    });
+    panel.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!panel.classList.contains('panel-dragging') && Math.hypot(dx, dy) < 4) return;
+      panel.style.setProperty('--panel-width', drag.width + 'px');
+      panel.style.setProperty('--panel-height', drag.height + 'px');
+      panel.classList.add('panel-floating', 'panel-dragging');
+      this._clampPanel(panel, drag.left + dx, drag.top + dy);
+    });
+    const endDrag = (e) => {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      drag = null;
+      panel.classList.remove('panel-dragging');
+      if (panel.hasPointerCapture(e.pointerId)) panel.releasePointerCapture(e.pointerId);
+    };
+    panel.addEventListener('pointerup', endDrag);
+    panel.addEventListener('pointercancel', endDrag);
+    panel.addEventListener('lostpointercapture', endDrag);
+    window.addEventListener('resize', () => {
+      if (!panel.classList.contains('panel-floating')) return;
+      const rect = panel.getBoundingClientRect();
+      this._clampPanel(panel, rect.left, rect.top);
+    });
+  }
+
+  _clampPanel(panel, left, top) {
+    const rect = panel.getBoundingClientRect();
+    panel.style.setProperty('--panel-left', Math.max(0, Math.min(left, window.innerWidth - rect.width)) + 'px');
+    panel.style.setProperty('--panel-top', Math.max(0, Math.min(top, window.innerHeight - rect.height)) + 'px');
   }
 
   // The board's displayed size: the largest that fits the slot CSS leaves
@@ -480,6 +522,8 @@ export class UIController {
 
   showUpgradePanel(tower, upgradedStats = null) {
     const panel = this.elements.upgradePanel;
+    if (this._upgradeTower !== tower) panel.classList.remove('panel-floating');
+    this._upgradeTower = tower;
     const def = tower.def;
     const type = tower.type;
     const pos = gridToPixel(tower.gx, tower.gy);
@@ -487,7 +531,7 @@ export class UIController {
 
     const canModify = game.state === 'BETWEEN_WAVES';
     let html = `<button class="up-close" aria-label="${t('ctrl.close')}">&times;</button>`;
-    html += `<div class="up-title" style="color:${def.color}">${spriteImg(towerSprite(type, tower.upgradesB ? 'B' : 'A', Math.max(tower.upgradesA, tower.upgradesB)), 'up-pic')}${t('tower.' + type)}</div>`;
+    html += `<div class="up-title panel-handle" style="color:${def.color}">${spriteImg(towerSprite(type, tower.upgradesB ? 'B' : 'A', Math.max(tower.upgradesA, tower.upgradesB)), 'up-pic')}${t('tower.' + type)}</div>`;
 
     // Current stats summary
     const s = tower.currentStats;
@@ -539,21 +583,23 @@ export class UIController {
     }
 
     if (canModify) {
-      html += `<div class="up-actions">`;
-      html += `<div class="move-btn">${t('towers.move')}</div>`;
-      if (game.canSell(tower)) {
-        html += `<div class="sell-btn">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
-        html += `</div>`;
-      } else {
-        html += `<div class="sell-btn sell-blocked">${t('towers.sell')} ($${tower.getSellValue()})</div>`;
-        html += `</div><div class="up-need">${t('towers.lastTower')}</div>`;
-      }
+      const canSell = game.canSell(tower);
+      html += `<div class="up-actions">
+        <button type="button" class="tower-action move-btn"><span class="action-icon">${ICONS.move}</span><span class="action-label">${t('towers.move')}</span></button>
+        <button type="button" class="tower-action sell-btn${canSell ? '' : ' sell-blocked'}" ${canSell ? '' : 'disabled aria-describedby="sell-blocked-note"'}>
+          <span class="action-icon">${canSell ? ICONS.sell : ICONS.lock}</span><span class="action-copy"><span class="action-label" aria-live="polite">${t('towers.sell')}</span><span class="action-value">${ICONS.coin}+${tower.getSellValue()}</span></span>
+        </button>
+      </div>`;
+      if (!canSell) html += `<div id="sell-blocked-note" class="up-need">${t('towers.lastTower')}</div>`;
     }
 
     panel.innerHTML = html;
     panel.style.display = 'block';
 
-    if (isPhoneLayout()) {
+    if (panel.classList.contains('panel-floating')) {
+      const rect = panel.getBoundingClientRect();
+      this._clampPanel(panel, rect.left, rect.top);
+    } else if (isPhoneLayout()) {
       panel.style.left = '';
       panel.style.top = '';
       this._fitSheet();
@@ -593,7 +639,9 @@ export class UIController {
       sellBtn.addEventListener('click', () => {
         if (!sellBtn.dataset.armed) {
           sellBtn.dataset.armed = 'true';
-          sellBtn.textContent = t('towers.sellConfirm').replace('{n}', tower.getSellValue());
+          sellBtn.querySelector('.action-icon').innerHTML = ICONS.check;
+          sellBtn.querySelector('.action-label').textContent = t('towers.sellConfirm').replace('{n}', tower.getSellValue());
+          sellBtn.querySelector('.action-value').remove();
           return;
         }
         game.sellSelectedTower();
@@ -629,6 +677,8 @@ export class UIController {
 
   hideUpgradePanel() {
     this.elements.upgradePanel.style.display = 'none';
+    this.elements.upgradePanel.classList.remove('panel-floating', 'panel-dragging');
+    this._upgradeTower = null;
   }
 
   // Phones: CANCEL is a flex item of the wave controls, so it never covers
@@ -646,7 +696,7 @@ export class UIController {
   _fitSheet() {
     const panel = this.elements.upgradePanel;
     const tower = this.game.input.selectedTower;
-    if (panel.style.display !== 'block' || !isPhoneLayout() || !tower) return;
+    if (panel.style.display !== 'block' || panel.classList.contains('panel-floating') || !isPhoneLayout() || !tower) return;
     const board = this.game.renderer.canvas.getBoundingClientRect();
     const ts = CONFIG.TILE_SIZE * board.width / CONFIG.CANVAS_WIDTH;
     const left = board.left + tower.gx * ts, top = board.top + tower.gy * ts, gap = 8;
@@ -684,7 +734,7 @@ export class UIController {
     const canAfford = unlocked && this.game.economy.canAfford(def.cost);
     const color = unlocked ? def.color : '#8c8c96';
 
-    let html = `<div class="ttp-title" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
+    let html = `<div class="ttp-title${isMobile ? ' panel-handle' : ''}" style="color:${color}">${spriteImg(towerSprite(type), 'ttp-pic')}${t('tower.' + type)}</div>`;
     html += `<div class="ttp-desc">${t('tower.' + type + '.desc')}</div>`;
 
     html += `<div class="ttp-stats">`;
@@ -765,7 +815,7 @@ export class UIController {
   _hideTooltip() {
     const tooltip = this.elements.towerStatsTooltip;
     if (tooltip) {
-      tooltip.classList.remove('visible');
+      tooltip.classList.remove('visible', 'panel-floating', 'panel-dragging');
     }
     this._previewingType = null;
     document.querySelectorAll('.tower-btn.previewing').forEach(b => b.classList.remove('previewing'));

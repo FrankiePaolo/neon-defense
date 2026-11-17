@@ -22,4 +22,7 @@ export const ICONS = {
   chain: svg('<path d="M3 12l5-6 4 8 4-8 5 6"/>'),
   splash: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/>'),
   boost: svg('<path d="M12 20V4M5 11l7-7 7 7"/>'),
+  move: svg('<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>'),
+  sell: svg('<path d="M3 12l9-9h7l2 2v7l-9 9z"/><circle cx="16.5" cy="7.5" r="1"/>'),
+  check: svg('<path d="M5 12l4 4L19 6"/>'),
 };

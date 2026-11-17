@@ -148,6 +148,7 @@ export class InputHandler {
     // Typing a name is not a shortcut
     const el = e.target;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    if (el?.closest('.tower-action') && (e.key === ' ' || e.key === 'Enter')) return;
     const game = this.game;
     // While paused, Space and Escape resume whatever was pending
     if (game.state === 'PAUSED' && (e.key === ' ' || e.key === 'Escape')) {

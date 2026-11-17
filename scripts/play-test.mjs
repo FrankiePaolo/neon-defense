@@ -808,6 +808,65 @@ async function selectPlacedTower(g, tile) {
   return t;
 }
 
+async function dragPanel(g, selector, dx, dy) {
+  const title = await g.rect(`${selector} .panel-handle`);
+  const x = title.left + 20, y = title.top + title.height / 2;
+  if (g.touch) {
+    const session = await g.page.createCDPSession();
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 8; i++) {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / 8, y: y + dy * i / 8 }] });
+    }
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
+  } else {
+    await g.page.mouse.move(x, y);
+    await g.page.mouse.down();
+    await g.page.mouse.move(x + dx, y + dy, { steps: 8 });
+    await g.page.mouse.up();
+  }
+}
+
+scenario('Drag upgrade panel', { layouts: ['phone', 'phoneShort', 'landscape', 'desktop'], langs: ['en', 'it'] }, async (g) => {
+  await g.startGame();
+  await g.setGold(10000);
+  const tile = await selectPlacedTower(g);
+  const before = await g.rect('#upgrade-panel');
+  const dy = before.top > 70 ? -60 : 60;
+  await dragPanel(g, '#upgrade-panel', -40, dy);
+  const moved = await g.rect('#upgrade-panel');
+  assert(Math.abs(moved.top - before.top) > 20 || Math.abs(moved.left - before.left) > 20, 'panel did not move');
+  assert(await inViewport(g, moved), 'dragged panel outside viewport');
+  assert(await g.eval(() => window.game.input.selectedTower.upgradesA === 0 && window.game.input.selectedTower.upgradesB === 0), 'drag bought an upgrade');
+  await g.press('#upgrade-panel .up-available[data-upgrade-path="A"]');
+  const upgraded = await g.rect('#upgrade-panel');
+  assert(Math.abs(upgraded.left - moved.left) < 1 && Math.abs(upgraded.top - moved.top) < 1, 'upgrade reset the panel position');
+  assert(await g.eval(() => window.game.input.selectedTower.upgradesA === 1), 'upgrade button failed after dragging');
+  await dragPanel(g, '#upgrade-panel', -2000, -2000);
+  assert(await inViewport(g, await g.rect('#upgrade-panel')), 'panel escaped at the screen edge');
+  await g.page.setViewport({ ...LAYOUTS[g.layout], width: LAYOUTS[g.layout].width - 40, height: LAYOUTS[g.layout].height - 40 });
+  await settle(g);
+  assert(await inViewport(g, await g.rect('#upgrade-panel')), 'panel escaped after resizing');
+  await g.press('#upgrade-panel .up-close');
+  assert(!(await g.visible('#upgrade-panel')), 'close failed after dragging');
+  await g.pressTile(tile.x, tile.y);
+  assert(await g.visible('#upgrade-panel'), 'panel did not reopen');
+  assert(await g.eval(() => !document.getElementById('upgrade-panel').classList.contains('panel-floating')), 'reopened panel did not return to automatic placement');
+});
+
+scenario('Drag tower details card', { layouts: ['phone', 'landscape'] }, async (g) => {
+  await g.startGame();
+  await g.press('.tower-btn[data-tower-type="blaster"]');
+  const before = await g.rect('#tower-stats-tooltip');
+  await dragPanel(g, '#tower-stats-tooltip', -60, before.top > 70 ? -60 : 60);
+  const moved = await g.rect('#tower-stats-tooltip');
+  assert(Math.abs(moved.top - before.top) > 20 || Math.abs(moved.left - before.left) > 20, 'details card did not move');
+  assert(await inViewport(g, moved), 'details card outside viewport');
+  await g.press('#tower-stats-tooltip .ttp-place-btn');
+  assert(await g.eval(() => window.game.input.placingType === 'blaster'), 'PLACE failed after dragging');
+  assert(!(await g.visible('#tower-stats-tooltip')), 'details card stayed open after PLACE');
+});
+
 const noPageScroll = (g) => g.eval(() => document.documentElement.scrollHeight === innerHeight &&
   document.documentElement.scrollWidth === innerWidth);
 
@@ -1062,7 +1121,7 @@ scenario('Stray tap on Sell', { layouts: ['phone', 'desktop'], langs: ['en', 'it
   await selectPlacedTower(g);
   const gold = await g.eval(() => window.game.economy.gold);
   await g.press('#upgrade-panel .sell-btn');
-  const label = await g.eval(() => document.querySelector('#upgrade-panel .sell-btn').textContent);
+  const label = await g.eval(() => document.querySelector('#upgrade-panel .sell-btn .action-label').textContent);
   const value = await g.eval(() => window.game.towers[0].getSellValue());
   const want = (g.lang === 'it' ? 'Vendi per {n}?' : 'Sell for {n}?').replace('{n}', value);
   assert(label === want, `Sell reads "${label}"`);
@@ -1082,6 +1141,24 @@ scenario('Confirmed sell', { layouts: ['phone', 'desktop'] }, async (g) => {
   assert(await g.eval(() => window.game.towers.length) === 0, 'tower not sold');
   assert(await g.eval(() => window.game.economy.gold) === gold + value, 'wrong gold');
   assert(!(await g.visible('#upgrade-panel')), 'panel still open');
+});
+
+scenario('Tower actions with the keyboard', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  const tile = await selectPlacedTower(g);
+  await g.page.focus('#upgrade-panel .move-btn');
+  await g.page.keyboard.press('Space');
+  assert(await g.eval(() => !!window.game.input.movingTower && window.game.state === 'BETWEEN_WAVES'), 'Space did not activate Move');
+  await g.page.keyboard.press('Escape');
+  await g.pressTile(tile.x, tile.y);
+  const gold = await g.eval(() => window.game.economy.gold);
+  const value = await g.eval(() => window.game.input.selectedTower.getSellValue());
+  await g.page.focus('#upgrade-panel .sell-btn');
+  await g.page.keyboard.press('Space');
+  assert(await g.eval(() => window.game.towers.length === 1 && window.game.state === 'BETWEEN_WAVES'), 'Space skipped Sell confirmation or started a wave');
+  await g.page.keyboard.press('Enter');
+  assert(await g.eval(() => window.game.towers.length === 0), 'Enter did not confirm Sell');
+  assert(await g.eval(() => window.game.economy.gold) === gold + value, 'wrong return from keyboard Sell');
 });
 
 // Every visible text on the game screen at 12px or more and 4.5:1 or more
