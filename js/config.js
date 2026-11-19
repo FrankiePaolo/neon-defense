@@ -22,8 +22,9 @@ export const CONFIG = {
   // Maximum path length per difficulty: the longest road a phone board makes,
   // so a wide desktop board cannot lay a much longer, easier road
   ROAD_MAX: { easy: 54, normal: 49, hard: 37 },
-  // Enemy HP multiplier per difficulty, on top of the wave curve
-  DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1 },
+  // Enemy HP multiplier per difficulty, on top of the wave curve. Wave 1 takes
+  // at most 1, so one Blaster still holds it on Hard.
+  DIFFICULTY_HP: { easy: 0.75, normal: 1, hard: 1.11 },
   // Kill reward multiplier per difficulty, on top of the wave curve
   DIFFICULTY_REWARD: { easy: 1, normal: 1, hard: 0.8 },
 };
@@ -127,7 +128,7 @@ export const TOWER_DEFS = {
       pathA: {
         name: 'Deep Freeze',
         levels: [
-          { cost: 110, stats: { slowAmount: 0.26, slowDuration: 1.8, fireRate: 1.3 } },
+          { cost: 104, stats: { slowAmount: 0.26, slowDuration: 1.8, fireRate: 1.3 } },
           { cost: 140, stats: { slowAmount: 0.33, slowDuration: 2.2, fireRate: 1.6 } },
           { cost: 160, stats: { slowAmount: 0.43, slowDuration: 2.5, range: 3.5, fireRate: 2.2 } },
         ]

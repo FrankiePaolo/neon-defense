@@ -5,7 +5,8 @@ import { COLORS } from './config.js';
 const SB = SHADOW_BLUR_SCALE;
 
 export class Tower {
-  constructor(type, gx, gy) {
+  /** @param {string} type @param {number} gx @param {number} gy @param {import('./cards.js').RunCards | null} [cards] */
+  constructor(type, gx, gy, cards = null) {
     this.type = type;
     this.gx = gx;
     this.gy = gy;
@@ -19,6 +20,7 @@ export class Tower {
     this.upgradesB = 0;
     this.totalInvested = this.def.cost;
     this.upgradePulseUntil = 0;
+    this.cards = cards;
 
     this.currentStats = this._computeStats();
     this.cooldown = 0;
@@ -41,7 +43,12 @@ export class Tower {
         Object.assign(base, this.def.upgrades.pathB.levels[i].stats);
       }
     }
-    return base;
+    return this.cards ? this.cards.apply(base, this.type) : base;
+  }
+
+  // After a card pick: the run's cards apply on top of the path upgrades
+  refreshStats() {
+    this.currentStats = this._computeStats();
   }
 
   getUpgradeCost(path) {

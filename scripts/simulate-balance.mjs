@@ -38,6 +38,7 @@ const { Projectile } = await import('../js/projectile.js');
 const { WaveManager, ENEMY_UNLOCK, WAVE, waveBonusGold, waveCores } = await import('../js/waves.js');
 const { repairCost } = await import('../js/economy.js');
 const { resolveHit, updateSynergies } = await import('../js/combat.js');
+const { RunCards, CARD_DEFS } = await import('../js/cards.js');
 const { maxPlausibleScore } = await import('../netlify/functions/scores.mjs');
 const { gridToPixel, distance } = await import('../js/utils.js');
 
@@ -219,6 +220,7 @@ class Run {
     this.cores = 0;
     this.unlocked = new Set(['blaster']);
     this.unlockWave = { blaster: 1 };
+    this.cards = new RunCards();
     this.rows = [];
     this.value = {};       // stress-test damage and gold, per tower type and per 'type path' at level 3
     this.won = false;
@@ -241,7 +243,7 @@ class Run {
   }
 
   place(type, tile) {
-    const tower = new Tower(type, tile.x, tile.y);
+    const tower = new Tower(type, tile.x, tile.y, this.cards);
     this.gold -= TOWER_DEFS[type].cost;
     this.grid.placeTower(tile.x, tile.y, tower);
     this.towers.push(tower);
@@ -446,9 +448,11 @@ class Run {
         if (t.type === 'support' && t.currentStats.goldPerWave) this.earn(t.currentStats.goldPerWave);
       }
       if (wave >= CONFIG.MAX_WAVES) { this.score += 5000; this.won = true; }
+      else this.chooseCard(wave);
     }
 
-    const ratio = buyableOverNeeded(wave, this.totalEarned);
+    // Global cards multiply what the gold buys
+    const ratio = buyableOverNeeded(wave, this.totalEarned) * this.cardPower();
     this.rows.push({
       wave, livesLost, lives: Math.max(0, this.lives), gold: this.gold, earned: this.totalEarned,
       towers: this.towers.length, upgrades: this.towers.reduce((s, t) => s + t.upgradesA + t.upgradesB, 0),
@@ -456,8 +460,37 @@ class Run {
     });
   }
 
+  // As in the game: the seeded offer for this wave, from the unlocked towers.
+  // The naive player takes the first card; the sensible player the card that
+  // helps the most gold of its towers (global cards help all of them).
+  chooseCard(wave) {
+    this.cards.openOffer(this.seed, wave, [...this.unlocked]);
+    if (!this.cards.offer) return;
+    let index = 0;
+    if (this.player !== 'naive') {
+      const invested = (type) => this.towers.filter(t => !type || t.type === type).reduce((s, t) => s + t.totalInvested, 0);
+      const worth = (id) => {
+        if (this.cards.isCapped(id)) return 0;
+        const def = CARD_DEFS[id];
+        return def.killGold ? invested() * 0.5 : invested(def.tower);
+      };
+      const values = this.cards.offer.map(worth);
+      index = values.indexOf(Math.max(...values));
+    }
+    const chosen = this.cards.choose(index);
+    if (chosen.gold) this.earn(chosen.gold);
+    for (const t of this.towers) t.refreshStats();
+    if (TRACE) console.log(`  after wave ${wave}: card ${chosen.id}`);
+  }
+
+  // Damage per second multiplier of the global cards picked so far
+  cardPower() {
+    const s = this.cards.apply({ damage: 1, fireRate: 1 }, '');
+    return s.damage * s.fireRate;
+  }
+
   onKilled(enemy, wave) {
-    this.earn(enemy.reward);
+    this.earn(Math.round(enemy.reward * this.cards.killGoldMult()));
     this.score += Math.floor(enemy.maxHp * (1 + wave * 0.1));
     this.killStreak++;
     this.killStreakTimer = 1.5;
@@ -499,7 +532,7 @@ class Run {
   stress(nextWave) {
     const saved = rngState;
     const copies = this.towers.map(t => {
-      const c = new Tower(t.type, t.gx, t.gy);
+      const c = new Tower(t.type, t.gx, t.gy, this.cards);
       for (let i = 0; i < t.upgradesA; i++) c.upgrade('A');
       for (let i = 0; i < t.upgradesB; i++) c.upgrade('B');
       c.ledger = newLedger();

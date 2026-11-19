@@ -5,6 +5,7 @@ import { t, getLang, setLang, cores } from './i18n.js';
 import { ICONS } from './icons.js';
 import { towerSprite, enemySprite, spriteImg } from './sprites.js';
 import { encodeChallenge } from './challenge.js';
+import { CARD_DEFS } from './cards.js';
 
 // Stat key -> [i18n label key, icon]
 const STAT_LABELS = {
@@ -77,6 +78,7 @@ export class UIController {
       startWaveBtn: /** @type {HTMLButtonElement} */ (document.getElementById('start-wave-btn')),
       menuScreen: document.getElementById('menu-screen'),
       pauseOverlay: document.getElementById('pause-overlay'),
+      cardOverlay: document.getElementById('card-overlay'),
       gameOverScreen: document.getElementById('game-over-screen'),
       finalScore: document.getElementById('final-score'),
       finalWave: document.getElementById('final-wave'),
@@ -193,6 +195,11 @@ export class UIController {
     pauseBtn.innerHTML = ICONS.pause;
     pauseBtn.setAttribute('aria-label', t('ctrl.pause'));
     document.getElementById('mute-btn').setAttribute('aria-label', t('ctrl.sound'));
+
+    // Upgrade cards
+    document.getElementById('card-title').textContent = t('card.title');
+    document.getElementById('card-description').textContent = t('card.description');
+    if (this.game.cards?.offer) this.showCardOffer();
 
     // Pause
     document.querySelector('#pause-overlay h2').textContent = t('game.paused');
@@ -438,7 +445,12 @@ export class UIController {
       this.game.returnToMenu();
     });
 
-    for (const overlay of [this.elements.pauseOverlay, this.elements.gameOverScreen]) {
+    document.getElementById('card-options').addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement | null} */ ((/** @type {HTMLElement} */ (e.target)).closest('.card-option'));
+      if (btn) this.game.chooseCard(Number(btn.dataset.cardIndex));
+    });
+
+    for (const overlay of [this.elements.pauseOverlay, this.elements.gameOverScreen, this.elements.cardOverlay]) {
       overlay.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
         const controls = [...overlay.querySelectorAll('button:not(:disabled), input')]
@@ -504,7 +516,7 @@ export class UIController {
     this.elements.livesValue.textContent = String(this.game.lives);
     this.elements.scoreValue.textContent = shortNumber(this.game.scoreTracker.score);
     if (this.game.state === 'BETWEEN_WAVES') {
-      this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
+      this.elements.startWaveBtn.disabled = !this._canStartWave();
       this._updatePhaseLabel();
       this.updateRepairButton();
     }
@@ -855,7 +867,7 @@ export class UIController {
     this._buildTowerPanel();
     this.elements.towerPanel.classList.remove('panel-hidden');
     this.elements.startWaveBtn.textContent = IS_MOBILE ? t('game.startWave') : t('game.startWaveDesktop');
-    this.elements.startWaveBtn.disabled = this.game.towers.length === 0 || !this.game.tutorial.allows('startWave');
+    this.elements.startWaveBtn.disabled = !this._canStartWave();
     this.updateRepairButton();
     const preview = this.game.waveManager.getPreview();
     const text = Object.entries(preview).map(([type, count]) => {
@@ -934,6 +946,39 @@ export class UIController {
     el.classList.remove(className);
     void el.offsetWidth; // reflow so the animation starts again
     el.classList.add(className);
+  }
+
+  _canStartWave() {
+    return this.game.towers.length > 0 && !this.game.cards.offer && this.game.tutorial.allows('startWave');
+  }
+
+  // The open card offer: one button per card, with its tower, effect and stack
+  showCardOffer() {
+    const cards = this.game.cards;
+    if (!cards.offer) return;
+    const list = document.getElementById('card-options');
+    list.innerHTML = cards.offer.map((id, i) => {
+      const def = CARD_DEFS[id];
+      const tag = def.tower ? t('tower.' + def.tower) : t('card.all');
+      const stack = cards.isCapped(id)
+        ? t('card.capped').replace('{gold}', String(cards.cappedGold(cards.offerWave)))
+        : t('card.stack').replace('{n}', String(cards.count(id) + 1)).replace('{max}', String(def.max));
+      return `<button class="card-option" data-card-index="${i}" data-card-id="${id}">`
+        + `<span class="card-key" aria-hidden="true">${i + 1}</span>`
+        + `<span class="card-tag">${tag}</span>`
+        + `<span class="card-name">${t('card.' + id)}</span>`
+        + `<span class="card-text">${t('card.' + id + '.desc').replace('{n}', String(Math.round(100 * (def.mult || def.killGold || def.add))))}</span>`
+        + `<span class="card-stack">${stack}</span></button>`;
+    }).join('');
+    const overlay = this.elements.cardOverlay;
+    overlay.style.display = 'flex';
+    overlay.scrollTop = 0;
+    /** @type {HTMLElement} */ (list.firstElementChild).focus({ preventScroll: true });
+    this.updateHUD();
+  }
+
+  hideCardOffer() {
+    this.elements.cardOverlay.style.display = 'none';
   }
 
   showPause() {

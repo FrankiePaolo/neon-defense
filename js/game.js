@@ -7,6 +7,7 @@ import { Enemy } from './enemy.js';
 import { Projectile } from './projectile.js';
 import { Tower } from './tower.js';
 import { WaveManager, waveBonusGold, waveCores } from './waves.js';
+import { RunCards } from './cards.js';
 import { resolveHit, updateSynergies } from './combat.js';
 import { Economy, ScoreTracker, ProgressTracker, repairCost } from './economy.js';
 import { Renderer } from './renderer.js';
@@ -27,6 +28,7 @@ export class Game {
     this.scoreTracker = new ScoreTracker();
     this.progressTracker = new ProgressTracker();
     this.waveManager = new WaveManager();
+    this.cards = new RunCards();
     this.audio = new AudioEngine();
     this.input = new InputHandler(this.canvas, this);
     this.ui = new UIController(this);
@@ -112,6 +114,8 @@ export class Game {
     this.scoreTracker = new ScoreTracker();
     this.coresThisRun = 0;
     this.runTime = 0;
+    this.cards = new RunCards();
+    this.ui.hideCardOffer();
     this.waveManager = new WaveManager(CONFIG.DIFFICULTY_HP[this.difficulty] ?? 1, CONFIG.DIFFICULTY_REWARD[this.difficulty] ?? 1, this.seed);
     this.lives = CONFIG.BASE_LIVES;
     this.repairs = 0;
@@ -138,6 +142,7 @@ export class Game {
   startNextWave() {
     if (this.state !== 'BETWEEN_WAVES') return;
     if (this.towers.length === 0) return;
+    if (this.cards.offer) return;
     if (!this.tutorial.allows('startWave')) return;
     this.input.clearCarry();
     this.state = 'PLAYING';
@@ -165,7 +170,7 @@ export class Game {
     if (!this.grid.isPlaceable(gx, gy)) return false;
     if (!this.economy.canAfford(def.cost)) return false;
 
-    const tower = new Tower(type, gx, gy);
+    const tower = new Tower(type, gx, gy, this.cards);
     this.economy.spend(def.cost);
     this.grid.placeTower(gx, gy, tower);
     this.towers.push(tower);
@@ -238,6 +243,22 @@ export class Game {
     }
   }
 
+  // Takes the card at index from the open offer. Existing towers gain it at
+  // once; a capped card pays gold instead.
+  /** @param {number} index */
+  chooseCard(index) {
+    if (this.state !== 'BETWEEN_WAVES') return false;
+    const chosen = this.cards.choose(index);
+    if (!chosen) return false;
+    if (chosen.gold) this.economy.earn(chosen.gold);
+    for (const tower of this.towers) tower.refreshStats();
+    if (this.input.selectedTower) this.ui.showUpgradePanel(this.input.selectedTower);
+    this.ui.hideCardOffer();
+    this.audio.playSfx('upgrade');
+    this.ui.updateHUD();
+    return true;
+  }
+
   // Gold for the next life, or null when lives are full
   getRepairCost() {
     return this.lives < CONFIG.BASE_LIVES ? repairCost(this.repairs) : null;
@@ -263,6 +284,7 @@ export class Game {
   // Leave the current game for the menu; the loop does not update in MENU
   returnToMenu() {
     this.state = 'MENU';
+    this.ui.hideCardOffer();
     this.audio.stopMusic();
     this.audio.stopSfx();
     this.input.clearCarry();
@@ -387,14 +409,15 @@ export class Game {
 
   /** @param {Enemy} enemy */
   _onEnemyKilled(enemy) {
-    this.economy.earn(enemy.reward);
+    const reward = Math.round(enemy.reward * this.cards.killGoldMult());
+    this.economy.earn(reward);
     this.scoreTracker.addKill(enemy, this.waveManager.currentWave);
     this.particles.emit(enemy.x, enemy.y, enemy.color, 'death');
 
     // Floating gold text
     this.floatingTexts.push({
       x: enemy.x, y: enemy.y,
-      text: `+${enemy.reward}g`, color: '#ffd700',
+      text: `+${reward}g`, color: '#ffd700',
       life: 1.0, maxLife: 1.0,
     });
     this.ui.pulseGold();
@@ -521,6 +544,9 @@ export class Game {
     this.state = 'BETWEEN_WAVES';
     this.audio.playTrack('gameplay');
     this.ui.showBetweenWaves();
+    this.input.clearCarry();
+    this.cards.openOffer(this.seed, wave, [...this.progressTracker.unlocked]);
+    if (this.cards.offer) this.ui.showCardOffer();
     this.ui.updateHUD();
   }
 

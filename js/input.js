@@ -156,6 +156,11 @@ export class InputHandler {
       game.togglePause();
       return;
     }
+    // While cards are on offer, 1 to 3 pick one instead of setting the speed
+    if (game.state === 'BETWEEN_WAVES' && game.cards.offer && /^[1-9]$/.test(e.key)) {
+      if (game.chooseCard(Number(e.key) - 1)) e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case ' ':
         if (game.state === 'BETWEEN_WAVES') game.startNextWave();

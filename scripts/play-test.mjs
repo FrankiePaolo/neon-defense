@@ -581,6 +581,113 @@ scenario('Run screens contain keyboard focus', { layouts: ['desktop'], langs: ['
   assert(await g.eval(() => document.activeElement.id) === 'retry-map-btn', 'end screen focus escaped forwards');
 });
 
+// ── Upgrade cards ──
+
+async function endWave(g) {
+  await g.eval(() => { window.game.waveManager.spawnQueue = []; window.game.enemies = []; });
+  await g.page.waitForFunction(() => window.game.state === 'BETWEEN_WAVES', { timeout: 5000 });
+  await sleep(100);
+}
+
+const offer = (g) => g.eval(() => window.game.cards.offer);
+
+scenario('Card offer after a cleared wave', {
+  layouts: ['phone', 'phoneShort', 'phoneNarrow', 'landscape', 'landscapeShort', 'desktopShort', 'desktop'],
+  langs: ['en', 'it'],
+}, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await endWave(g);
+  const cards = await offer(g);
+  assert(Array.isArray(cards) && cards.length === 3, `offer is ${JSON.stringify(cards)}`);
+  assert(await g.visible('#card-overlay'), 'card overlay hidden');
+  const want = g.lang === 'it' ? 'SCEGLI UN POTENZIAMENTO' : 'CHOOSE AN UPGRADE';
+  assert(await g.eval(() => document.getElementById('card-title').textContent) === want, 'card title not translated');
+  const options = await g.eval(() => [...document.querySelectorAll('#card-overlay .card-option')]
+    .map(b => ({ id: b.dataset.cardId, name: b.querySelector('.card-name').textContent, text: b.querySelector('.card-text').textContent })));
+  assert(JSON.stringify(options.map(o => o.id)) === JSON.stringify(cards), 'buttons do not match the offer');
+  for (const o of options) assert(o.name && o.text && !o.name.startsWith('card.') && !o.text.startsWith('card.'), `untranslated card ${o.id}`);
+  for (const o of options) assert(!/[{}]/.test(o.text), `placeholder left in card ${o.id}: ${o.text}`);
+  const viewport = await g.eval(() => ({ w: innerWidth, h: innerHeight }));
+  for (let i = 0; i < 3; i++) {
+    const sel = `#card-overlay .card-option[data-card-index="${i}"]`;
+    await g.eval(s => document.querySelector(s).scrollIntoView({ block: 'nearest' }), sel);
+    const r = await g.rect(sel);
+    assert(r.height >= 44 && r.width >= 44 && r.top >= 0 && r.bottom <= viewport.h + 1 && r.left >= 0 && r.right <= viewport.w + 1,
+      `card ${i} outside viewport: ${JSON.stringify(r)}`);
+  }
+  assert(await g.eval(() => { const el = document.getElementById('card-overlay'); return el.scrollWidth <= el.clientWidth + 1; }), 'card overlay scrolls sideways');
+  // No wave until a card is chosen
+  await g.eval(() => window.game.startNextWave());
+  assert(await g.eval(() => window.game.state) === 'BETWEEN_WAVES', 'wave started with an offer open');
+  await g.press('#card-overlay .card-option[data-card-index="1"]');
+  assert(!(await g.visible('#card-overlay')), 'overlay still open after a pick');
+  assert(await offer(g) === null, 'offer still pending');
+  assert(await g.eval((id) => window.game.cards.count(id), cards[1]) === 1, 'pick not recorded');
+  assert(!(await g.eval(() => document.getElementById('start-wave-btn').disabled)), 'start still disabled');
+});
+
+scenario('A card changes tower stats at once', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await endWave(g);
+  await g.eval(() => { window.game.cards.offer = ['allDamage', 'allRate', 'allRange']; window.game.ui.showCardOffer(); });
+  const before = await g.eval(() => window.game.towers[0].currentStats.damage);
+  await g.press('#card-overlay .card-option[data-card-index="0"]');
+  assert(await g.eval(() => window.game.towers[0].currentStats.damage) > before, 'damage did not grow');
+  await g.setGold(1000);
+  const [, b] = await g.buildable();
+  assert(await g.placeAt('blaster', b.x, b.y), 'second tower not placed');
+  assert(await g.eval(() => window.game.towers[1].currentStats.damage) > before, 'new tower lacks the card');
+});
+
+scenario('Number keys pick a card', { layouts: ['desktop'] }, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await endWave(g);
+  const cards = await offer(g);
+  const speed = await g.eval(() => window.game.speedMultiplier);
+  await g.page.keyboard.press('3');
+  assert(await g.eval((id) => window.game.cards.count(id), cards[2]) === 1, 'key 3 did not pick the third card');
+  assert(await g.eval(() => window.game.speedMultiplier) === speed, 'key changed the speed while picking');
+  await g.page.keyboard.press('2');
+  assert(await g.eval(() => window.game.speedMultiplier) === 2, 'speed keys stopped working after the pick');
+});
+
+scenario('Pause keeps the card offer', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await endWave(g);
+  const cards = await offer(g);
+  await g.eval(() => window.game.togglePause());
+  assert(await g.visible('#pause-overlay'), 'pause hidden');
+  await g.press('#resume-btn');
+  assert(await g.visible('#card-overlay'), 'offer gone after resume');
+  assert(JSON.stringify(await offer(g)) === JSON.stringify(cards), 'offer changed after resume');
+});
+
+scenario('A new run starts without cards', { layouts: ['phone', 'desktop'] }, async (g) => {
+  await g.startGame();
+  await startWave(g);
+  await endWave(g);
+  await g.press('#card-overlay .card-option[data-card-index="0"]');
+  await g.eval(() => window.game.startNewGame('normal'));
+  assert(await g.eval(() => Object.keys(window.game.cards.picks).length) === 0, 'picks survived a new run');
+  assert(await offer(g) === null && !(await g.visible('#card-overlay')), 'offer survived a new run');
+});
+
+scenario('A seed replays its card offers', { layouts: ['phone'] }, async (g) => {
+  const offersOf = () => g.eval(() => {
+    const game = window.game;
+    game.startNewGame('normal', { seed: 777, board: 'phone', difficulty: 'normal', name: 'A', score: 1, wave: 1 });
+    const list = [];
+    for (let w = 1; w <= 5; w++) { game.cards.openOffer(game.seed, w, [...game.progressTracker.unlocked]); list.push(game.cards.offer.join()); }
+    game.cards.offer = null;
+    return list;
+  });
+  assert(JSON.stringify(await offersOf()) === JSON.stringify(await offersOf()), 'same seed gave different offers');
+});
+
 // ── Challenges ──
 
 // The map and the waves of a seed, as a run started from a challenge on that board
@@ -1681,6 +1788,11 @@ scenario('Complete tutorial', { layouts: ['phone', 'phoneSafari', 'phoneShort', 
       // The upgrade step waits for the wave to end
       await g.eval(() => { window.game.waveManager.spawnQueue = []; window.game.enemies = []; });
       await g.page.waitForFunction(() => window.game.state === 'BETWEEN_WAVES', { timeout: 5000 });
+      // The card offer comes first; the tutorial waits until a card is chosen
+      await sleep(150);
+      assert(await g.visible('#card-overlay'), 'no card offer after the first wave');
+      assert(await g.eval(() => document.getElementById('tutorial-overlay').classList.contains('hidden')), 'tutorial covers the card offer');
+      await g.press('#card-overlay .card-option[data-card-index="0"]');
     }
     await g.page.waitForFunction((st) => window.game.tutorial.step === st &&
       !document.getElementById('tutorial-overlay').classList.contains('hidden'), { timeout: 3000 }, step);
@@ -1723,6 +1835,8 @@ async function clearWave(g) {
     game.enemies = [];
   });
   await g.page.waitForFunction(() => window.game.state === 'BETWEEN_WAVES', { timeout: 5000 });
+  // A cleared wave offers cards; take the first so the next wave can start
+  await g.eval(() => { if (window.game.cards.offer) window.game.chooseCard(0); });
 }
 
 scenario('Fresh profile', { layouts: ['desktop'] }, async (g) => {
@@ -2150,6 +2264,7 @@ scenario('Boss music lasts through pauses and returns to normal after clearing',
   });
   assert(await g.eval(() => window.game.state === 'BETWEEN_WAVES'), 'boss wave did not clear');
   assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'boss music continues after clearing');
+  await g.press('#card-overlay .card-option[data-card-index="0"]');
   await g.press('#pause-btn');
   await g.press('#resume-btn');
   assert(await g.eval(() => window.game.audio.currentTrack === 'gameplay'), 'boss music returns between waves');

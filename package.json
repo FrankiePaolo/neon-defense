@@ -5,10 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "npm run typecheck && npm run balance && npm run play-test",
+    "test": "npm run unit && npm run typecheck && npm run balance && npm run play-test",
     "balance": "node scripts/simulate-balance.mjs",
     "play-test": "node scripts/play-test.mjs",
-    "typecheck": "tsc -p jsconfig.json"
+    "typecheck": "tsc -p jsconfig.json",
+    "unit": "node --test tests/"
   },
   "keywords": [],
   "author": "",

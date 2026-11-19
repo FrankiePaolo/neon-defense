@@ -133,7 +133,9 @@ export class Tutorial {
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  // A step also waits while upgrade cards are on offer
   _waiting(s) {
+    if (this.game.cards?.offer) return true;
     return s.waitForState && this.game.state !== s.waitForState;
   }
 

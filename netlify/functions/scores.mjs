@@ -7,7 +7,7 @@ const DIFFICULTIES = ["easy", "normal", "hard"];
 // Highest score a real run can have after the given wave: at least 2x the
 // best score scripts/simulate-balance.mjs produces at every wave
 const CAP_BASE = 76000;
-const CAP_GROWTH = 1.16;
+const CAP_GROWTH = 1.185;
 
 export function maxPlausibleScore(wave) {
   return CAP_BASE * CAP_GROWTH ** wave;

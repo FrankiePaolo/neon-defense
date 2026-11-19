@@ -23,6 +23,7 @@
 │               ScoreTracker (scores, pending queue)                   │
 │               ProgressTracker (cores, unlocked towers)               │
 │   config.js: CONFIG, TOWER_DEFS, ENEMY_DEFS (shared data)            │
+│   cards.js:  RunCards (upgrade cards picked this run, open offer)    │
 │   utils.js:  math and shape helpers                                  │
 │                                                                      │
 │   localStorage: scores, pending scores, player name, language,       │
@@ -48,7 +49,7 @@ setup-db, cleanup-scores, check-paths, generate-icons
 - Only `ScoreTracker` talks to the backend. It falls back to `localStorage` and retries queued scores when offline.
 - The API is three calls. GET returns the top 50 scores of each difficulty, one board per difficulty. GET with `?score=&difficulty=` returns that score's rank among saved scores as `{ top }` (a top percentage, for the end card). POST validates name, score, wave and difficulty (missing means normal), rejects a score above `maxPlausibleScore(wave)`, then inserts.
 - The board shape is chosen per game: `Game.startNewGame` calls `chooseGridShape()` in `config.js`. Phone boards are 9x12 in portrait and 12x9 in landscape; desktop boards are 20x15 in landscape and 15x20 in portrait when a board class is supplied. `Grid` reads the size from `CONFIG` when it generates.
-- Every run has a seed (`Game.startNewGame`). The map draws from `mulberry32(seed)` and each wave from its own stream of the seed (`WaveManager.generateWave`), so a seed and a board class (phone or desktop) replay the same map and waves on any device. A challenge link (`?c=`, `challenge.js`) carries them with the sender's name and score. Without a seed (the balance simulator), both fall back to `Math.random`.
+- Every run has a seed (`Game.startNewGame`). The map draws from `mulberry32(seed)` and each wave from its own stream of the seed (`WaveManager.generateWave`), so a seed and a board class (phone or desktop) replay the same map and waves on any device. Upgrade-card offers (`cards.js`, `drawOffer`) draw from a third stream of the seed, so a challenge also replays its offers. A challenge link (`?c=`, `challenge.js`) carries them with the sender's name and score. Without a seed (the balance simulator), the map and the waves fall back to `Math.random`.
 - `fitBoard` (`ui.js`) and `Renderer.resize` own the board's displayed size: `fitBoard` fits the canvas into the `#board-slot` CSS leaves for it, and `resize` sizes the backing store to match. CSS arranges everything else.
 - The simulation modules (config, grid, pathfinding, enemy, tower, projectile, waves, combat) must not touch the DOM beyond `config.js` reading `window` and `navigator` for `IS_MOBILE` and the board shape. `scripts/simulate-balance.mjs` shims those two globals and runs the real game code in Node. Keep DOM access in the UI and rendering modules.
 - `simulate-balance.mjs` imports `maxPlausibleScore` from the Netlify function, so the balance simulator and the server-side anti-cheat ceiling are one rule. Changing one changes the other.

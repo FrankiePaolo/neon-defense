@@ -917,6 +917,60 @@ canvas {
 #game-over-screen::after { content: ''; flex: 1 0 0; }
 #pause-overlay > *, #game-over-screen > * { flex-shrink: 0; }
 #pause-overlay { background: rgba(5, 9, 16, 0.88); z-index: 50; }
+
+/* Upgrade cards: one pick after each cleared wave, below the pause screen */
+#card-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: rgba(5, 9, 16, 0.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 45;
+}
+#card-overlay::before, #card-overlay::after { content: ''; flex: 1 0 0; }
+.card-panel { flex-shrink: 0; width: min(760px, 100%); text-align: center; }
+#card-title { font-family: var(--font-brand); font-size: 32px; letter-spacing: 0.06em; line-height: 1.1; color: #ffd166; }
+#card-description { margin: 6px 0 16px; color: var(--text-2); font-size: 14px; }
+#card-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.card-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 16px 14px 14px;
+  border: 1px solid #35465a;
+  border-radius: var(--radius-card);
+  background: linear-gradient(160deg, #16243a, #0c121d 70%);
+  color: #f0f5fc;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  text-align: center;
+}
+.card-key { position: absolute; top: 8px; left: 10px; color: #6f8399; font-size: 12px; font-weight: 700; }
+.card-tag { padding: 2px 8px; border-radius: 999px; background: rgba(0, 255, 255, 0.08); color: #7fe9ff; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.card-name { font-size: 17px; font-weight: 700; }
+.card-text { color: #c4d1e0; font-size: 13px; line-height: 1.4; }
+.card-stack { color: #ffd166; font-size: 12px; font-weight: 700; }
+@media (hover: hover) { .card-option:hover { border-color: #ffd166; background: #1c2d45; } }
+@media (hover: none) { .card-key { display: none; } }
+.card-option:focus-visible { outline: 2px solid #ffd166; outline-offset: 2px; }
+@media (max-height: 420px) {
+  #card-overlay { padding: 10px 12px; }
+  #card-title { font-size: 24px; }
+  #card-description { margin: 2px 0 8px; font-size: 12px; }
+  .card-option { padding: 10px 10px 8px; gap: 4px; }
+  .card-name { font-size: 15px; }
+  .card-text { font-size: 12px; }
+}
 #game-over-screen {
   --result-accent: 255, 110, 110;
   background: radial-gradient(ellipse at 50% 10%, rgba(var(--result-accent), 0.1), transparent 65%), rgba(7, 10, 17, 0.97);
@@ -1957,6 +2011,14 @@ canvas {
       <div id="pwa-banner" class="hidden">
         <span id="pwa-banner-text"></span>
         <button id="pwa-banner-close">&times;</button>
+      </div>
+    </div>
+
+    <div id="card-overlay" role="dialog" aria-modal="true" aria-labelledby="card-title">
+      <div class="card-panel">
+        <h2 id="card-title">CHOOSE AN UPGRADE</h2>
+        <p id="card-description"></p>
+        <div id="card-options"></div>
       </div>
     </div>
 

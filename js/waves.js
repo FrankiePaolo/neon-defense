@@ -17,7 +17,7 @@ export const ENEMY_UNLOCK = [
 export const WAVE = {
   COUNT_BASE: 6,          // enemies on wave 0
   COUNT_PER_WAVE: 1.6,    // extra enemies per wave
-  HP_RATE: 1.09,          // HP multiplier grows by this factor each wave
+  HP_RATE: 1.11,          // HP multiplier grows by this factor each wave
   SPEED_SLOPE: 0.012,     // speed multiplier gained per wave
   SPEED_CAP: 1.4,         // speed multiplier never exceeds this
   ARMOR_START: 7,         // wave armor bonus counts waves after this one
@@ -74,7 +74,7 @@ export class WaveManager {
 
   generateWave(waveNum) {
     const scale = waveScaling(waveNum);
-    scale.hp *= this.hpMult;
+    scale.hp *= waveNum === 1 ? Math.min(1, this.hpMult) : this.hpMult;
     scale.reward *= this.rewardMult;
     const isBoss = waveNum % CONFIG.BOSS_INTERVAL === 0;
     const waveMult = (type) => ({
